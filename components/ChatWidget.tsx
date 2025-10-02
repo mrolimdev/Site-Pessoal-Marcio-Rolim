@@ -231,9 +231,11 @@ const ChatWidget: React.FC = () => {
         botReplyText = responseData.resposta_chat || botReplyText;
       } catch (e) { /* It's plain text, use as is */ }
 
-      if (speakResponse && placeholderId) {
+      if (placeholderId) {
         setMessages(prev => prev.map(msg => msg.id === placeholderId ? { ...msg, content: botReplyText, type: undefined } : msg));
-        await speakText(botReplyText, placeholderId);
+        if (speakResponse) {
+          await speakText(botReplyText, placeholderId);
+        }
       } else {
         const botResponse: Message = { id: crypto.randomUUID(), sender: 'bot', content: botReplyText };
         setMessages((prev) => [...prev, botResponse]);
@@ -256,10 +258,11 @@ const ChatWidget: React.FC = () => {
     if (!inputValue.trim() || isSending) return;
     stopSpeaking();
     const userMessage: Message = { id: crypto.randomUUID(), sender: 'user', content: inputValue };
-    setMessages((prev) => [...prev, userMessage]);
+    const botPlaceholder: Message = { id: crypto.randomUUID(), sender: 'bot', content: '', type: 'thinking' };
+    setMessages((prev) => [...prev, userMessage, botPlaceholder]);
     setInputValue('');
     setIsSending(true);
-    await sendWebhookRequest({ pergunta_chat: userMessage.content, id_chat: chatId, mensagem_tipo: 'texto' }, false);
+    await sendWebhookRequest({ pergunta_chat: userMessage.content, id_chat: chatId, mensagem_tipo: 'texto' }, false, botPlaceholder.id);
   };
 
   useEffect(() => {
