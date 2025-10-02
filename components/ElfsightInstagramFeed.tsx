@@ -3,13 +3,13 @@ import WhatsAppIcon from './icons/WhatsAppIcon';
 
 const Hero: React.FC = () => {
   return (
-    <section className="bg-brand-dark min-h-[500px] flex flex-col justify-start items-center text-center px-6 relative mt-[45px] sm:mt-[90px]">
-       <div className="absolute inset-0 bg-gradient-to-b from-brand-dark via-brand-dark/80 to-brand-dark opacity-50"></div>
-       <div className="z-10 pt-[180px] sm:pt-[130px]">
+    <section className="bg-brand-dark min-h-[500px] flex flex-col justify-start items-center text-center px-6 relative">
+       {/* Removed gradient overlay for performance and simplicity */}
+       <div className="z-10 pt-[225px] sm:pt-[220px]">
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-serif font-bold text-brand-light leading-tight">
           Marcio Rolim
         </h1>
-        <p className="text-lg sm:text-xl md:text-2xl font-sans text-brand-light/80 mt-2 mb-28">
+        <p className="text-lg sm:text-xl md:text-2xl font-sans text-brand-light/80 mt-2 mb-20">
           Consultor de Tecnologia
         </p>
         <a
