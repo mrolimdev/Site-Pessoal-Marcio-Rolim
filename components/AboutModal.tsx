@@ -180,15 +180,16 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
             >
                 <CloseIcon className="h-6 w-6" />
             </button>
-            <iframe
+            <video
                 className="absolute top-0 left-0 w-full h-full"
-                src="https://www.youtube.com/embed/KKOxIINnEfM?autoplay=1&rel=0"
+                src="https://sites.arquivo.download/marciorolim/Olhe%20o%20que%20Deus%20fez%20comigo.mp4"
                 title="Meu Testemunho"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                loading="lazy"
-            ></iframe>
+                controls
+                autoPlay
+                playsInline
+            >
+                Seu navegador não suporta a tag de vídeo.
+            </video>
           </div>
         </div>
       )}
