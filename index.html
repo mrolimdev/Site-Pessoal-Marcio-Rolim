@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=48&h=48&fit=cover&output=png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Marcio Rolim - Página Pessoal</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Página Pessoal de Marcio Rolim, Consultor de Tecnologia, Pastor e Especialista em IA. Conheça meus projetos, habilidades e entre em contato." />
+    <meta name="keywords" content="Marcio Rolim, Página Pessoal, Consultor de Tecnologia, Desenvolvedor, Pastor, Inteligência Artificial, Marketing Digital, Liderança Pastoral" />
+    <meta name="author" content="Marcio Rolim" />
+    <link rel="canonical" href="/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="/" />
+    <meta property="og:title" content="Marcio Rolim - Página Pessoal" />
+    <meta property="og:description" content="Página Pessoal de Marcio Rolim, Consultor de Tecnologia, Pastor e Especialista em IA. Conheça meus projetos, habilidades e entre em contato." />
+    <meta property="og:image" content="https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=1200&h=630&fit=cover&output=webp" />
+    <meta property="og:site_name" content="Marcio Rolim" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Marcio Rolim - Página Pessoal" />
+    <meta name="twitter:description" content="Página Pessoal de Marcio Rolim, Consultor de Tecnologia, Pastor e Especialista em IA. Conheça meus projetos, habilidades e entre em contato." />
+    <meta name="twitter:image" content="https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=1200&h=630&fit=cover&output=webp" />
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#1a1a1a" />
+    <link rel="apple-touch-icon" href="https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=180&h=180&fit=cover&output=png" />
+
+    <!-- Structured Data (Schema.org) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "Marcio Rolim",
+      "jobTitle": "Consultor de Tecnologia",
+      "url": "/",
+      "image": "https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=600&output=webp",
+      "sameAs": [
+        "https://instagram.com/marciorolim",
+        "https://youtube.com/marciorolim",
+        "https://facebook.com/marciorolim"
+      ],
+      "knowsAbout": ["Tecnologia", "Desenvolvimento de Software", "Inteligência Artificial", "Marketing Digital", "Liderança", "Aconselhamento Pastoral"]
+    }
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'brand-dark': '#1a1a1a',
+              'brand-light': '#e0e0e0',
+              'brand-gold': '#f0c420',
+              'brand-grey': '#333333',
+            },
+            fontFamily: {
+              'serif': ['Cormorant Garamond', 'serif'],
+              'sans': ['Inter', 'sans-serif'],
+            },
+            keyframes: {
+              'slide-in-up': {
+                '0%': { transform: 'translateY(20px)', opacity: '0' },
+                '100%': { transform: 'translateY(0)', opacity: '1' },
+              },
+              'speak-wave': {
+                '0%, 40%, 100%': { transform: 'scaleY(0.4)' },
+                '20%': { transform: 'scaleY(1)' },
+              },
+              'fade-in': {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+            },
+            animation: {
+              'slide-in-up': 'slide-in-up 0.3s ease-out forwards',
+              'speak-wave': 'speak-wave 1.2s infinite ease-in-out',
+              'fade-in': 'fade-in 0.3s ease-out forwards',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+      }
+      .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+      }
+       /* Custom Scrollbar */
+      body::-webkit-scrollbar {
+        width: 12px;
+      }
+      body::-webkit-scrollbar-track {
+        background: #000000;
+      }
+      body::-webkit-scrollbar-thumb {
+        background-color: #333333;
+        border-radius: 20px;
+        border: 3px solid #000000;
+      }
+      .speaking-indicator span {
+        display: inline-block;
+        animation: speak-wave 1.2s infinite ease-in-out;
+      }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "path": "https://aistudiocdn.com/path@^0.12.7",
+    "vite": "https://aistudiocdn.com/vite@^7.1.8",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.0.4"
+  }
+}
+</script>
+</head>
+  <body class="bg-black">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(registration => {
+            console.log('Service Worker registered: ', registration);
+          }).catch(registrationError => {
+            console.log('Service Worker registration failed: ', registrationError);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>

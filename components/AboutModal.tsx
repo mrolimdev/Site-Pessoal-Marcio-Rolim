@@ -1,0 +1,194 @@
+import React, { useState, useRef, useEffect } from 'react';
+import CloseIcon from './icons/CloseIcon';
+import PlayIcon from './icons/PlayIcon';
+import PauseIcon from './icons/PauseIcon';
+
+interface AboutModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      // Pause audio and close video modal when main modal is closed
+      audioRef.current?.pause();
+      setIsVideoModalOpen(false);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      const handlePlay = () => setIsPlaying(true);
+      const handlePause = () => setIsPlaying(false);
+      const handleEnded = () => setIsPlaying(false);
+
+      audio.addEventListener('play', handlePlay);
+      audio.addEventListener('pause', handlePause);
+      audio.addEventListener('ended', handleEnded);
+
+      return () => {
+        audio.removeEventListener('play', handlePlay);
+        audio.removeEventListener('pause', handlePause);
+        audio.removeEventListener('ended', handleEnded);
+      };
+    }
+  }, []);
+
+
+  if (!isOpen) return null;
+
+  const profileImageUrl = 'https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=500&output=webp&q=85';
+  const audioUrl = 'https://sites.arquivo.download/Diversos/Audio%20sobre%20mim%20marcio%20rolim.mp3';
+
+  const calculateAge = (birthDate: string): number => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDifference = today.getMonth() - birth.getMonth();
+    if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const age = calculateAge('1973-04-18');
+
+  const togglePlayPause = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+    }
+  };
+
+  return (
+    <>
+      <div 
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center p-4 pt-16 sm:pt-24"
+        onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="about-modal-title"
+      >
+        <div 
+          className="relative bg-brand-dark rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border-2 border-brand-light/10 scrollbar-hide animate-slide-in-up"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button 
+            onClick={onClose} 
+            className="absolute top-4 right-4 bg-brand-grey rounded-full p-2 text-brand-light/70 hover:bg-brand-light/20 transition-all duration-300 z-10"
+            aria-label="Fechar modal"
+          >
+            <CloseIcon className="h-6 w-6" />
+          </button>
+          
+          <div className="p-8 md:p-12">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-12">
+              <div className="md:w-1/3 flex-shrink-0">
+                <img
+                  src={profileImageUrl}
+                  alt="Foto de Marcio Rolim"
+                  className="w-48 h-48 md:w-full md:h-auto rounded-full md:rounded-lg object-cover object-center mx-auto border-4 border-brand-grey shadow-lg"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              <div className="md:w-2/3 text-center md:text-left">
+                <h2 id="about-modal-title" className="text-3xl sm:text-4xl font-serif font-bold text-brand-light mb-4">
+                  Sobre Mim
+                </h2>
+                <div className="mb-6">
+                  <audio ref={audioRef} src={audioUrl} preload="metadata">
+                    Seu navegador não suporta o elemento de áudio.
+                  </audio>
+                  <button
+                    onClick={togglePlayPause}
+                    className="w-full bg-brand-grey border border-brand-light/20 text-brand-light font-sans font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-4 transition-all duration-300 hover:bg-brand-gold hover:text-brand-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-brand-dark focus:ring-brand-gold"
+                    aria-label={isPlaying ? 'Pausar áudio' : 'Ouvir sobre mim'}
+                  >
+                    {isPlaying ? (
+                      <PauseIcon className="h-6 w-6" />
+                    ) : (
+                      <PlayIcon className="h-6 w-6" />
+                    )}
+                    <span>{isPlaying ? 'Pausar' : 'Ouvir Áudio'}</span>
+                  </button>
+                </div>
+                <div className="space-y-4 text-brand-light/80 font-sans text-lg leading-relaxed">
+                  <p>
+                    Olá, eu sou Marcio Rolim. Sou casado, pai de quatro filhas e avô de dois netos — minha maior alegria e motivação diária.
+                  </p>
+                  <p>
+                    Minha trajetória é marcada pela união de duas áreas que moldam minha vida: a fé e a tecnologia. Como Pastor Evangélico, dedico meu ministério ao cuidado espiritual, especialmente no acompanhamento de jovens e casais, ajudando-os a superar desafios e a construir relacionamentos sólidos à luz da Palavra de Deus.
+                  </p>
+                  <p>
+                    No campo profissional, atuo como Especialista em Tecnologia, com ampla experiência em desenvolvimento de aplicativos, websites, gestão de tráfego e conversão. Também sou especialista em Inteligência Artificial, criando soluções inovadoras que unem propósito, estratégia e resultados.
+                  </p>
+                  <p>
+                    Minha missão é clara: crescer e contribuir. Acredito que cada conhecimento adquirido deve ser compartilhado e colocado a serviço das pessoas, seja através da transformação espiritual ou da inovação digital.
+                  </p>
+                  <p>
+                    Hoje, aos {age} anos, sigo construindo um legado que une fé, família e tecnologia, sempre com o objetivo de impactar vidas de forma positiva e duradoura.
+                  </p>
+                </div>
+
+                <div className="mt-8 text-center border-t border-brand-light/10 pt-6">
+                    <button
+                        onClick={() => setIsVideoModalOpen(true)}
+                        className="font-sans font-bold bg-brand-gold text-brand-dark py-3 px-8 rounded-full hover:opacity-90 transition-opacity duration-300 shadow-lg text-lg inline-flex items-center"
+                        aria-label="Assistir ao testemunho em vídeo: Olha o que Deus fez comigo"
+                    >
+                        Olha o que Deus fez comigo
+                    </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {isVideoModalOpen && (
+        <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in"
+            onClick={() => setIsVideoModalOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="video-modal-title"
+        >
+          <div
+            className="relative w-full max-w-4xl aspect-video bg-black rounded-lg shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h4 id="video-modal-title" className="sr-only">Testemunho em vídeo: Meu Testemunho</h4>
+            <button
+              onClick={() => setIsVideoModalOpen(false)}
+              className="absolute top-2 right-2 z-10 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition-colors"
+              aria-label="Fechar vídeo"
+            >
+                <CloseIcon className="h-6 w-6" />
+            </button>
+            <iframe
+                className="absolute top-0 left-0 w-full h-full"
+                src="https://www.youtube.com/embed/KKOxIINnEfM?autoplay=1&rel=0"
+                title="Meu Testemunho"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                loading="lazy"
+            ></iframe>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default AboutModal;
