@@ -3,9 +3,9 @@ import WhatsAppIcon from './icons/WhatsAppIcon';
 
 const Hero: React.FC = () => {
   return (
-    <section className="bg-brand-dark h-[75vh] min-h-[500px] flex items-center justify-center text-center pt-20 px-6 relative mt-[45px] sm:mt-[90px]">
+    <section className="bg-brand-dark min-h-[500px] flex flex-col justify-start items-center text-center px-6 relative mt-[45px] sm:mt-[90px]">
        <div className="absolute inset-0 bg-gradient-to-b from-brand-dark via-brand-dark/80 to-brand-dark opacity-50"></div>
-       <div className="z-10">
+       <div className="z-10 pt-[180px] sm:pt-[130px]">
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-serif font-bold text-brand-light leading-tight">
           Marcio Rolim
         </h1>
