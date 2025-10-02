@@ -140,14 +140,19 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
                   </p>
                 </div>
 
-                <div className="mt-8 text-center border-t border-brand-light/10 pt-6">
+                <div className="mt-8 text-center border-t border-brand-light/10 pt-8">
+                  <div className="bg-brand-grey p-6 rounded-lg border border-brand-gold/30 shadow-lg">
+                    <h3 className="text-2xl font-serif font-bold text-brand-light mb-4">
+                      Meu Testemunho
+                    </h3>
                     <button
                         onClick={() => setIsVideoModalOpen(true)}
-                        className="font-sans font-bold bg-brand-gold text-brand-dark py-3 px-8 rounded-full hover:opacity-90 transition-opacity duration-300 shadow-lg text-lg inline-flex items-center"
+                        className="font-sans font-bold bg-brand-gold text-brand-dark py-3 px-8 rounded-full hover:opacity-90 transition-all duration-300 shadow-lg shadow-brand-gold/20 text-lg inline-flex items-center transform hover:scale-105"
                         aria-label="Assistir ao testemunho em vídeo: Olha o que Deus fez comigo"
                     >
                         Olha o que Deus fez comigo
                     </button>
+                  </div>
                 </div>
               </div>
             </div>
