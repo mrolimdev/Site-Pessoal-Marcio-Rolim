@@ -13,10 +13,10 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
-      // Pause audio and close video modal when main modal is closed
       audioRef.current?.pause();
       setIsVideoModalOpen(false);
     }
@@ -25,21 +25,30 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     const video = videoRef.current;
     if (isVideoModalOpen && video) {
-      // Attempt to play the video when the modal opens
       const playPromise = video.play();
       if (playPromise !== undefined) {
         playPromise.catch(error => {
-          // Autoplay was prevented, which is expected on some mobile browsers.
-          // The user can still press play on the controls.
-          console.log("Video play was prevented by browser:", error);
+          setIsVideoPlaying(false);
+          console.log("Video autoplay was prevented by browser:", error);
         });
       }
     } else if (video) {
-      // Pause and reset the video when the modal is closed for better UX
       video.pause();
       video.currentTime = 0;
+      setIsVideoPlaying(false);
     }
   }, [isVideoModalOpen]);
+
+  const toggleVideoPlay = () => {
+    const video = videoRef.current;
+    if (video) {
+      if (video.paused) {
+        video.play();
+      } else {
+        video.pause();
+      }
+    }
+  };
 
 
   useEffect(() => {
@@ -186,7 +195,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
       
       {isVideoModalOpen && (
         <div
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in"
             onClick={() => setIsVideoModalOpen(false)}
             role="dialog"
             aria-modal="true"
@@ -199,21 +208,33 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
             <h4 id="video-modal-title" className="sr-only">Testemunho em vídeo: Meu Testemunho</h4>
             <button
               onClick={() => setIsVideoModalOpen(false)}
-              className="absolute top-2 right-2 z-10 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition-colors"
+              className="absolute top-2 right-2 z-30 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition-colors"
               aria-label="Fechar vídeo"
             >
                 <CloseIcon className="h-6 w-6" />
             </button>
-            <video
-                ref={videoRef}
-                className="absolute top-0 left-0 w-full h-full"
-                src="https://sites.arquivo.download/marciorolim/Olhe%20o%20que%20Deus%20fez%20comigo.mp4"
-                title="Meu Testemunho"
-                controls
-                playsInline
-            >
-                Seu navegador não suporta a tag de vídeo.
-            </video>
+            <div className="relative w-full h-full cursor-pointer" onClick={toggleVideoPlay}>
+                <video
+                    ref={videoRef}
+                    className="relative z-10 w-full h-full object-contain"
+                    src="https://sites.arquivo.download/marciorolim/Olhe%20o%20que%20Deus%20fez%20comigo.mp4"
+                    title="Meu Testemunho"
+                    playsInline
+                    onPlay={() => setIsVideoPlaying(true)}
+                    onPause={() => setIsVideoPlaying(false)}
+                    onEnded={() => setIsVideoPlaying(false)}
+                >
+                    Seu navegador não suporta a tag de vídeo.
+                </video>
+                
+                {!isVideoPlaying && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 transition-opacity duration-300" aria-hidden="true">
+                        <div className="bg-brand-gold text-brand-dark rounded-full p-4 shadow-lg transform transition-transform hover:scale-110">
+                            <PlayIcon className="h-12 w-12" />
+                        </div>
+                    </div>
+                )}
+            </div>
           </div>
         </div>
       )}
