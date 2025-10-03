@@ -11,6 +11,7 @@ interface AboutModalProps {
 const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
   useEffect(() => {
@@ -20,6 +21,26 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
       setIsVideoModalOpen(false);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (isVideoModalOpen && video) {
+      // Attempt to play the video when the modal opens
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          // Autoplay was prevented, which is expected on some mobile browsers.
+          // The user can still press play on the controls.
+          console.log("Video play was prevented by browser:", error);
+        });
+      }
+    } else if (video) {
+      // Pause and reset the video when the modal is closed for better UX
+      video.pause();
+      video.currentTime = 0;
+    }
+  }, [isVideoModalOpen]);
+
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -184,6 +205,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
                 <CloseIcon className="h-6 w-6" />
             </button>
             <video
+                ref={videoRef}
                 className="absolute top-0 left-0 w-full h-full"
                 src="https://sites.arquivo.download/marciorolim/Olhe%20o%20que%20Deus%20fez%20comigo.mp4"
                 title="Meu Testemunho"
