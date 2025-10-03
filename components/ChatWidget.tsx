@@ -141,6 +141,8 @@ const ChatWidget: React.FC = () => {
 
   const speakTextWithMinimax = async (text: string, messageId: string) => {
     const groupId = '1869423538042048652';
+    // TODO: SECURITY WARNING: API keys should not be hardcoded in client-side code.
+    // This key should be moved to a secure backend or environment variable.
     const apiKey = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJHcm91cE5hbWUiOiJNYXJjaW8gUm9saW0iLCJVc2VyTmFtZSI6Ik1hcmNpbyBSb2xpbSIsIkFjY291bnQiOiIiLCJTdWJqZWN0SUQiOiIxODY5NDIzNTM4MDUwNDM3MjYwIiwiUGhvbmUiOiIiLCJHcm91cElEIjoiMTg2OTQyMzUzODA0MjA0ODY1MiIsIlBhZ2VOYW1lIjoiIiwiTWFpbCI6Im1hcmNpby5yb2xpbUBnbWFpbC5jb20iLCJDcmVhdGVUaW1lIjoiMjAyNS0wOC0yMiAyMzowMTozOCIsIlRva2VuVHlwZSI6MSwiaXNzIjoibWluaW1heCJ9.Q6cK2Ba741_PSo4RWOPAqa0JDyGIfaUT7lB87_rbrOABh3vy6Edz9UH047ZsmrD2w6Fecjj8kimv8AG5wlN5ASSYKyNhCO6t_n6d72kTdJDqw8QllsBYtVg9NThyIrGDYM5Wksy5xoW6BxFrulWpMvzQbOud3C0zdLNogAfPXtKd_1tSKgqok6WGFQZ1iqNk8udnJ7R6LQ0YW2YRhFXrLM8TAkkvdrUzZ9J6WICnRHQIhm78O4ZikXbO0zoMVrwCi4JtL_q6ccpuzzVCC4vy3gPATrJ4HB6dtjOibJ0sNrp7nFyRswp_758BfAiqN24elYxNI3I3mFYmWE15rh04Gg';
     const url = `https://api.minimax.io/v1/t2a_v2?GroupId=${groupId}`;
 
@@ -375,7 +377,7 @@ const ChatWidget: React.FC = () => {
               </button>
             </header>
             <div className="flex-1 p-4 overflow-y-auto scrollbar-hide">
-              <div className="flex flex-col space-y-3">
+              <div className="flex flex-col space-y-3" aria-live="polite">
                 {messages.map((msg) => (
                   <div key={msg.id} className={`flex items-end gap-2 ${ msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                     {msg.sender === 'bot' && speakingMessageId === msg.id && (

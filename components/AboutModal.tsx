@@ -153,6 +153,9 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
                         Olha o que Deus fez comigo
                     </button>
                   </div>
+                   <p className="md:hidden text-brand-light/70 font-sans mt-4">
+                    Eu creio em Deus
+                  </p>
                 </div>
               </div>
             </div>
