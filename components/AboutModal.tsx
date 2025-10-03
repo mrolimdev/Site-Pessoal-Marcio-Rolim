@@ -188,7 +188,6 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
                 src="https://sites.arquivo.download/marciorolim/Olhe%20o%20que%20Deus%20fez%20comigo.mp4"
                 title="Meu Testemunho"
                 controls
-                autoPlay
                 playsInline
             >
                 Seu navegador não suporta a tag de vídeo.
