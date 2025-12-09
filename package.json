@@ -9,11 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@vitejs/plugin-react": "^5.0.4",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "path": "^0.12.7",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "path": "^0.12.7",
-    "vite": "^7.1.8",
-    "@vitejs/plugin-react": "^5.0.4"
+    "vite": "^7.1.8"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

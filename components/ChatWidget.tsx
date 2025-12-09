@@ -3,6 +3,7 @@ import ChatBubbleIcon from './icons/ChatBubbleIcon';
 import CloseIcon from './icons/CloseIcon';
 import SendIcon from './icons/SendIcon';
 import MicrophoneIcon from './icons/MicrophoneIcon';
+import { sendMessageToGemini } from '../services/geminiService';
 
 // Type definitions for Web Speech API to fix TypeScript error
 interface SpeechRecognition extends EventTarget {
@@ -46,12 +47,6 @@ interface Message {
   type?: 'thinking';
 }
 
-type WebhookPayload = {
-  pergunta_chat: string;
-  id_chat: string;
-  mensagem_tipo: 'texto' | 'audio';
-};
-
 // Browser support for Speech Recognition API
 const SpeechRecognitionApi = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
@@ -68,42 +63,41 @@ const ChatWidget: React.FC = () => {
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const webhookUrl = 'https://api.automacao.click/webhook/a225d8b7-52a1-4489-98fe-23f59ca92cc6';
 
   useEffect(() => {
     const setVoice = () => {
-        const voices = window.speechSynthesis.getVoices();
-        if (voices.length > 0) {
-            const preferredVoices = ['Microsoft Daniel - Portuguese (Brazil)', 'Felipe', 'Google português do Brasil'];
-            let foundVoice: SpeechSynthesisVoice | null = null;
-            for (const name of preferredVoices) {
-                const voice = voices.find(v => v.name === name && v.lang === 'pt-BR');
-                if (voice) {
-                    foundVoice = voice;
-                    break;
-                }
-            }
-            if (!foundVoice) {
-                foundVoice = voices.find(v => v.lang === 'pt-BR' && /male|homem|masculino/i.test(v.name)) || null;
-            }
-            if (!foundVoice) {
-                foundVoice = voices.find(v => v.lang === 'pt-BR') || null;
-            }
-            setSelectedVoice(foundVoice);
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        const preferredVoices = ['Microsoft Daniel - Portuguese (Brazil)', 'Felipe', 'Google português do Brasil'];
+        let foundVoice: SpeechSynthesisVoice | null = null;
+        for (const name of preferredVoices) {
+          const voice = voices.find(v => v.name === name && v.lang === 'pt-BR');
+          if (voice) {
+            foundVoice = voice;
+            break;
+          }
         }
+        if (!foundVoice) {
+          foundVoice = voices.find(v => v.lang === 'pt-BR' && /male|homem|masculino/i.test(v.name)) || null;
+        }
+        if (!foundVoice) {
+          foundVoice = voices.find(v => v.lang === 'pt-BR') || null;
+        }
+        setSelectedVoice(foundVoice);
+      }
     };
 
     if ('speechSynthesis' in window) {
-        setVoice();
-        window.speechSynthesis.onvoiceschanged = setVoice;
+      setVoice();
+      window.speechSynthesis.onvoiceschanged = setVoice;
     }
 
     return () => {
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.onvoiceschanged = null;
-        }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
     };
   }, []);
 
@@ -126,7 +120,7 @@ const ChatWidget: React.FC = () => {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'pt-BR';
       if (selectedVoice) utterance.voice = selectedVoice;
-      
+
       utterance.onstart = () => setSpeakingMessageId(messageId);
       utterance.onend = () => setSpeakingMessageId(null);
       utterance.onerror = (e) => {
@@ -140,33 +134,28 @@ const ChatWidget: React.FC = () => {
   };
 
   const speakTextWithMinimax = async (text: string, messageId: string) => {
-    const groupId = '1869423538042048652';
-    // TODO: SECURITY WARNING: API keys should not be hardcoded in client-side code.
-    // This key should be moved to a secure backend or environment variable.
-    const apiKey = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJHcm91cE5hbWUiOiJNYXJjaW8gUm9saW0iLCJVc2VyTmFtZSI6Ik1hcmNpbyBSb2xpbSIsIkFjY291bnQiOiIiLCJTdWJqZWN0SUQiOiIxODY5NDIzNTM4MDUwNDM3MjYwIiwiUGhvbmUiOiIiLCJHcm91cElEIjoiMTg2OTQyMzUzODA0MjA0ODY1MiIsIlBhZ2VOYW1lIjoiIiwiTWFpbCI6Im1hcmNpby5yb2xpbUBnbWFpbC5jb20iLCJDcmVhdGVUaW1lIjoiMjAyNS0wOC0yMiAyMzowMTozOCIsIlRva2VuVHlwZSI6MSwiaXNzIjoibWluaW1heCJ9.Q6cK2Ba741_PSo4RWOPAqa0JDyGIfaUT7lB87_rbrOABh3vy6Edz9UH047ZsmrD2w6Fecjj8kimv8AG5wlN5ASSYKyNhCO6t_n6d72kTdJDqw8QllsBYtVg9NThyIrGDYM5Wksy5xoW6BxFrulWpMvzQbOud3C0zdLNogAfPXtKd_1tSKgqok6WGFQZ1iqNk8udnJ7R6LQ0YW2YRhFXrLM8TAkkvdrUzZ9J6WICnRHQIhm78O4ZikXbO0zoMVrwCi4JtL_q6ccpuzzVCC4vy3gPATrJ4HB6dtjOibJ0sNrp7nFyRswp_758BfAiqN24elYxNI3I3mFYmWE15rh04Gg';
-    const url = `https://api.minimax.io/v1/t2a_v2?GroupId=${groupId}`;
-
-    const payload = {
-      model: "speech-2.5-hd-preview", text, stream: false,
-      voice_setting: { voice_id: "moss_audio_0b954a1b-c0a1-11ef-aeac-3e1feda129b7", speed: 1.1, vol: 1, pitch: 0 },
-      audio_setting: { sample_rate: 32000, bitrate: 128000, format: "mp3", channel: 1 }
-    };
-
     try {
-      const response = await fetch(url, {
+      const response = await fetch('/api/tts', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
       });
 
-      if (!response.ok) throw new Error(`Minimax API error: ${response.status} ${response.statusText}`);
-      
+      if (!response.ok) {
+        console.warn('TTS API not available, falling back to browser TTS');
+        speakTextWithBrowser(text, messageId);
+        return;
+      }
+
       const responseData = await response.json();
-      if (responseData.base_resp?.status_code !== 0) throw new Error(`Minimax API Error: ${responseData.base_resp?.status_msg || 'Unknown error'}`);
-      
-      const hexAudio = responseData.data?.audio;
-      if (!hexAudio) throw new Error("No audio data found in Minimax response.");
-      
+      const hexAudio = responseData.audio;
+
+      if (!hexAudio) {
+        console.warn('No audio data, falling back to browser TTS');
+        speakTextWithBrowser(text, messageId);
+        return;
+      }
+
       const hexToBytes = (hex: string): Uint8Array => {
         const bytes = new Uint8Array(hex.length / 2);
         for (let i = 0; i < hex.length; i += 2) {
@@ -174,34 +163,35 @@ const ChatWidget: React.FC = () => {
         }
         return bytes;
       };
-      
+
       const audioBytes = hexToBytes(hexAudio);
       const audioBlob = new Blob([audioBytes], { type: 'audio/mp3' });
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
-      
+
       setMessages(prev => prev.map(msg => msg.id === messageId ? { ...msg, content: text, type: undefined } : msg));
       setSpeakingMessageId(messageId);
-      
+
       audio.play().catch(e => {
         console.error("Audio playback failed:", e);
         setSpeakingMessageId(null);
       });
-      
+
       audio.onended = () => {
         setSpeakingMessageId(null);
         URL.revokeObjectURL(audioUrl);
       };
-      
+
       audio.onerror = () => {
-        console.error("Error playing audio from Minimax");
+        console.error("Error playing audio from TTS API");
         setSpeakingMessageId(null);
         URL.revokeObjectURL(audioUrl);
       };
 
     } catch (error) {
-      console.error("Error calling Minimax TTS API:", error);
-      setMessages(prev => prev.map(msg => msg.id === messageId ? { ...msg, content: "Desculpe, tive um problema ao gerar o áudio.", type: undefined } : msg));
+      console.error("Error calling TTS API:", error);
+      // Fallback to browser TTS
+      speakTextWithBrowser(text, messageId);
     }
   };
 
@@ -217,21 +207,10 @@ const ChatWidget: React.FC = () => {
 
   useEffect(scrollToBottom, [messages]);
 
-  const sendWebhookRequest = async (payload: WebhookPayload, speakResponse: boolean, placeholderId?: string) => {
+  const sendMessageToAI = async (message: string, speakResponse: boolean, placeholderId?: string) => {
     try {
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) throw new Error('A resposta do webhook não foi bem-sucedida.');
-      const responseText = await response.text();
-      let botReplyText = responseText || 'Obrigado pelo seu contato! Responderei em breve.';
-      try {
-        const responseData = JSON.parse(responseText);
-        botReplyText = responseData.resposta_chat || botReplyText;
-      } catch (e) { /* It's plain text, use as is */ }
+      // Call Gemini API
+      const botReplyText = await sendMessageToGemini(message, chatId);
 
       if (placeholderId) {
         setMessages(prev => prev.map(msg => msg.id === placeholderId ? { ...msg, content: botReplyText, type: undefined } : msg));
@@ -264,7 +243,7 @@ const ChatWidget: React.FC = () => {
     setMessages((prev) => [...prev, userMessage, botPlaceholder]);
     setInputValue('');
     setIsSending(true);
-    await sendWebhookRequest({ pergunta_chat: userMessage.content, id_chat: chatId, mensagem_tipo: 'texto' }, false, botPlaceholder.id);
+    await sendMessageToAI(userMessage.content, false, botPlaceholder.id);
   };
 
   useEffect(() => {
@@ -285,7 +264,7 @@ const ChatWidget: React.FC = () => {
       const botPlaceholder: Message = { id: crypto.randomUUID(), sender: 'bot', content: '', type: 'thinking' };
       setMessages((prev) => [...prev, userMessage, botPlaceholder]);
       setIsSending(true);
-      sendWebhookRequest({ pergunta_chat: transcript, id_chat: chatId, mensagem_tipo: 'audio' }, true, botPlaceholder.id);
+      sendMessageToAI(transcript, true, botPlaceholder.id);
     };
     recognitionRef.current = recognition;
   }, [chatId]);
@@ -360,42 +339,62 @@ const ChatWidget: React.FC = () => {
 
   return (
     <>
+      {/* Backdrop */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" onClick={handleCloseChat} />
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+          onClick={handleCloseChat}
+        />
       )}
-      <div className="fixed bottom-0 right-0 sm:bottom-8 sm:right-8 z-50 w-full sm:w-auto">
+
+      {/* Chat Container */}
+      <div className="fixed bottom-0 right-0 sm:bottom-6 sm:right-6 z-50 w-full sm:w-auto">
         {isOpen ? (
-          <div className="w-full sm:w-80 h-[85vh] sm:h-[28rem] bg-brand-dark rounded-t-lg sm:rounded-lg shadow-2xl flex flex-col border-t-2 sm:border-2 border-brand-gold animate-slide-in-up">
-            <header className="bg-brand-gold p-4 flex justify-between items-center rounded-t-lg sm:rounded-t-md">
-              <h3 className="text-brand-dark font-bold text-lg">Fale Comigo</h3>
-              <button 
-                onClick={handleCloseChat} 
-                className="bg-black/10 rounded-full p-1 text-brand-dark hover:bg-black/20 transition-colors duration-300" 
+          <div className="w-full sm:w-96 h-[100dvh] sm:h-[32rem] bg-white sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden sm:border sm:border-slate-200">
+            {/* Header */}
+            <header className="bg-emerald-500 px-5 py-4 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <ChatBubbleIcon className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-white font-bold text-lg">Fale Comigo</h3>
+                  <p className="text-white/80 text-xs">Online agora</p>
+                </div>
+              </div>
+              <button
+                onClick={handleCloseChat}
+                className="bg-white/20 hover:bg-white/30 rounded-full p-2 text-white transition-colors"
                 aria-label="Fechar chat"
               >
-                <CloseIcon className="h-6 w-6" />
+                <CloseIcon className="h-5 w-5" />
               </button>
             </header>
-            <div className="flex-1 p-4 overflow-y-auto scrollbar-hide">
+
+            {/* Messages */}
+            <div className="flex-1 p-4 overflow-y-auto bg-slate-50">
               <div className="flex flex-col space-y-3" aria-live="polite">
                 {messages.map((msg) => (
-                  <div key={msg.id} className={`flex items-end gap-2 ${ msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div key={msg.id} className={`flex items-end gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                     {msg.sender === 'bot' && speakingMessageId === msg.id && (
                       <div className="speaking-indicator flex items-center space-x-1 self-center">
-                        <span className="h-4 w-1 bg-brand-gold rounded-full"></span>
-                        <span className="h-4 w-1 bg-brand-gold rounded-full" style={{ animationDelay: '0.2s' }}></span>
-                        <span className="h-4 w-1 bg-brand-gold rounded-full" style={{ animationDelay: '0.4s' }}></span>
+                        <span className="h-3 w-1 bg-emerald-500 rounded-full"></span>
+                        <span className="h-3 w-1 bg-emerald-500 rounded-full animation-delay-200"></span>
+                        <span className="h-3 w-1 bg-emerald-500 rounded-full animation-delay-400"></span>
                       </div>
                     )}
-                    <div className={`max-w-[80%] p-3 rounded-xl ${ msg.sender === 'user' ? 'bg-brand-gold text-brand-dark' : 'bg-brand-grey text-white' }`}>
+                    <div className={`max-w-[85%] p-3 rounded-2xl shadow-sm ${msg.sender === 'user'
+                        ? 'bg-emerald-500 text-white rounded-br-md'
+                        : 'bg-white text-slate-800 rounded-bl-md border border-slate-100'
+                      }`}>
                       {msg.type === 'thinking' ? (
                         <div className="speaking-indicator flex items-center space-x-1 px-2 py-1">
-                          <span className="h-4 w-1 bg-brand-light/50 rounded-full"></span>
-                          <span className="h-4 w-1 bg-brand-light/50 rounded-full" style={{ animationDelay: '0.2s' }}></span>
-                          <span className="h-4 w-1 bg-brand-light/50 rounded-full" style={{ animationDelay: '0.4s' }}></span>
+                          <span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce"></span>
+                          <span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce animation-delay-200"></span>
+                          <span className="h-2 w-2 bg-slate-400 rounded-full animate-bounce animation-delay-400"></span>
                         </div>
                       ) : (
-                        <div className="text-sm break-words whitespace-pre-wrap">
+                        <div className="text-sm break-words whitespace-pre-wrap leading-relaxed">
                           {renderMessageContent(msg.content)}
                         </div>
                       )}
@@ -405,27 +404,57 @@ const ChatWidget: React.FC = () => {
                 <div ref={messagesEndRef} />
               </div>
             </div>
-            <div className="p-4 border-t-2 border-brand-light/10 flex items-center bg-brand-grey sm:rounded-b-md">
-              <input type="text" value={inputValue} onChange={(e) => { stopSpeaking(); setInputValue(e.target.value); }} onKeyDown={handleKeyDown} placeholder="Digite ou grave..." className="flex-1 bg-brand-dark border border-brand-light/20 rounded-full py-2 px-4 text-brand-light focus:outline-none focus:ring-2 focus:ring-brand-gold" disabled={isSending || isRecording} />
-              <div className="ml-3 flex-shrink-0">
-                {inputValue.trim() === '' ? (
-                  <button onMouseDown={handleStartRecording} onMouseUp={handleStopRecording} onMouseLeave={handleStopRecording} onTouchStart={handleStartRecording} onTouchEnd={handleStopRecording} className={`bg-brand-gold text-brand-dark p-4 rounded-full disabled:opacity-50 hover:opacity-90 transition-all ${isRecording ? 'ring-2 ring-red-500 animate-pulse' : ''}`} disabled={isSending} aria-label={isRecording ? "Gravando..." : "Gravar áudio"}>
-                    <MicrophoneIcon className="h-6 w-6" />
-                  </button>
-                ) : (
-                  <button onClick={handleSendTextMessage} className="bg-brand-gold text-brand-dark p-3 rounded-full disabled:opacity-50 hover:opacity-90 transition-opacity" disabled={isSending || !inputValue.trim()} aria-label="Enviar mensagem">
-                    <SendIcon className="h-6 w-6" />
-                  </button>
-                )}
+
+            {/* Input Area */}
+            <div className="p-4 bg-white border-t border-slate-200 safe-area-bottom">
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={inputValue}
+                  onChange={(e) => { stopSpeaking(); setInputValue(e.target.value); }}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Digite sua mensagem..."
+                  className="flex-1 bg-slate-100 border-0 rounded-full py-3 px-5 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                  disabled={isSending || isRecording}
+                />
+                <div className="flex-shrink-0">
+                  {inputValue.trim() === '' ? (
+                    <button
+                      onMouseDown={handleStartRecording}
+                      onMouseUp={handleStopRecording}
+                      onMouseLeave={handleStopRecording}
+                      onTouchStart={handleStartRecording}
+                      onTouchEnd={handleStopRecording}
+                      className={`bg-emerald-500 hover:bg-emerald-600 text-white p-3 rounded-full disabled:opacity-50 transition-all shadow-lg ${isRecording ? 'ring-2 ring-red-500 animate-pulse bg-red-500' : ''}`}
+                      disabled={isSending}
+                      aria-label={isRecording ? "Gravando..." : "Gravar áudio"}
+                    >
+                      <MicrophoneIcon className="h-5 w-5" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleSendTextMessage}
+                      className="bg-emerald-500 hover:bg-emerald-600 text-white p-3 rounded-full disabled:opacity-50 transition-all shadow-lg"
+                      disabled={isSending || !inputValue.trim()}
+                      aria-label="Enviar mensagem"
+                    >
+                      <SendIcon className="h-5 w-5" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         ) : (
-           <div className="p-5 sm:p-0 flex justify-end">
-             <button onClick={() => setIsOpen(true)} className="bg-brand-gold text-brand-dark rounded-full p-4 shadow-lg hover:opacity-90 transition-opacity" aria-label="Abrir chat">
-               <ChatBubbleIcon className="h-8 w-8" />
-             </button>
-           </div>
+          <div className="p-4 sm:p-0 flex justify-end">
+            <button
+              onClick={() => setIsOpen(true)}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full p-4 shadow-xl shadow-emerald-500/40 transition-all hover:scale-110 active:scale-95"
+              aria-label="Abrir chat"
+            >
+              <ChatBubbleIcon className="h-7 w-7" />
+            </button>
+          </div>
         )}
       </div>
     </>
