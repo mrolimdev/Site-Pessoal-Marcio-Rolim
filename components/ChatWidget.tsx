@@ -3,6 +3,7 @@ import ChatBubbleIcon from './icons/ChatBubbleIcon';
 import CloseIcon from './icons/CloseIcon';
 import SendIcon from './icons/SendIcon';
 import MicrophoneIcon from './icons/MicrophoneIcon';
+import WhatsAppIcon from './icons/WhatsAppIcon';
 import { sendMessageToGemini } from '../services/geminiService';
 
 // Type definitions for Web Speech API to fix TypeScript error
@@ -339,6 +340,24 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ isOpen: controlledIsOpen, onOpe
               <strong key={index}>
                 {renderTextWithLinks(boldContent, `bold-${index}`)}
               </strong>
+            );
+          } else if (part && part.includes('[[WHATSAPP_ACTION]]')) {
+            const cleanPart = part.replace('[[WHATSAPP_ACTION]]', '');
+            return (
+              <React.Fragment key={index}>
+                {renderTextWithLinks(cleanPart, `part-${index}`)}
+                <div className="mt-2">
+                  <a
+                    href="https://wa.me/5511980888880"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-full font-bold text-sm transition-all shadow-md hover:shadow-lg no-underline"
+                  >
+                    <WhatsAppIcon className="h-4 w-4" />
+                    Falar agora
+                  </a>
+                </div>
+              </React.Fragment>
             );
           } else {
             return renderTextWithLinks(part, `part-${index}`);
