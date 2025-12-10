@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import ChatWidget from './components/ChatWidget';
+import CountUp from './components/CountUp';
+import ChatBubbleIcon from './components/icons/ChatBubbleIcon';
 
 // Icons
 const ChevronDownIcon = ({ className }: { className?: string }) => (
@@ -125,7 +127,10 @@ function App() {
   const [activeTab, setActiveTab] = useState<'pastoral' | 'tech'>('tech');
   const [isScrolled, setIsScrolled] = useState(false);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const age = calculateAge('1973-04-18');
+  const techYears = calculateAge('1998-01-01');
+  const ministryYears = calculateAge('2012-01-01');
 
   // Detect scroll to show/hide profile photo in navbar
   React.useEffect(() => {
@@ -155,7 +160,7 @@ function App() {
                     className="w-8 h-8 rounded-full object-cover border-2 border-slate-200"
                   />
                 </div>
-                <span>Rolim<span className="text-amber-500">.</span></span>
+                <span>Rolim</span>
               </a>
               <div className="hidden md:flex items-center space-x-8">
                 <a href="#sobre" className="text-slate-600 hover:text-slate-900 transition-colors">Sobre</a>
@@ -215,15 +220,13 @@ function App() {
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
-                  <a
-                    href={SOCIAL_LINKS.whatsapp}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => setIsChatOpen(true)}
                     className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-full font-medium transition-all shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-3"
                   >
-                    <WhatsAppIcon className="h-5 w-5" />
+                    <ChatBubbleIcon className="h-5 w-5" />
                     Vamos Conversar
-                  </a>
+                  </button>
                   <a
                     href="#sobre"
                     className="w-full sm:w-auto border-2 border-slate-200 hover:border-slate-300 text-slate-700 px-8 py-4 rounded-full font-medium transition-all flex items-center justify-center gap-2"
@@ -242,19 +245,27 @@ function App() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
               <div>
-                <div className="text-3xl md:text-4xl font-bold text-white mb-1">{age}</div>
+                <div className="text-3xl md:text-4xl font-bold text-white mb-1">
+                  <CountUp end={age} />
+                </div>
                 <div className="text-slate-400 text-sm">Anos de vida</div>
               </div>
               <div>
-                <div className="text-3xl md:text-4xl font-bold text-white mb-1">20+</div>
+                <div className="text-3xl md:text-4xl font-bold text-white mb-1">
+                  <CountUp end={techYears} suffix="+" />
+                </div>
                 <div className="text-slate-400 text-sm">Anos em tecnologia</div>
               </div>
               <div>
-                <div className="text-3xl md:text-4xl font-bold text-white mb-1">15+</div>
+                <div className="text-3xl md:text-4xl font-bold text-white mb-1">
+                  <CountUp end={ministryYears} suffix="+" />
+                </div>
                 <div className="text-slate-400 text-sm">Anos de ministério</div>
               </div>
               <div>
-                <div className="text-3xl md:text-4xl font-bold text-white mb-1">4</div>
+                <div className="text-3xl md:text-4xl font-bold text-white mb-1">
+                  <CountUp end={4} />
+                </div>
                 <div className="text-slate-400 text-sm">Filhas abençoadas</div>
               </div>
             </div>
@@ -300,7 +311,7 @@ function App() {
                 </div>
                 <h3 className="text-2xl font-bold text-slate-900 mb-3">Especialista em Tecnologia</h3>
                 <p className="text-slate-600 mb-6">
-                  Atuo com desenvolvimento de aplicativos, websites, gestão de tráfego e Inteligência Artificial,
+                  Atuo com desenvolvimento de aplicativos, websites, gestão de tráfego e automação com Inteligência Artificial,
                   criando soluções inovadoras que unem propósito, estratégia e resultados.
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -475,8 +486,15 @@ function App() {
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="text-center md:text-left">
-                <div className="font-bold text-xl mb-2">
-                  Rolim<span className="text-amber-500">.</span>
+                <div className="flex items-center gap-3 justify-center md:justify-start font-bold text-xl mb-2">
+                  <div className="w-8 h-8 flex-shrink-0">
+                    <img
+                      src={profileImageUrl}
+                      alt="Marcio Rolim"
+                      className="w-8 h-8 rounded-full object-cover border-2 border-slate-700"
+                    />
+                  </div>
+                  Rolim
                 </div>
                 <p className="text-slate-400 text-sm">
                   Transformando vidas através da fé e tecnologia.
@@ -523,7 +541,7 @@ function App() {
       )}
 
       {/* Chat Widget */}
-      <ChatWidget />
+      <ChatWidget isOpen={isChatOpen} onOpenChange={setIsChatOpen} />
     </>
   );
 }

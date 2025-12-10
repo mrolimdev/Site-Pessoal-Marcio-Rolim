@@ -50,8 +50,19 @@ interface Message {
 // Browser support for Speech Recognition API
 const SpeechRecognitionApi = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-const ChatWidget: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+interface ChatWidgetProps {
+  isOpen?: boolean;
+  onOpenChange?: (isOpen: boolean) => void;
+}
+
+const ChatWidget: React.FC<ChatWidgetProps> = ({ isOpen: controlledIsOpen, onOpenChange }) => {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+
+  const setIsOpen = (value: boolean) => {
+    setInternalIsOpen(value);
+    onOpenChange?.(value);
+  };
   const [messages, setMessages] = useState<Message[]>([
     { id: crypto.randomUUID(), sender: 'bot', content: 'Olá! Como posso ajudar?' },
   ]);
@@ -384,8 +395,8 @@ const ChatWidget: React.FC = () => {
                       </div>
                     )}
                     <div className={`max-w-[85%] p-3 rounded-2xl shadow-sm ${msg.sender === 'user'
-                        ? 'bg-emerald-500 text-white rounded-br-md'
-                        : 'bg-white text-slate-800 rounded-bl-md border border-slate-100'
+                      ? 'bg-emerald-500 text-white rounded-br-md'
+                      : 'bg-white text-slate-800 rounded-bl-md border border-slate-100'
                       }`}>
                       {msg.type === 'thinking' ? (
                         <div className="speaking-indicator flex items-center space-x-1 px-2 py-1">
