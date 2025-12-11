@@ -450,28 +450,33 @@ function App() {
 
             {/* Testimony Video Section */}
             <div className="mt-8 max-w-lg mx-auto">
-              <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-4 md:p-5 text-white relative overflow-hidden">
-                <div className="flex flex-col sm:flex-row items-center gap-6">
-                  <div className="flex-shrink-0">
-                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                      <svg className="h-8 w-8 text-white" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
-                    </div>
+              <div
+                onClick={() => setIsVideoOpen(true)}
+                className="group relative bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-100/80 cursor-pointer hover:shadow-lg hover:border-amber-200 transition-all duration-300"
+              >
+                <div className="flex items-center gap-4">
+                  {/* Play Button */}
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/25 group-hover:scale-105 transition-transform">
+                    <svg className="h-5 w-5 text-white ml-0.5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
                   </div>
-                  <div className="text-center sm:text-left flex-1">
-                    <h3 className="text-xl font-bold mb-2">
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-bold text-slate-900 group-hover:text-amber-700 transition-colors">
                       Olha o que Deus fez comigo
                     </h3>
-                    <p className="text-white/90 text-sm mb-4">
-                      Conheça minha história de transformação e fé.
+                    <p className="text-slate-500 text-sm">
+                      Minha história de transformação e fé
                     </p>
-                    <button
-                      onClick={() => setIsVideoOpen(true)}
-                      className="inline-flex items-center gap-2 bg-white text-amber-600 px-6 py-2 rounded-full font-bold text-sm hover:bg-amber-50 transition-all shadow-lg hover:scale-105"
-                    >
-                      Assistir Testemunho
-                    </button>
+                  </div>
+
+                  {/* Arrow */}
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/60 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+                    <svg className="w-4 h-4 text-amber-600 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
                 </div>
               </div>
