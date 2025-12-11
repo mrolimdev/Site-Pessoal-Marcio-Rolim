@@ -195,9 +195,7 @@ function App() {
                   />
                 </div>
                 {/* Decorative elements */}
-                <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-amber-400 rounded-full flex items-center justify-center shadow-lg">
-                  <SparklesIcon className="h-6 w-6 text-white" />
-                </div>
+                {/* Decorative elements - REMOVED */}
               </div>
 
               {/* Hero Content */}
