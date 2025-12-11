@@ -449,12 +449,12 @@ function App() {
             </div>
 
             {/* Testimony Video Section */}
-            <div className="mt-8 max-w-2xl mx-auto">
-              <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-6 md:p-8 text-white relative overflow-hidden">
+            <div className="mt-8 max-w-lg mx-auto">
+              <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-4 md:p-5 text-white relative overflow-hidden">
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                   <div className="flex-shrink-0">
-                    <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
-                      <svg className="h-10 w-10 text-white" viewBox="0 0 24 24" fill="currentColor">
+                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                      <svg className="h-8 w-8 text-white" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M8 5v14l11-7z" />
                       </svg>
                     </div>
