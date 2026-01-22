@@ -2,9 +2,18 @@
     "buildCommand": "npm run build",
     "outputDirectory": "dist",
     "framework": "vite",
+    "cleanUrls": true,
     "rewrites": [
         {
-            "source": "/((?!api/).*)",
+            "source": "/sobre",
+            "destination": "/sobre.html"
+        },
+        {
+            "source": "/login",
+            "destination": "/login.html"
+        },
+        {
+            "source": "/((?!api/|sobre|login).*)",
             "destination": "/index.html"
         }
     ],
