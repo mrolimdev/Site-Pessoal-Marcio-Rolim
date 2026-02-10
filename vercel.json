@@ -13,7 +13,11 @@
             "destination": "/login.html"
         },
         {
-            "source": "/((?!api/|sobre|login).*)",
+            "source": "/curriculum",
+            "destination": "/curriculum.html"
+        },
+        {
+            "source": "/((?!api/|sobre|login|curriculum).*)",
             "destination": "/index.html"
         }
     ],

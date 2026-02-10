@@ -20,6 +20,7 @@ export default defineConfig({
         main: path.resolve(__dirname, 'index.html'),
         sobre: path.resolve(__dirname, 'sobre.html'),
         login: path.resolve(__dirname, 'login.html'),
+        curriculum: path.resolve(__dirname, 'curriculum.html'),
       },
     },
   },
