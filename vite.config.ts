@@ -10,8 +10,6 @@ function htmlRewritePlugin() {
       server.middlewares.use((req: any, _res: any, next: any) => {
         const cleanUrls: Record<string, string> = {
           '/curriculum': '/curriculum.html',
-          '/sobre': '/sobre.html',
-          '/login': '/login.html',
         };
         if (req.url && cleanUrls[req.url.split('?')[0]]) {
           req.url = cleanUrls[req.url.split('?')[0]];
@@ -38,8 +36,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
-        sobre: path.resolve(__dirname, 'sobre.html'),
-        login: path.resolve(__dirname, 'login.html'),
         curriculum: path.resolve(__dirname, 'curriculum.html'),
       },
     },
@@ -50,3 +46,4 @@ export default defineConfig({
     }
   }
 });
+

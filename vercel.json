@@ -5,19 +5,11 @@
     "cleanUrls": true,
     "rewrites": [
         {
-            "source": "/sobre",
-            "destination": "/sobre.html"
-        },
-        {
-            "source": "/login",
-            "destination": "/login.html"
-        },
-        {
             "source": "/curriculum",
             "destination": "/curriculum.html"
         },
         {
-            "source": "/((?!api/|sobre|login|curriculum).*)",
+            "source": "/((?!api/|curriculum).*)",
             "destination": "/index.html"
         }
     ],
