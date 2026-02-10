@@ -1,5 +1,25 @@
 User-agent: *
 Allow: /
+Disallow: /curriculum
+
+# Block AI crawlers
+User-agent: GPTBot
+Disallow: /curriculum
+
+User-agent: ChatGPT-User
+Disallow: /curriculum
+
+User-agent: Google-Extended
+Disallow: /curriculum
+
+User-agent: CCBot
+Disallow: /curriculum
+
+User-agent: anthropic-ai
+Disallow: /curriculum
+
+User-agent: ClaudeBot
+Disallow: /curriculum
 
 # Sitemap
 Sitemap: https://marciorolim.com.br/sitemap.xml

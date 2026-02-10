@@ -555,7 +555,7 @@ const CurriculumPage: React.FC = () => {
                                 <SkillBar name="N8N" level={85} color="bg-gradient-to-r from-orange-400 to-red-400" delay={0} isDark={isDark} />
                                 <SkillBar name="Make (Integromat)" level={75} color="bg-gradient-to-r from-violet-400 to-purple-500" delay={100} isDark={isDark} />
                                 <SkillBar name="Agentes de IA" level={80} color="bg-gradient-to-r from-fuchsia-400 to-pink-500" delay={200} isDark={isDark} />
-                                <SkillBar name="Gestão de Tráfego" level={70} color="bg-gradient-to-r from-sky-400 to-cyan-500" delay={300} isDark={isDark} />
+                                <SkillBar name="Gestão de Tráfego" level={90} color="bg-gradient-to-r from-sky-400 to-cyan-500" delay={300} isDark={isDark} />
                             </div>
                         </div>
 
