@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 // --- Icons ---
 const MapPinIcon = ({ className }: { className?: string }) => (
@@ -121,6 +121,84 @@ const SparklesIcon = ({ className }: { className?: string }) => (
     </svg>
 );
 
+const SunIcon = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+    </svg>
+);
+
+const MoonIcon = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+);
+
+// --- Theme helper ---
+const getTheme = (dark: boolean) => ({
+    bg: dark ? 'bg-slate-950' : 'bg-stone-50',
+    text: dark ? 'text-slate-100' : 'text-slate-800',
+    headerBg: dark ? 'from-slate-900 via-slate-900 to-emerald-950' : 'from-white via-stone-50 to-emerald-50',
+    headerGlow1: dark ? 'bg-amber-500/20' : 'bg-amber-300/20',
+    headerGlow2: dark ? 'bg-emerald-500/10' : 'bg-emerald-300/15',
+    barBg: dark ? 'bg-slate-800/90' : 'bg-white/90',
+    barText: dark ? 'text-slate-300' : 'text-slate-600',
+    barBorder: dark ? 'border-slate-700/50' : 'border-slate-200',
+    barHover: dark ? 'hover:text-white hover:border-slate-600' : 'hover:text-slate-900 hover:border-slate-400',
+    name: dark ? 'text-white' : 'text-slate-900',
+    subtitle: dark ? 'text-amber-400' : 'text-amber-600',
+    tagBg: dark ? 'bg-slate-800/60' : 'bg-white/80',
+    tagBorder: dark ? 'border-slate-700/50' : 'border-slate-200',
+    tagText: dark ? 'text-slate-400' : 'text-slate-600',
+    contactBg: dark ? 'bg-slate-800/40' : 'bg-white/60',
+    contactBorder: dark ? 'border-slate-700/30' : 'border-slate-200/80',
+    contactText: dark ? 'text-slate-300' : 'text-slate-600',
+    sectionTitle: dark ? 'text-white' : 'text-slate-900',
+    cardBg: dark ? 'bg-slate-800/50' : 'bg-white',
+    cardBorder: dark ? 'border-slate-700/50' : 'border-slate-200',
+    cardGradient: dark ? 'from-slate-800/80 to-slate-800/40' : 'from-white to-stone-50',
+    bodyText: dark ? 'text-slate-300' : 'text-slate-600',
+    bodyTextLight: dark ? 'text-slate-400' : 'text-slate-500',
+    labelText: dark ? 'text-slate-500' : 'text-slate-400',
+    infoValue: dark ? 'text-slate-200' : 'text-slate-700',
+    skillBarBg: dark ? 'bg-slate-800' : 'bg-slate-200',
+    skillName: dark ? 'text-slate-300' : 'text-slate-700',
+    skillPercent: dark ? 'text-slate-500' : 'text-slate-400',
+    timelineDotBg: dark ? 'bg-slate-900' : 'bg-white',
+    highlightBg: dark ? 'bg-slate-700/50' : 'bg-slate-100',
+    highlightText: dark ? 'text-slate-300' : 'text-slate-600',
+    highlightBorder: dark ? 'border-slate-600/30' : 'border-slate-200',
+    diffCardBg: dark ? 'bg-slate-800/40' : 'bg-white/80',
+    diffCardBorder: dark ? 'border-slate-700/40' : 'border-slate-200',
+    diffDesc: dark ? 'text-slate-400' : 'text-slate-500',
+    footerBorder: dark ? 'border-slate-800' : 'border-slate-200',
+    footerText: dark ? 'text-slate-500' : 'text-slate-400',
+    footerAccent: dark ? 'text-amber-500/50' : 'text-amber-600/60',
+    strongAccent: dark ? 'text-amber-400' : 'text-amber-600',
+    strongGreen: dark ? 'text-emerald-400' : 'text-emerald-600',
+    strongWhite: dark ? 'text-white' : 'text-slate-900',
+    toolColors: dark ? {
+        claude: 'bg-orange-500/10 text-orange-300 border-orange-500/20',
+        openai: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
+        gemini: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
+        cursor: 'bg-violet-500/10 text-violet-300 border-violet-500/20',
+        antigravity: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20',
+        vibe: 'bg-pink-500/10 text-pink-300 border-pink-500/20',
+        websites: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
+        apps: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20',
+        agents: 'bg-rose-500/10 text-rose-300 border-rose-500/20',
+    } : {
+        claude: 'bg-orange-100 text-orange-700 border-orange-200',
+        openai: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+        gemini: 'bg-blue-100 text-blue-700 border-blue-200',
+        cursor: 'bg-violet-100 text-violet-700 border-violet-200',
+        antigravity: 'bg-cyan-100 text-cyan-700 border-cyan-200',
+        vibe: 'bg-pink-100 text-pink-700 border-pink-200',
+        websites: 'bg-amber-100 text-amber-700 border-amber-200',
+        apps: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+        agents: 'bg-rose-100 text-rose-700 border-rose-200',
+    },
+});
+
 
 // --- Helpers ---
 const calculateAge = (birthDate: string): number => {
@@ -137,13 +215,13 @@ const calculateYearsSince = (year: number): number => {
 };
 
 // --- Skill Bar Component ---
-const SkillBar: React.FC<{ name: string; level: number; color: string; delay: number }> = ({ name, level, color, delay }) => (
+const SkillBar: React.FC<{ name: string; level: number; color: string; delay: number; isDark?: boolean }> = ({ name, level, color, delay, isDark = true }) => (
     <div className="group" style={{ animationDelay: `${delay}ms` }}>
         <div className="flex justify-between items-center mb-1.5">
-            <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">{name}</span>
-            <span className="text-xs text-slate-500 font-mono">{level}%</span>
+            <span className={`text-sm font-medium ${isDark ? 'text-slate-300 group-hover:text-white' : 'text-slate-700 group-hover:text-slate-900'} transition-colors`}>{name}</span>
+            <span className={`text-xs font-mono ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{level}%</span>
         </div>
-        <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+        <div className={`w-full h-2 ${isDark ? 'bg-slate-800' : 'bg-slate-200'} rounded-full overflow-hidden`}>
             <div
                 className={`h-full rounded-full transition-all duration-1000 ease-out ${color}`}
                 style={{ width: `${level}%` }}
@@ -160,31 +238,29 @@ const TimelineItem: React.FC<{
     description: string;
     highlights?: string[];
     isLast?: boolean;
-}> = ({ period, company, role, description, highlights, isLast }) => (
+    isDark?: boolean;
+}> = ({ period, company, role, description, highlights, isLast, isDark = true }) => (
     <div className="relative pl-8 pb-10 group">
-        {/* Vertical line */}
         {!isLast && (
             <div className="absolute left-[11px] top-8 w-[2px] h-full bg-gradient-to-b from-amber-500/50 to-transparent" />
         )}
-        {/* Dot */}
-        <div className="absolute left-0 top-1 w-6 h-6 bg-slate-900 border-2 border-amber-500 rounded-full flex items-center justify-center group-hover:bg-amber-500 transition-colors duration-300">
+        <div className={`absolute left-0 top-1 w-6 h-6 ${isDark ? 'bg-slate-900' : 'bg-white'} border-2 border-amber-500 rounded-full flex items-center justify-center group-hover:bg-amber-500 transition-colors duration-300`}>
             <div className="w-2 h-2 bg-amber-400 rounded-full group-hover:bg-slate-900 transition-colors duration-300" />
         </div>
-        {/* Content */}
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 hover:border-amber-500/30 hover:bg-slate-800/80 transition-all duration-300">
+        <div className={`${isDark ? 'bg-slate-800/50 border-slate-700/50 hover:bg-slate-800/80' : 'bg-white border-slate-200 hover:bg-stone-50'} border rounded-2xl p-6 hover:border-amber-500/30 transition-all duration-300`}>
             <div className="flex flex-wrap items-center gap-3 mb-2">
-                <span className="text-xs font-mono text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+                <span className={`text-xs font-mono ${isDark ? 'text-amber-400' : 'text-amber-600'} bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20`}>
                     {period}
                 </span>
-                <span className="text-xs text-slate-500">•</span>
-                <span className="text-sm font-semibold text-emerald-400">{company}</span>
+                <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>•</span>
+                <span className={`text-sm font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{company}</span>
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">{role}</h3>
-            <p className="text-slate-400 text-sm leading-relaxed mb-3">{description}</p>
+            <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'} mb-2`}>{role}</h3>
+            <p className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-sm leading-relaxed mb-3`}>{description}</p>
             {highlights && highlights.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                     {highlights.map((h, i) => (
-                        <span key={i} className="text-xs bg-slate-700/50 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-600/30">
+                        <span key={i} className={`text-xs ${isDark ? 'bg-slate-700/50 text-slate-300 border-slate-600/30' : 'bg-slate-100 text-slate-600 border-slate-200'} px-2.5 py-1 rounded-lg border`}>
                             {h}
                         </span>
                     ))}
@@ -197,53 +273,70 @@ const TimelineItem: React.FC<{
 
 // --- Main Component ---
 const CurriculumPage: React.FC = () => {
+    const [isDark, setIsDark] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('cv-theme');
+            return saved === 'dark';
+        }
+        return false;
+    });
     const age = calculateAge('1973-04-18');
     const techYears = calculateYearsSince(1988);
     const profileImageUrl = 'https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=400&output=webp&q=90';
+    const t = getTheme(isDark);
+
+    const toggleTheme = () => {
+        setIsDark(prev => {
+            const next = !prev;
+            localStorage.setItem('cv-theme', next ? 'dark' : 'light');
+            return next;
+        });
+    };
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100">
+        <div className={`min-h-screen ${t.bg} ${t.text} transition-colors duration-500`}>
             {/* Floating Action Bar */}
             <div className="no-print fixed top-4 left-4 right-4 z-50 flex items-center justify-between max-w-5xl mx-auto">
                 <a
                     href="/"
-                    className="flex items-center gap-2 bg-slate-800/90 backdrop-blur-xl text-slate-300 hover:text-white px-4 py-2.5 rounded-full border border-slate-700/50 hover:border-slate-600 transition-all shadow-xl"
+                    className={`flex items-center gap-2 ${t.barBg} backdrop-blur-xl ${t.barText} px-4 py-2.5 rounded-full border ${t.barBorder} ${t.barHover} transition-all shadow-xl`}
                 >
                     <ArrowLeftIcon className="w-4 h-4" />
                     <span className="text-sm font-medium">Voltar</span>
                 </a>
-                <button
-                    onClick={() => window.print()}
-                    className="flex items-center gap-2 bg-amber-500/90 backdrop-blur-xl text-slate-900 hover:bg-amber-400 px-4 py-2.5 rounded-full transition-all shadow-xl font-medium"
-                >
-                    <PrinterIcon className="w-4 h-4" />
-                    <span className="text-sm">Imprimir CV</span>
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={toggleTheme}
+                        className={`flex items-center gap-2 ${t.barBg} backdrop-blur-xl ${t.barText} px-3 py-2.5 rounded-full border ${t.barBorder} ${t.barHover} transition-all shadow-xl`}
+                        title={isDark ? 'Modo Claro' : 'Modo Escuro'}
+                    >
+                        {isDark ? <SunIcon className="w-4 h-4 text-amber-400" /> : <MoonIcon className="w-4 h-4 text-indigo-500" />}
+                    </button>
+                    <button
+                        onClick={() => window.print()}
+                        className="flex items-center gap-2 bg-amber-500/90 backdrop-blur-xl text-slate-900 hover:bg-amber-400 px-4 py-2.5 rounded-full transition-all shadow-xl font-medium"
+                    >
+                        <PrinterIcon className="w-4 h-4" />
+                        <span className="text-sm">Imprimir CV</span>
+                    </button>
+                </div>
             </div>
 
             {/* Hero / Header Section */}
             <header className="relative overflow-hidden">
-                {/* Background gradient */}
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950" />
+                <div className={`absolute inset-0 bg-gradient-to-br ${t.headerBg} transition-colors duration-500`} />
                 <div className="absolute inset-0 opacity-20">
-                    <div className="absolute top-20 left-10 w-72 h-72 bg-amber-500/20 rounded-full blur-3xl" />
-                    <div className="absolute bottom-10 right-10 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl" />
+                    <div className={`absolute top-20 left-10 w-72 h-72 ${t.headerGlow1} rounded-full blur-3xl`} />
+                    <div className={`absolute bottom-10 right-10 w-96 h-96 ${t.headerGlow2} rounded-full blur-3xl`} />
                 </div>
 
                 <div className="relative max-w-5xl mx-auto px-6 pt-24 pb-16 md:pt-28 md:pb-20">
                     <div className="flex flex-col md:flex-row items-center md:items-start gap-10">
-                        {/* Profile Image */}
                         <div className="flex-shrink-0 animate-scale-in">
                             <div className="relative">
                                 <div className="w-40 h-40 md:w-48 md:h-48 rounded-2xl overflow-hidden ring-4 ring-amber-500/30 shadow-2xl shadow-amber-500/10 rotate-3 hover:rotate-0 transition-transform duration-500">
-                                    <img
-                                        src={profileImageUrl}
-                                        alt="Marcio Rolim"
-                                        className="w-full h-full object-cover"
-                                        loading="eager"
-                                    />
+                                    <img src={profileImageUrl} alt="Marcio Rolim" className="w-full h-full object-cover" loading="eager" />
                                 </div>
-                                {/* Status badge */}
                                 <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
                                     <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
                                     Disponível
@@ -251,56 +344,44 @@ const CurriculumPage: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Info */}
                         <div className="flex-1 text-center md:text-left animate-fade-in-up">
-                            <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-2 tracking-tight">
+                            <h1 className={`text-4xl sm:text-5xl font-extrabold ${t.name} mb-2 tracking-tight`}>
                                 Marcio Rolim
                             </h1>
-                            <p className="text-xl text-amber-400 font-semibold mb-4">
+                            <p className={`text-xl ${t.subtitle} font-semibold mb-4`}>
                                 Especialista em Tecnologia & Inteligência Artificial
                             </p>
 
-                            {/* Quick info tags */}
                             <div className="flex flex-wrap justify-center md:justify-start gap-3 mb-6">
-                                <span className="flex items-center gap-1.5 text-sm text-slate-400 bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700/50">
-                                    <MapPinIcon className="w-3.5 h-3.5 text-emerald-400" />
-                                    São Paulo, SP
+                                <span className={`flex items-center gap-1.5 text-sm ${t.tagText} ${t.tagBg} px-3 py-1.5 rounded-lg border ${t.tagBorder}`}>
+                                    <MapPinIcon className="w-3.5 h-3.5 text-emerald-400" /> São Paulo, SP
                                 </span>
-                                <span className="flex items-center gap-1.5 text-sm text-slate-400 bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700/50">
-                                    <CalendarIcon className="w-3.5 h-3.5 text-amber-400" />
-                                    {age} anos
+                                <span className={`flex items-center gap-1.5 text-sm ${t.tagText} ${t.tagBg} px-3 py-1.5 rounded-lg border ${t.tagBorder}`}>
+                                    <CalendarIcon className="w-3.5 h-3.5 text-amber-400" /> {age} anos
                                 </span>
-                                <span className="flex items-center gap-1.5 text-sm text-slate-400 bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700/50">
-                                    <HeartIcon className="w-3.5 h-3.5 text-rose-400" />
-                                    Casado
+                                <span className={`flex items-center gap-1.5 text-sm ${t.tagText} ${t.tagBg} px-3 py-1.5 rounded-lg border ${t.tagBorder}`}>
+                                    <HeartIcon className="w-3.5 h-3.5 text-rose-400" /> Casado · 4 filhas
                                 </span>
-                                <span className="flex items-center gap-1.5 text-sm text-slate-400 bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700/50">
-                                    <BriefcaseIcon className="w-3.5 h-3.5 text-blue-400" />
-                                    +{techYears} anos em TI
+                                <span className={`flex items-center gap-1.5 text-sm ${t.tagText} ${t.tagBg} px-3 py-1.5 rounded-lg border ${t.tagBorder}`}>
+                                    <BriefcaseIcon className="w-3.5 h-3.5 text-blue-400" /> +{techYears} anos em TI
                                 </span>
                             </div>
 
-                            {/* Contact row */}
                             <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                                <a href="mailto:contato@marciorolim.com.br" className="flex items-center gap-2 text-sm text-slate-300 hover:text-amber-400 bg-slate-800/40 px-4 py-2 rounded-lg border border-slate-700/30 hover:border-amber-500/30 transition-all">
-                                    <MailIcon className="w-4 h-4" />
-                                    contato@marciorolim.com.br
+                                <a href="mailto:contato@marciorolim.com.br" className={`flex items-center gap-2 text-sm ${t.contactText} hover:text-amber-400 ${t.contactBg} px-4 py-2 rounded-lg border ${t.contactBorder} hover:border-amber-500/30 transition-all`}>
+                                    <MailIcon className="w-4 h-4" /> contato@marciorolim.com.br
                                 </a>
-                                <a href="https://wa.me/5511980888880" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-slate-300 hover:text-emerald-400 bg-slate-800/40 px-4 py-2 rounded-lg border border-slate-700/30 hover:border-emerald-500/30 transition-all">
-                                    <WhatsAppIcon className="w-4 h-4" />
-                                    (11) 98088-8880
+                                <a href="https://wa.me/5511980888880" target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 text-sm ${t.contactText} hover:text-emerald-400 ${t.contactBg} px-4 py-2 rounded-lg border ${t.contactBorder} hover:border-emerald-500/30 transition-all`}>
+                                    <WhatsAppIcon className="w-4 h-4" /> (11) 98088-8880
                                 </a>
-                                <a href="https://instagram.com/marciorolim" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-slate-300 hover:text-pink-400 bg-slate-800/40 px-4 py-2 rounded-lg border border-slate-700/30 hover:border-pink-500/30 transition-all">
-                                    <InstagramIcon className="w-4 h-4" />
-                                    @marciorolim
+                                <a href="https://instagram.com/marciorolim" target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 text-sm ${t.contactText} hover:text-pink-400 ${t.contactBg} px-4 py-2 rounded-lg border ${t.contactBorder} hover:border-pink-500/30 transition-all`}>
+                                    <InstagramIcon className="w-4 h-4" /> @marciorolim
                                 </a>
-                                <a href="https://linkedin.com/in/marciorolim" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-slate-300 hover:text-blue-400 bg-slate-800/40 px-4 py-2 rounded-lg border border-slate-700/30 hover:border-blue-500/30 transition-all">
-                                    <LinkedInIcon className="w-4 h-4" />
-                                    /marciorolim
+                                <a href="https://linkedin.com/in/marciorolim" target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 text-sm ${t.contactText} hover:text-blue-400 ${t.contactBg} px-4 py-2 rounded-lg border ${t.contactBorder} hover:border-blue-500/30 transition-all`}>
+                                    <LinkedInIcon className="w-4 h-4" /> /marciorolim
                                 </a>
-                                <a href="https://marciorolim.com.br" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-slate-300 hover:text-violet-400 bg-slate-800/40 px-4 py-2 rounded-lg border border-slate-700/30 hover:border-violet-500/30 transition-all">
-                                    <GlobeIcon className="w-4 h-4" />
-                                    marciorolim.com.br
+                                <a href="https://marciorolim.com.br" target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 text-sm ${t.contactText} hover:text-violet-400 ${t.contactBg} px-4 py-2 rounded-lg border ${t.contactBorder} hover:border-violet-500/30 transition-all`}>
+                                    <GlobeIcon className="w-4 h-4" /> marciorolim.com.br
                                 </a>
                             </div>
                         </div>
@@ -317,18 +398,18 @@ const CurriculumPage: React.FC = () => {
                         <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
                             <TargetIcon className="w-5 h-5 text-white" />
                         </div>
-                        <h2 className="text-2xl font-bold text-white">Propósito & Objetivo</h2>
+                        <h2 className={`text-2xl font-bold ${t.sectionTitle}`}>Propósito & Objetivo</h2>
                     </div>
-                    <div className="bg-gradient-to-r from-slate-800/80 to-slate-800/40 border border-slate-700/50 rounded-2xl p-6 md:p-8">
-                        <p className="text-slate-300 leading-relaxed text-base md:text-lg">
-                            Profissional com mais de <strong className="text-amber-400">{techYears} anos de experiência em tecnologia</strong>,
+                    <div className={`bg-gradient-to-r ${t.cardGradient} border ${t.cardBorder} rounded-2xl p-6 md:p-8`}>
+                        <p className={`${t.bodyText} leading-relaxed text-base md:text-lg`}>
+                            Profissional com mais de <strong className={t.strongAccent}>{techYears} anos de experiência em tecnologia</strong>,
                             unindo visão estratégica e capacidade técnica para gerar resultados concretos. Minha trajetória abrange desde
                             o suporte técnico até a gestão completa de infraestrutura de TI, implementação de ERPs corporativos e, mais recentemente,
-                            o desenvolvimento de soluções inovadoras com <strong className="text-emerald-400">Inteligência Artificial</strong>,
+                            o desenvolvimento de soluções inovadoras com <strong className={t.strongGreen}>Inteligência Artificial</strong>,
                             automação e desenvolvimento web moderno.
                         </p>
-                        <p className="text-slate-300 leading-relaxed text-base md:text-lg mt-4">
-                            Meu propósito é <strong className="text-white">transformar vidas e negócios através da tecnologia</strong>.
+                        <p className={`${t.bodyText} leading-relaxed text-base md:text-lg mt-4`}>
+                            Meu propósito é <strong className={t.strongWhite}>transformar vidas e negócios através da tecnologia</strong>.
                             Acredito que cada pessoa e cada organização tem um potencial único que pode ser amplificado com as ferramentas
                             e estratégias certas. Busco oportunidades onde possa aplicar minha experiência em IA, desenvolvimento e
                             gestão de tecnologia para criar impacto real e duradouro.
@@ -342,16 +423,16 @@ const CurriculumPage: React.FC = () => {
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                             <GraduationCapIcon className="w-5 h-5 text-white" />
                         </div>
-                        <h2 className="text-2xl font-bold text-white">Formação Acadêmica</h2>
+                        <h2 className={`text-2xl font-bold ${t.sectionTitle}`}>Formação Acadêmica</h2>
                     </div>
-                    <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 hover:border-blue-500/30 transition-all duration-300">
+                    <div className={`${t.cardBg} border ${t.cardBorder} rounded-2xl p-6 hover:border-blue-500/30 transition-all duration-300`}>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                             <div className="w-14 h-14 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl flex items-center justify-center border border-blue-500/20">
                                 <GraduationCapIcon className="w-7 h-7 text-blue-400" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-white">Ciências da Computação</h3>
-                                <p className="text-slate-400 text-sm">Graduação</p>
+                                <h3 className={`text-lg font-bold ${t.sectionTitle}`}>Ciências da Computação</h3>
+                                <p className={`${t.bodyTextLight} text-sm`}>Graduação</p>
                             </div>
                         </div>
                     </div>
@@ -363,81 +444,79 @@ const CurriculumPage: React.FC = () => {
                         <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
                             <SparklesIcon className="w-5 h-5 text-white" />
                         </div>
-                        <h2 className="text-2xl font-bold text-white">Habilidades Técnicas</h2>
+                        <h2 className={`text-2xl font-bold ${t.sectionTitle}`}>Habilidades Técnicas</h2>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-6">
-
-                        {/* Programação */}
-                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 hover:border-emerald-500/30 transition-all duration-300">
+                        <div className={`${t.cardBg} border ${t.cardBorder} rounded-2xl p-6 hover:border-emerald-500/30 transition-all duration-300`}>
                             <div className="flex items-center gap-3 mb-5">
                                 <div className="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center">
                                     <CodeIcon className="w-4 h-4 text-emerald-400" />
                                 </div>
-                                <h3 className="text-base font-bold text-white">Programação</h3>
+                                <h3 className={`text-base font-bold ${t.sectionTitle}`}>Programação</h3>
                             </div>
                             <div className="space-y-4">
-                                <SkillBar name="Python" level={85} color="bg-gradient-to-r from-yellow-400 to-yellow-500" delay={0} />
-                                <SkillBar name="JavaScript" level={80} color="bg-gradient-to-r from-amber-400 to-amber-500" delay={100} />
-                                <SkillBar name="HTML / CSS" level={90} color="bg-gradient-to-r from-orange-400 to-red-500" delay={200} />
-                                <SkillBar name="Node.js" level={75} color="bg-gradient-to-r from-emerald-400 to-emerald-500" delay={300} />
-                                <SkillBar name="PHP" level={65} color="bg-gradient-to-r from-indigo-400 to-violet-500" delay={400} />
+                                <SkillBar name="Python" level={85} color="bg-gradient-to-r from-yellow-400 to-yellow-500" delay={0} isDark={isDark} />
+                                <SkillBar name="JavaScript" level={80} color="bg-gradient-to-r from-amber-400 to-amber-500" delay={100} isDark={isDark} />
+                                <SkillBar name="HTML / CSS" level={90} color="bg-gradient-to-r from-orange-400 to-red-500" delay={200} isDark={isDark} />
+                                <SkillBar name="Node.js" level={75} color="bg-gradient-to-r from-emerald-400 to-emerald-500" delay={300} isDark={isDark} />
+                                <SkillBar name="PHP" level={65} color="bg-gradient-to-r from-indigo-400 to-violet-500" delay={400} isDark={isDark} />
                             </div>
                         </div>
 
-                        {/* Banco de Dados */}
-                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 hover:border-blue-500/30 transition-all duration-300">
+                        <div className={`${t.cardBg} border ${t.cardBorder} rounded-2xl p-6 hover:border-blue-500/30 transition-all duration-300`}>
                             <div className="flex items-center gap-3 mb-5">
                                 <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
                                     <DatabaseIcon className="w-4 h-4 text-blue-400" />
                                 </div>
-                                <h3 className="text-base font-bold text-white">Banco de Dados</h3>
+                                <h3 className={`text-base font-bold ${t.sectionTitle}`}>Banco de Dados</h3>
                             </div>
                             <div className="space-y-4">
-                                <SkillBar name="MySQL" level={80} color="bg-gradient-to-r from-sky-400 to-blue-500" delay={0} />
-                                <SkillBar name="SQL" level={80} color="bg-gradient-to-r from-blue-400 to-indigo-500" delay={100} />
-                                <SkillBar name="Supabase" level={85} color="bg-gradient-to-r from-emerald-400 to-green-500" delay={200} />
+                                <SkillBar name="MySQL" level={80} color="bg-gradient-to-r from-sky-400 to-blue-500" delay={0} isDark={isDark} />
+                                <SkillBar name="SQL" level={80} color="bg-gradient-to-r from-blue-400 to-indigo-500" delay={100} isDark={isDark} />
+                                <SkillBar name="Supabase" level={85} color="bg-gradient-to-r from-emerald-400 to-green-500" delay={200} isDark={isDark} />
                             </div>
                         </div>
 
-                        {/* Automação */}
-                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 hover:border-violet-500/30 transition-all duration-300">
+                        <div className={`${t.cardBg} border ${t.cardBorder} rounded-2xl p-6 hover:border-violet-500/30 transition-all duration-300`}>
                             <div className="flex items-center gap-3 mb-5">
                                 <div className="w-8 h-8 bg-violet-500/10 rounded-lg flex items-center justify-center">
                                     <CpuIcon className="w-4 h-4 text-violet-400" />
                                 </div>
-                                <h3 className="text-base font-bold text-white">Automação & IA</h3>
+                                <h3 className={`text-base font-bold ${t.sectionTitle}`}>Automação & IA</h3>
                             </div>
                             <div className="space-y-4">
-                                <SkillBar name="N8N" level={85} color="bg-gradient-to-r from-orange-400 to-red-400" delay={0} />
-                                <SkillBar name="Make (Integromat)" level={75} color="bg-gradient-to-r from-violet-400 to-purple-500" delay={100} />
-                                <SkillBar name="Agentes de IA" level={80} color="bg-gradient-to-r from-fuchsia-400 to-pink-500" delay={200} />
+                                <SkillBar name="N8N" level={85} color="bg-gradient-to-r from-orange-400 to-red-400" delay={0} isDark={isDark} />
+                                <SkillBar name="Make (Integromat)" level={75} color="bg-gradient-to-r from-violet-400 to-purple-500" delay={100} isDark={isDark} />
+                                <SkillBar name="Agentes de IA" level={80} color="bg-gradient-to-r from-fuchsia-400 to-pink-500" delay={200} isDark={isDark} />
+                                <SkillBar name="Gestão de Tráfego" level={70} color="bg-gradient-to-r from-sky-400 to-cyan-500" delay={300} isDark={isDark} />
                             </div>
                         </div>
 
-                        {/* Ferramentas */}
-                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 hover:border-amber-500/30 transition-all duration-300">
+                        <div className={`${t.cardBg} border ${t.cardBorder} rounded-2xl p-6 hover:border-amber-500/30 transition-all duration-300`}>
                             <div className="flex items-center gap-3 mb-5">
                                 <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center">
                                     <WrenchIcon className="w-4 h-4 text-amber-400" />
                                 </div>
-                                <h3 className="text-base font-bold text-white">Ferramentas & Plataformas</h3>
+                                <h3 className={`text-base font-bold ${t.sectionTitle}`}>Ferramentas & Plataformas</h3>
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 {[
-                                    { name: 'Claude', color: 'bg-orange-500/10 text-orange-300 border-orange-500/20' },
-                                    { name: 'OpenAI / GPT', color: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' },
-                                    { name: 'Gemini', color: 'bg-blue-500/10 text-blue-300 border-blue-500/20' },
-                                    { name: 'Cursor', color: 'bg-violet-500/10 text-violet-300 border-violet-500/20' },
-                                    { name: 'Antigravity', color: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20' },
-                                    { name: 'Vibe Coding', color: 'bg-pink-500/10 text-pink-300 border-pink-500/20' },
-                                    { name: 'Websites', color: 'bg-amber-500/10 text-amber-300 border-amber-500/20' },
-                                    { name: 'Aplicativos', color: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20' },
-                                    { name: 'Agentes de IA', color: 'bg-rose-500/10 text-rose-300 border-rose-500/20' },
+                                    { name: 'Claude', key: 'claude' },
+                                    { name: 'OpenAI / GPT', key: 'openai' },
+                                    { name: 'Gemini', key: 'gemini' },
+                                    { name: 'Cursor', key: 'cursor' },
+                                    { name: 'Antigravity', key: 'antigravity' },
+                                    { name: 'Vibe Coding', key: 'vibe' },
+                                    { name: 'Websites', key: 'websites' },
+                                    { name: 'Aplicativos', key: 'apps' },
+                                    { name: 'Agentes de IA', key: 'agents' },
+                                    { name: 'META Ads', key: 'vibe' },
+                                    { name: 'Google ADS', key: 'gemini' },
                                 ].map((tool) => (
                                     <span
                                         key={tool.name}
-                                        className={`text-xs font-medium px-3 py-1.5 rounded-lg border ${tool.color} hover:scale-105 transition-transform cursor-default`}
+                                        className={`text-xs font-medium px-3 py-1.5 rounded-lg border ${(t.toolColors as any)[tool.key]} hover:scale-105 transition-transform cursor-default`}
                                     >
                                         {tool.name}
                                     </span>
@@ -453,7 +532,7 @@ const CurriculumPage: React.FC = () => {
                         <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
                             <BriefcaseIcon className="w-5 h-5 text-white" />
                         </div>
-                        <h2 className="text-2xl font-bold text-white">Experiência Profissional</h2>
+                        <h2 className={`text-2xl font-bold ${t.sectionTitle}`}>Experiência Profissional</h2>
                     </div>
 
                     <div className="space-y-0">
@@ -471,6 +550,7 @@ const CurriculumPage: React.FC = () => {
                                 'Gestão de equipes',
                                 '120 congregações',
                             ]}
+                            isDark={isDark}
                         />
 
                         <TimelineItem
@@ -485,6 +565,7 @@ const CurriculumPage: React.FC = () => {
                                 'Migração de dados',
                                 'Suporte corporativo',
                             ]}
+                            isDark={isDark}
                         />
 
                         <TimelineItem
@@ -499,6 +580,7 @@ const CurriculumPage: React.FC = () => {
                                 'Otimização de processos',
                             ]}
                             isLast
+                            isDark={isDark}
                         />
                     </div>
                 </section>
@@ -509,58 +591,58 @@ const CurriculumPage: React.FC = () => {
                         <div className="w-10 h-10 bg-gradient-to-br from-rose-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg shadow-rose-500/20">
                             <HeartIcon className="w-5 h-5 text-white" />
                         </div>
-                        <h2 className="text-2xl font-bold text-white">Informações Pessoais</h2>
+                        <h2 className={`text-2xl font-bold ${t.sectionTitle}`}>Informações Pessoais</h2>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-6">
-                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
+                        <div className={`${t.cardBg} border ${t.cardBorder} rounded-2xl p-6`}>
                             <div className="space-y-4">
                                 <div className="flex items-start gap-3">
                                     <CalendarIcon className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <span className="text-xs text-slate-500 uppercase tracking-wider">Data de Nascimento</span>
-                                        <p className="text-slate-200 font-medium">18 de Abril de 1973 ({age} anos)</p>
+                                        <span className={`text-xs ${t.labelText} uppercase tracking-wider`}>Data de Nascimento</span>
+                                        <p className={`${t.infoValue} font-medium`}>18 de Abril de 1973 ({age} anos)</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <HeartIcon className="w-5 h-5 text-rose-400 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <span className="text-xs text-slate-500 uppercase tracking-wider">Estado Civil</span>
-                                        <p className="text-slate-200 font-medium">Casado</p>
+                                        <span className={`text-xs ${t.labelText} uppercase tracking-wider`}>Estado Civil</span>
+                                        <p className={`${t.infoValue} font-medium`}>Casado · 4 filhas</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <MapPinIcon className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <span className="text-xs text-slate-500 uppercase tracking-wider">Endereço</span>
-                                        <p className="text-slate-200 font-medium">Rua Guaraitá, 1290 - Vila Curuçá</p>
-                                        <p className="text-slate-400 text-sm">CEP 08030-310 - São Paulo - SP</p>
+                                        <span className={`text-xs ${t.labelText} uppercase tracking-wider`}>Endereço</span>
+                                        <p className={`${t.infoValue} font-medium`}>Rua Guaraitá, 1290 - Vila Curuçá</p>
+                                        <p className={`${t.bodyTextLight} text-sm`}>CEP 08030-310 - São Paulo - SP</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
+                        <div className={`${t.cardBg} border ${t.cardBorder} rounded-2xl p-6`}>
                             <div className="space-y-4">
                                 <div className="flex items-start gap-3">
                                     <GraduationCapIcon className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <span className="text-xs text-slate-500 uppercase tracking-wider">Formação</span>
-                                        <p className="text-slate-200 font-medium">Ciências da Computação</p>
+                                        <span className={`text-xs ${t.labelText} uppercase tracking-wider`}>Formação</span>
+                                        <p className={`${t.infoValue} font-medium`}>Ciências da Computação</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <BriefcaseIcon className="w-5 h-5 text-violet-400 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <span className="text-xs text-slate-500 uppercase tracking-wider">Atuação em TI desde</span>
-                                        <p className="text-slate-200 font-medium">1988 — mais de {techYears} anos de experiência</p>
+                                        <span className={`text-xs ${t.labelText} uppercase tracking-wider`}>Atuação em TI desde</span>
+                                        <p className={`${t.infoValue} font-medium`}>1988 — mais de {techYears} anos de experiência</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <SparklesIcon className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <span className="text-xs text-slate-500 uppercase tracking-wider">Foco atual</span>
-                                        <p className="text-slate-200 font-medium">IA, Desenvolvimento Web & Automação</p>
+                                        <span className={`text-xs ${t.labelText} uppercase tracking-wider`}>Foco atual</span>
+                                        <p className={`${t.infoValue} font-medium`}>IA, Desenvolvimento Web e Aplicativos, Automação & Gestão de Tráfego</p>
                                     </div>
                                 </div>
                             </div>
@@ -574,7 +656,7 @@ const CurriculumPage: React.FC = () => {
                         <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
                             <SparklesIcon className="w-5 h-5 text-white" />
                         </div>
-                        <h2 className="text-2xl font-bold text-white">Diferenciais</h2>
+                        <h2 className={`text-2xl font-bold ${t.sectionTitle}`}>Diferenciais</h2>
                     </div>
 
                     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -588,12 +670,12 @@ const CurriculumPage: React.FC = () => {
                         ].map((item, index) => (
                             <div
                                 key={item.title}
-                                className="group bg-slate-800/40 border border-slate-700/40 rounded-2xl p-5 hover:border-cyan-500/30 hover:bg-slate-800/60 transition-all duration-300 hover:-translate-y-1"
+                                className={`group ${t.diffCardBg} border ${t.diffCardBorder} rounded-2xl p-5 hover:border-cyan-500/30 ${isDark ? 'hover:bg-slate-800/60' : 'hover:bg-white'} transition-all duration-300 hover:-translate-y-1`}
                                 style={{ animationDelay: `${index * 80}ms` }}
                             >
                                 <div className="text-3xl mb-3">{item.icon}</div>
-                                <h3 className="text-sm font-bold text-white mb-1.5">{item.title}</h3>
-                                <p className="text-xs text-slate-400 leading-relaxed">{item.desc}</p>
+                                <h3 className={`text-sm font-bold ${t.sectionTitle} mb-1.5`}>{item.title}</h3>
+                                <p className={`text-xs ${t.diffDesc} leading-relaxed`}>{item.desc}</p>
                             </div>
                         ))}
                     </div>
@@ -601,12 +683,12 @@ const CurriculumPage: React.FC = () => {
             </main>
 
             {/* Footer */}
-            <footer className="border-t border-slate-800 py-10 px-6">
+            <footer className={`border-t ${t.footerBorder} py-10 px-6`}>
                 <div className="max-w-5xl mx-auto text-center">
-                    <p className="text-slate-500 text-sm mb-2">
+                    <p className={`${t.footerText} text-sm mb-2`}>
                         © {new Date().getFullYear()} Marcio Rolim. Todos os direitos reservados.
                     </p>
-                    <p className="text-amber-500/50 text-xs">Eu creio em Deus.</p>
+                    <p className={`${t.footerAccent} text-xs`}>Eu creio em Deus.</p>
                 </div>
             </footer>
         </div>
