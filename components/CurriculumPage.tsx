@@ -438,6 +438,72 @@ const CurriculumPage: React.FC = () => {
                     </div>
                 </section>
 
+                {/* Cursos Complementares */}
+                <section>
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/20">
+                            <GraduationCapIcon className="w-5 h-5 text-white" />
+                        </div>
+                        <h2 className={`text-2xl font-bold ${t.sectionTitle}`}>Cursos Complementares</h2>
+                    </div>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {[
+                            { name: 'Redes e Infraestrutura', icon: '🌐' },
+                            { name: 'Gestão de Negócios', icon: '📊' },
+                            { name: 'Engenharia de Prompt (IA)', icon: '🤖' },
+                            { name: 'Contabilidade Básica', icon: '📋' },
+                            { name: 'Lógica de Programação', icon: '💻' },
+                            { name: 'Automação Industrial com C#', icon: '⚙️' },
+                            { name: 'Banco de Dados SQL', icon: '🗄️' },
+                        ].map((curso, index) => (
+                            <div
+                                key={curso.name}
+                                className={`${t.cardBg} border ${t.cardBorder} rounded-xl px-4 py-3 flex items-center gap-3 hover:border-teal-500/30 transition-all duration-300`}
+                                style={{ animationDelay: `${index * 60}ms` }}
+                            >
+                                <span className="text-xl">{curso.icon}</span>
+                                <span className={`text-sm font-medium ${t.bodyText}`}>{curso.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* Idiomas */}
+                <section>
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 bg-gradient-to-br from-sky-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-sky-500/20">
+                            <GlobeIcon className="w-5 h-5 text-white" />
+                        </div>
+                        <h2 className={`text-2xl font-bold ${t.sectionTitle}`}>Idiomas</h2>
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                        <div className={`${t.cardBg} border ${t.cardBorder} rounded-xl p-5 hover:border-sky-500/30 transition-all duration-300`}>
+                            <div className="flex items-center gap-3 mb-3">
+                                <span className="text-2xl">🇺🇸</span>
+                                <div>
+                                    <h3 className={`text-base font-bold ${t.sectionTitle}`}>Inglês</h3>
+                                    <p className={`text-xs ${t.bodyTextLight}`}>Básico</p>
+                                </div>
+                            </div>
+                            <div className={`w-full h-2 ${isDark ? 'bg-slate-800' : 'bg-slate-200'} rounded-full overflow-hidden`}>
+                                <div className="h-full bg-gradient-to-r from-sky-400 to-blue-500 rounded-full" style={{ width: '35%' }} />
+                            </div>
+                        </div>
+                        <div className={`${t.cardBg} border ${t.cardBorder} rounded-xl p-5 hover:border-sky-500/30 transition-all duration-300`}>
+                            <div className="flex items-center gap-3 mb-3">
+                                <span className="text-2xl">🇪🇸</span>
+                                <div>
+                                    <h3 className={`text-base font-bold ${t.sectionTitle}`}>Espanhol</h3>
+                                    <p className={`text-xs ${t.bodyTextLight}`}>Básico</p>
+                                </div>
+                            </div>
+                            <div className={`w-full h-2 ${isDark ? 'bg-slate-800' : 'bg-slate-200'} rounded-full overflow-hidden`}>
+                                <div className="h-full bg-gradient-to-r from-orange-400 to-red-500 rounded-full" style={{ width: '30%' }} />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 {/* Habilidades Técnicas */}
                 <section>
                     <div className="flex items-center gap-3 mb-6">
