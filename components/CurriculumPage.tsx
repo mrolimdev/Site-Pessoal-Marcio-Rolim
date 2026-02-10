@@ -570,7 +570,7 @@ const CurriculumPage: React.FC = () => {
 
                         <TimelineItem
                             period="1988 – 2004"
-                            company="Diversas Empresas"
+                            company="Diversas Empresas (Sul América, SBT, Bunge Alimentos, Nalco Química, Braisa Brasil Serviços, Mecanográfics Automações)"
                             role="Profissional de Tecnologia"
                             description="Atuação diversificada na área de tecnologia com foco em suporte técnico e desenvolvimento de soluções departamentais. Criação de planilhas, pequenos sistemas e ferramentas para otimização de processos em diferentes setores corporativos."
                             highlights={[
