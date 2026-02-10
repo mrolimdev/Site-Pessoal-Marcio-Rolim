@@ -220,7 +220,6 @@ function App() {
     { href: '#sobre', label: 'Sobre' },
     { href: '#servicos', label: 'Serviços' },
     { href: '#contato', label: 'Contato' },
-    { href: '/curriculum', label: 'Currículo' },
   ];
 
   return (
@@ -348,13 +347,15 @@ function App() {
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center gap-3 justify-center md:justify-start">
-                  <button
-                    onClick={() => setIsChatOpen(true)}
+                  <a
+                    href={SOCIAL_LINKS.whatsapp}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white px-8 py-4 rounded-full font-semibold transition-all shadow-xl shadow-amber-500/20 hover:shadow-amber-500/30 hover:scale-[1.02] flex items-center justify-center gap-3"
                   >
-                    <ChatBubbleIcon className="h-5 w-5" />
+                    <WhatsAppIcon className="h-5 w-5" />
                     Vamos Conversar
-                  </button>
+                  </a>
                   <a
                     href="#sobre"
                     className={`w-full sm:w-auto border-2 ${isDark ? 'border-slate-700 hover:border-slate-600 text-slate-300' : 'border-stone-200 hover:border-stone-300 text-stone-600'} px-8 py-4 rounded-full font-medium transition-all flex items-center justify-center gap-2`}
@@ -469,8 +470,8 @@ function App() {
                 <button
                   onClick={() => setActiveTab('tech')}
                   className={`px-6 py-3 rounded-full font-semibold text-sm transition-all flex items-center gap-2 ${activeTab === 'tech'
-                      ? `${t.tabActive} ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`
-                      : `${t.textSecondary} hover:${t.heading}`
+                    ? `${t.tabActive} ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`
+                    : `${t.textSecondary} hover:${t.heading}`
                     }`}
                 >
                   <CodeIcon className="h-4 w-4" />
@@ -479,8 +480,8 @@ function App() {
                 <button
                   onClick={() => setActiveTab('pastoral')}
                   className={`px-6 py-3 rounded-full font-semibold text-sm transition-all flex items-center gap-2 ${activeTab === 'pastoral'
-                      ? `${t.tabActive} ${isDark ? 'text-amber-400' : 'text-amber-600'}`
-                      : `${t.textSecondary} hover:${t.heading}`
+                    ? `${t.tabActive} ${isDark ? 'text-amber-400' : 'text-amber-600'}`
+                    : `${t.textSecondary} hover:${t.heading}`
                     }`}
                 >
                   <HeartIcon className="h-4 w-4" />
@@ -528,12 +529,6 @@ function App() {
               >
                 <WhatsAppIcon className="h-6 w-6" />
                 Fale Comigo
-              </a>
-              <a
-                href="/curriculum"
-                className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 border-2 ${isDark ? 'border-slate-700 text-slate-300 hover:border-slate-600' : 'border-stone-200 text-stone-600 hover:border-stone-300'} px-8 py-5 rounded-full font-semibold transition-all`}
-              >
-                📄 Ver Currículo
               </a>
             </div>
           </div>
@@ -651,7 +646,9 @@ function App() {
       )}
 
       {/* ─── Chat Widget ─── */}
+      {/* ChatWidget temporariamente desativado
       <ChatWidget isOpen={isChatOpen} onOpenChange={setIsChatOpen} />
+      */}
     </>
   );
 }
