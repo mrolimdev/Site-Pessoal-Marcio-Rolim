@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ChatWidget from './components/ChatWidget';
 import CountUp from './components/CountUp';
 import ChatBubbleIcon from './components/icons/ChatBubbleIcon';
 
-// Icons
+// ─── Icons ──────────────────────────────────────────────────────────
 const ChevronDownIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -58,51 +58,104 @@ const SparklesIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// Data
+const SunIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+  </svg>
+);
+
+const MoonIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+  </svg>
+);
+
+const MenuIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" />
+  </svg>
+);
+
+const CloseIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
+// ─── Theme helper ───────────────────────────────────────────────────
+const getTheme = (isDark: boolean) => isDark ? {
+  // Dark theme
+  bg: 'bg-slate-950',
+  bgAlt: 'bg-slate-900',
+  bgCard: 'bg-slate-900/60 border-slate-800/60',
+  bgCardHover: 'hover:bg-slate-800/80 hover:border-slate-700/60',
+  bgGlass: 'bg-slate-900/70 backdrop-blur-xl border-slate-800/50',
+  text: 'text-slate-100',
+  textSecondary: 'text-slate-400',
+  textMuted: 'text-slate-500',
+  heading: 'text-white',
+  accent: 'text-amber-400',
+  accentBg: 'bg-amber-500/10 border-amber-500/20',
+  navBg: 'bg-slate-950/80 backdrop-blur-xl border-slate-800/50',
+  sectionBg: 'bg-slate-900/50',
+  statsBg: 'bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-y border-slate-800/50',
+  ctaBg: 'bg-gradient-to-br from-amber-500/10 via-slate-900 to-emerald-500/10',
+  footerBg: 'bg-slate-950 border-t border-slate-800/50',
+  divider: 'border-slate-800',
+  inputBg: 'bg-slate-800/50',
+  tabBg: 'bg-slate-800/60 border-slate-700/40',
+  tabActive: 'bg-slate-700 shadow-lg',
+  socialBg: 'bg-slate-800/60 border-slate-700/40 hover:bg-slate-700/60',
+  glow1: 'bg-amber-500/8',
+  glow2: 'bg-emerald-500/8',
+  badgePastor: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  badgeTech: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  cardPastor: 'bg-gradient-to-br from-amber-500/5 to-orange-500/5 border-amber-500/10 hover:border-amber-500/30',
+  cardTech: 'bg-gradient-to-br from-emerald-500/5 to-teal-500/5 border-emerald-500/10 hover:border-emerald-500/30',
+} : {
+  // Light theme
+  bg: 'bg-stone-50',
+  bgAlt: 'bg-white',
+  bgCard: 'bg-white/80 border-stone-200/80',
+  bgCardHover: 'hover:bg-white hover:border-stone-300',
+  bgGlass: 'bg-white/80 backdrop-blur-xl border-stone-200/60',
+  text: 'text-stone-800',
+  textSecondary: 'text-stone-500',
+  textMuted: 'text-stone-400',
+  heading: 'text-stone-900',
+  accent: 'text-amber-600',
+  accentBg: 'bg-amber-50 border-amber-200/50',
+  navBg: 'bg-white/80 backdrop-blur-xl border-stone-200/50',
+  sectionBg: 'bg-stone-100/50',
+  statsBg: 'bg-gradient-to-r from-stone-900 via-stone-800 to-stone-900',
+  ctaBg: 'bg-gradient-to-br from-amber-50 via-white to-emerald-50',
+  footerBg: 'bg-stone-900',
+  divider: 'border-stone-200',
+  inputBg: 'bg-stone-100',
+  tabBg: 'bg-stone-100 border-stone-200/60',
+  tabActive: 'bg-white shadow-lg',
+  socialBg: 'bg-white border-stone-200 hover:bg-stone-50',
+  glow1: 'bg-amber-200/30',
+  glow2: 'bg-emerald-200/30',
+  badgePastor: 'bg-amber-50 text-amber-700 border-amber-200/60',
+  badgeTech: 'bg-emerald-50 text-emerald-700 border-emerald-200/60',
+  cardPastor: 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100 hover:border-amber-300',
+  cardTech: 'bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100 hover:border-emerald-300',
+};
+
+// ─── Data ───────────────────────────────────────────────────────────
 const SKILLS_PASTORAL = [
-  {
-    icon: '🙏',
-    title: 'Liderança Pastoral',
-    description: 'Guio pessoas em sua jornada espiritual, fortalecendo famílias e transformando vidas através da fé.',
-  },
-  {
-    icon: '💬',
-    title: 'Mentoria e Aconselhamento',
-    description: 'Ajudo você a encontrar clareza em momentos difíceis, oferecendo direção baseada em sabedoria e experiência.',
-  },
-  {
-    icon: '❤️',
-    title: 'Empatia e Comunicação',
-    description: 'Escuto de verdade e me conecto com as pessoas. Cada conversa é uma oportunidade de fazer a diferença.',
-  },
-  {
-    icon: '✨',
-    title: 'Visão e Propósito',
-    description: 'Acredito que cada pessoa tem um propósito único. Ajudo você a descobrir e viver o seu com excelência.',
-  },
+  { icon: '🙏', title: 'Liderança Pastoral', description: 'Orientação espiritual para famílias e comunidades, fortalecendo valores e construindo alicerces sólidos.', color: 'amber' },
+  { icon: '💬', title: 'Mentoria & Aconselhamento', description: 'Direcionamento personalizado em momentos de decisão, com sabedoria e escuta ativa.', color: 'orange' },
+  { icon: '❤️', title: 'Empatia & Comunicação', description: 'Cada pessoa carrega uma história. Escuto com o coração e me conecto de verdade.', color: 'rose' },
+  { icon: '✨', title: 'Visão & Propósito', description: 'Todo ser humano tem um propósito único. Ajudo você a encontrar o seu e vivê-lo com plenitude.', color: 'yellow' },
 ];
 
 const SKILLS_TECH = [
-  {
-    icon: '💻',
-    title: 'Desenvolvimento Digital',
-    description: 'Aplicativos e websites modernos que geram resultados concretos.',
-  },
-  {
-    icon: '🛒',
-    title: 'E-commerce',
-    description: 'Lojas virtuais de alta performance com máxima conversão.',
-  },
-  {
-    icon: '📈',
-    title: 'Gestão de Tráfego',
-    description: 'Campanhas otimizadas para máximo retorno sobre investimento.',
-  },
-  {
-    icon: '🤖',
-    title: 'Inteligência Artificial',
-    description: 'Soluções inovadoras que automatizam e transformam negócios.',
-  },
+  { icon: '🤖', title: 'Inteligência Artificial', description: 'Agentes de IA, automação inteligente e soluções que transformam a forma de trabalhar.', color: 'violet' },
+  { icon: '💻', title: 'Desenvolvimento Web', description: 'Websites e aplicativos modernos, rápidos e com design que encanta usuários.', color: 'emerald' },
+  { icon: '📈', title: 'Gestão de Tráfego', description: 'Campanhas META e Google ADS com estratégia focada em resultados e ROI.', color: 'sky' },
+  { icon: '🛒', title: 'E-commerce & Digital', description: 'Lojas virtuais de alta performance e ecossistemas digitais completos.', color: 'teal' },
 ];
 
 const SOCIAL_LINKS = {
@@ -113,7 +166,6 @@ const SOCIAL_LINKS = {
   whatsapp: 'https://wa.me/5511980888880',
 };
 
-// Calculate age
 const calculateAge = (birthDate: string): number => {
   const today = new Date();
   const birth = new Date(birthDate);
@@ -123,111 +175,189 @@ const calculateAge = (birthDate: string): number => {
   return age;
 };
 
+const calculateYearsSince = (year: number): number => new Date().getFullYear() - year;
+
+// ─── App ────────────────────────────────────────────────────────────
 function App() {
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('site-theme');
+      return saved === 'dark';
+    }
+    return false;
+  });
   const [activeTab, setActiveTab] = useState<'pastoral' | 'tech'>('tech');
   const [isScrolled, setIsScrolled] = useState(false);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const age = calculateAge('1973-04-18');
-  const techYears = calculateAge('1998-01-01');
-  const ministryYears = calculateAge('2012-01-01');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Detect scroll to show/hide profile photo in navbar
-  React.useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 100);
-    };
+  const age = calculateAge('1973-04-18');
+  const techYears = calculateYearsSince(1988);
+  const ministryYears = calculateYearsSince(2012);
+
+  const t = getTheme(isDark);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 60);
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const toggleTheme = () => {
+    setIsDark(prev => {
+      const next = !prev;
+      localStorage.setItem('site-theme', next ? 'dark' : 'light');
+      return next;
+    });
+  };
+
   const profileImageUrl = 'https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=100&output=webp&q=85';
+  const heroImageUrl = 'https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=500&output=webp&q=90';
   const videoUrl = 'https://sites.arquivo.download/marciorolim/Olhe%20o%20que%20Deus%20fez%20comigo.mp4';
+
+  const navLinks = [
+    { href: '#sobre', label: 'Sobre' },
+    { href: '#servicos', label: 'Serviços' },
+    { href: '#contato', label: 'Contato' },
+    { href: '/curriculum', label: 'Currículo' },
+  ];
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-        {/* Navigation */}
-        <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white shadow-md' : 'bg-white/80 backdrop-blur-lg'} border-b border-slate-200/50`}>
+      <div className={`min-h-screen ${t.bg} ${t.text} transition-colors duration-500`}>
+        {/* ─── Navigation ─── */}
+        <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? `${t.navBg} shadow-xl shadow-black/5` : 'bg-transparent'} border-b ${isScrolled ? t.divider : 'border-transparent'}`}>
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <a href="#" className="flex items-center gap-3 font-bold text-xl text-slate-900">
-                {/* Profile photo - appears on scroll */}
-                <div className={`transition-all duration-300 flex-shrink-0 ${isScrolled ? 'w-8 h-8 opacity-100 mr-0' : 'w-0 h-8 opacity-0 -mr-3'}`}>
-                  <img
-                    src={profileImageUrl}
-                    alt="Marcio Rolim"
-                    className="w-8 h-8 rounded-full object-cover border-2 border-slate-200"
-                  />
+            <div className="flex items-center justify-between h-16 md:h-18">
+              {/* Logo */}
+              <a href="#" className={`flex items-center gap-3 font-bold text-lg ${t.heading} transition-colors`}>
+                <div className={`transition-all duration-500 flex-shrink-0 ${isScrolled ? 'w-8 h-8 opacity-100' : 'w-0 h-0 opacity-0'} overflow-hidden`}>
+                  <img src={profileImageUrl} alt="Marcio Rolim" className="w-8 h-8 rounded-full object-cover ring-2 ring-amber-500/30" />
                 </div>
-                <span>Rolim</span>
+                <span className="tracking-tight">Marcio <span className={t.accent}>Rolim</span></span>
               </a>
-              <div className="hidden md:flex items-center space-x-8">
-                <a href="#sobre" className="text-slate-600 hover:text-slate-900 transition-colors">Sobre</a>
-                <a href="#servicos" className="text-slate-600 hover:text-slate-900 transition-colors">Serviços</a>
-                <a href="#contato" className="text-slate-600 hover:text-slate-900 transition-colors">Contato</a>
+
+              {/* Desktop Nav */}
+              <div className="hidden md:flex items-center gap-1">
+                {navLinks.map(link => (
+                  <a key={link.href} href={link.href} className={`px-4 py-2 rounded-full text-sm font-medium ${t.textSecondary} hover:${t.heading} transition-colors`}>
+                    {link.label}
+                  </a>
+                ))}
               </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={toggleTheme}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center ${t.bgCard} border transition-all hover:scale-105`}
+                  title={isDark ? 'Modo Claro' : 'Modo Escuro'}
+                >
+                  {isDark ? <SunIcon className="w-4 h-4 text-amber-400" /> : <MoonIcon className="w-4 h-4 text-indigo-500" />}
+                </button>
+                <a
+                  href={SOCIAL_LINKS.whatsapp}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden sm:flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-5 py-2.5 rounded-full text-sm font-semibold transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30"
+                >
+                  <WhatsAppIcon className="h-4 w-4" />
+                  Conversar
+                </a>
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className={`md:hidden w-9 h-9 rounded-full flex items-center justify-center ${t.bgCard} border transition-all`}
+                >
+                  {mobileMenuOpen ? <CloseIcon className="w-4 h-4" /> : <MenuIcon className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className={`md:hidden ${t.bgGlass} border-t ${t.divider} px-4 py-4 space-y-1`}>
+              {navLinks.map(link => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-4 py-3 rounded-xl text-sm font-medium ${t.textSecondary} hover:${t.heading} transition-colors`}
+                >
+                  {link.label}
+                </a>
+              ))}
               <a
                 href={SOCIAL_LINKS.whatsapp}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-all shadow-lg shadow-emerald-500/25 flex items-center gap-2"
+                className="flex items-center justify-center gap-2 bg-emerald-500 text-white px-5 py-3 rounded-xl text-sm font-semibold mt-2"
               >
                 <WhatsAppIcon className="h-4 w-4" />
-                <span className="hidden sm:inline">Conversar</span>
+                Conversar pelo WhatsApp
               </a>
             </div>
-          </div>
+          )}
         </nav>
 
-        {/* Hero Section */}
-        <header className="pt-24 pb-16 md:pt-32 md:pb-24 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
-              {/* Profile Image */}
-              <div className="relative flex-shrink-0">
-                <div className="w-40 h-40 md:w-56 md:h-56 rounded-full overflow-hidden ring-4 ring-white shadow-2xl">
-                  <img
-                    src="https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=500&output=webp&q=85"
-                    alt="Marcio Rolim - Consultor de Tecnologia e Pastor"
-                    className="w-full h-full object-cover"
-                    loading="eager"
-                  />
+        {/* ─── Hero Section ─── */}
+        <header className="relative overflow-hidden pt-20 md:pt-24">
+          {/* Background decoration */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className={`absolute -top-40 -right-40 w-[600px] h-[600px] ${t.glow1} rounded-full blur-3xl`} />
+            <div className={`absolute -bottom-40 -left-40 w-[500px] h-[500px] ${t.glow2} rounded-full blur-3xl`} />
+          </div>
+
+          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 lg:py-28">
+            <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16">
+              {/* Profile */}
+              <div className="relative flex-shrink-0 order-1 md:order-none">
+                <div className="relative">
+                  <div className={`w-44 h-44 md:w-56 md:h-56 rounded-3xl overflow-hidden ring-4 ${isDark ? 'ring-amber-500/20' : 'ring-amber-200/60'} shadow-2xl ${isDark ? 'shadow-amber-500/10' : 'shadow-amber-200/40'} rotate-3 hover:rotate-0 transition-transform duration-700`}>
+                    <img src={heroImageUrl} alt="Marcio Rolim - Consultor de Tecnologia e Pastor" className="w-full h-full object-cover" loading="eager" />
+                  </div>
+                  {/* Status badge */}
+                  <div className="absolute -bottom-3 -right-3 bg-emerald-500 text-white text-xs font-bold px-3.5 py-2 rounded-full shadow-lg shadow-emerald-500/30 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                    Disponível
+                  </div>
                 </div>
-                {/* Decorative elements */}
-                {/* Decorative elements - REMOVED */}
               </div>
 
-              {/* Hero Content */}
-              <div className="text-center md:text-left flex-1">
-                <div className="inline-flex items-center gap-2 bg-slate-100 text-slate-600 px-4 py-2 rounded-full text-sm font-medium mb-4">
-                  <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                  Disponível para projetos
+              {/* Content */}
+              <div className="flex-1 text-center md:text-left">
+                <div className={`inline-flex items-center gap-2 ${t.accentBg} border px-4 py-2 rounded-full text-sm font-medium ${t.accent} mb-5`}>
+                  <SparklesIcon className="w-4 h-4" />
+                  Tecnologia & Propósito
                 </div>
 
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight mb-4">
+                <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-extrabold ${t.heading} leading-[1.1] mb-5 tracking-tight`}>
                   Olá, eu sou<br />
-                  <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 bg-clip-text text-transparent">
                     Marcio Rolim
                   </span>
                 </h1>
 
-                <p className="text-lg sm:text-xl text-slate-600 mb-6 max-w-xl">
-                  <strong className="text-slate-800">Consultor de Tecnologia</strong> e <strong className="text-slate-800">Pastor</strong>.
-                  Unindo inovação digital e propósito espiritual para transformar vidas e negócios.
+                <p className={`text-lg sm:text-xl ${t.textSecondary} mb-4 max-w-xl leading-relaxed`}>
+                  <strong className={t.heading}>Consultor de Tecnologia</strong> e{' '}
+                  <strong className={t.heading}>Pastor</strong>.
+                </p>
+                <p className={`text-base ${t.textMuted} mb-8 max-w-lg leading-relaxed`}>
+                  Unindo mais de {techYears} anos de experiência em tecnologia com chamado espiritual para transformar vidas e negócios. Especialista em IA, desenvolvimento web e gestão de tráfego.
                 </p>
 
-                <div className="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
+                <div className="flex flex-col sm:flex-row items-center gap-3 justify-center md:justify-start">
                   <button
                     onClick={() => setIsChatOpen(true)}
-                    className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-full font-medium transition-all shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-3"
+                    className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white px-8 py-4 rounded-full font-semibold transition-all shadow-xl shadow-amber-500/20 hover:shadow-amber-500/30 hover:scale-[1.02] flex items-center justify-center gap-3"
                   >
                     <ChatBubbleIcon className="h-5 w-5" />
                     Vamos Conversar
                   </button>
                   <a
                     href="#sobre"
-                    className="w-full sm:w-auto border-2 border-slate-200 hover:border-slate-300 text-slate-700 px-8 py-4 rounded-full font-medium transition-all flex items-center justify-center gap-2"
+                    className={`w-full sm:w-auto border-2 ${isDark ? 'border-slate-700 hover:border-slate-600 text-slate-300' : 'border-stone-200 hover:border-stone-300 text-stone-600'} px-8 py-4 rounded-full font-medium transition-all flex items-center justify-center gap-2`}
                   >
                     Conhecer mais
                     <ChevronDownIcon className="h-4 w-4" />
@@ -238,108 +368,109 @@ function App() {
           </div>
         </header>
 
-        {/* Stats Section */}
-        <section className="py-12 bg-gradient-to-r from-slate-900 to-slate-800">
+        {/* ─── Stats Strip ─── */}
+        <section className={`${t.statsBg} py-10 md:py-14`}>
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-              <div>
-                <div className="text-3xl md:text-4xl font-bold text-white mb-1">
-                  <CountUp end={age} />
+              {[
+                { end: age, label: 'Anos de vida', suffix: '' },
+                { end: techYears, label: 'Anos em tecnologia', suffix: '+' },
+                { end: ministryYears, label: 'Anos de ministério', suffix: '+' },
+                { end: 4, label: 'Filhas abençoadas', suffix: '' },
+              ].map((stat, i) => (
+                <div key={i} className="group">
+                  <div className="text-3xl md:text-4xl font-bold text-white mb-1.5">
+                    <CountUp end={stat.end} suffix={stat.suffix} />
+                  </div>
+                  <div className="text-slate-400 text-sm font-medium">{stat.label}</div>
                 </div>
-                <div className="text-slate-400 text-sm">Anos de vida</div>
-              </div>
-              <div>
-                <div className="text-3xl md:text-4xl font-bold text-white mb-1">
-                  <CountUp end={techYears} suffix="+" />
-                </div>
-                <div className="text-slate-400 text-sm">Anos em tecnologia</div>
-              </div>
-              <div>
-                <div className="text-3xl md:text-4xl font-bold text-white mb-1">
-                  <CountUp end={ministryYears} suffix="+" />
-                </div>
-                <div className="text-slate-400 text-sm">Anos de ministério</div>
-              </div>
-              <div>
-                <div className="text-3xl md:text-4xl font-bold text-white mb-1">
-                  <CountUp end={4} />
-                </div>
-                <div className="text-slate-400 text-sm">Filhas abençoadas</div>
-              </div>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* About Section */}
-        <section id="sobre" className="py-20 px-4 sm:px-6 lg:px-8">
+        {/* ─── About / Dual Identity ─── */}
+        <section id="sobre" className="relative py-20 md:py-28 px-4 sm:px-6 lg:px-8">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-                Uma jornada de <span className="text-amber-500">fé</span> e <span className="text-emerald-500">tecnologia</span>
+              <p className={`text-sm font-semibold uppercase tracking-widest ${t.accent} mb-3`}>Quem sou eu</p>
+              <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold ${t.heading} mb-5`}>
+                Uma jornada de{' '}
+                <span className="text-amber-500">fé</span> e{' '}
+                <span className="text-emerald-500">tecnologia</span>
               </h2>
-              <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-                Minha vida é marcada pela união de duas paixões: servir a Deus e inovar através da tecnologia.
-                Casado, pai de quatro filhas e avô de dois netos.
+              <p className={`text-lg ${t.textSecondary} max-w-2xl mx-auto leading-relaxed`}>
+                Minha vida é definida pela combinação de duas vocações: servir a Deus com excelência e inovar através da tecnologia.
+                Casado, pai de quatro filhas e avô de dois netos — cada experiência fortalece meu propósito.
               </p>
             </div>
 
-            {/* Dual Identity Cards */}
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Pastoral Card */}
-              <div className="group relative bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl p-8 border border-amber-100 hover:shadow-xl transition-all duration-300">
-                <div className="absolute top-6 right-6 w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-                  <HeartIcon className="h-6 w-6 text-amber-600" />
+            {/* Identity Cards */}
+            <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+              {/* Pastoral */}
+              <div className={`group relative ${t.cardPastor} border rounded-3xl p-8 md:p-10 transition-all duration-500 hover:shadow-xl`}>
+                <div className="flex items-start justify-between mb-6">
+                  <div className={`w-14 h-14 ${isDark ? 'bg-amber-500/10' : 'bg-amber-100'} rounded-2xl flex items-center justify-center`}>
+                    <HeartIcon className={`h-7 w-7 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+                  </div>
+                  <span className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${t.badgePastor}`}>Pessoal</span>
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-3">Pastor Evangélico</h3>
-                <p className="text-slate-600 mb-6">
-                  Dedico meu ministério ao cuidado espiritual, especialmente no acompanhamento de jovens e casais,
-                  ajudando-os a superar desafios e construir relacionamentos sólidos à luz da Palavra de Deus.
+                <h3 className={`text-2xl font-bold ${t.heading} mb-3`}>Pastor Evangélico</h3>
+                <p className={`${t.textSecondary} leading-relaxed mb-6`}>
+                  Desde 2012, dedico meu ministério ao cuidado espiritual de famílias, jovens e casais. Acredito que cada ser humano
+                  tem um chamado especial. Minha missão é ajudar pessoas a encontrar propósito, superar adversidades e construir
+                  relacionamentos sólidos à luz da Palavra de Deus.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm">Aconselhamento</span>
-                  <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm">Liderança</span>
-                  <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm">Mentoria</span>
+                  {['Aconselhamento', 'Liderança', 'Mentoria', 'Família', 'Jovens'].map(tag => (
+                    <span key={tag} className={`text-xs font-medium px-3 py-1.5 rounded-full border ${t.badgePastor}`}>{tag}</span>
+                  ))}
                 </div>
               </div>
 
-              {/* Tech Card */}
-              <div className="group relative bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl p-8 border border-emerald-100 hover:shadow-xl transition-all duration-300">
-                <div className="absolute top-6 right-6 w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-                  <CodeIcon className="h-6 w-6 text-emerald-600" />
+              {/* Tech */}
+              <div className={`group relative ${t.cardTech} border rounded-3xl p-8 md:p-10 transition-all duration-500 hover:shadow-xl`}>
+                <div className="flex items-start justify-between mb-6">
+                  <div className={`w-14 h-14 ${isDark ? 'bg-emerald-500/10' : 'bg-emerald-100'} rounded-2xl flex items-center justify-center`}>
+                    <CodeIcon className={`h-7 w-7 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                  </div>
+                  <span className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${t.badgeTech}`}>Profissional</span>
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-3">Especialista em Tecnologia</h3>
-                <p className="text-slate-600 mb-6">
-                  Atuo com desenvolvimento de aplicativos, websites, gestão de tráfego e automação com Inteligência Artificial,
-                  criando soluções inovadoras que unem propósito, estratégia e resultados.
+                <h3 className={`text-2xl font-bold ${t.heading} mb-3`}>Especialista em Tecnologia</h3>
+                <p className={`${t.textSecondary} leading-relaxed mb-6`}>
+                  Com mais de {techYears} anos no mercado de tecnologia, atuo com desenvolvimento de aplicativos, websites, automação com
+                  Inteligência Artificial e gestão de tráfego. Transformo ideias em soluções digitais que geram impacto real,
+                  unindo estratégia, criatividade e resultados mensuráveis.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm">IA</span>
-                  <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm">Desenvolvimento</span>
-                  <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm">Marketing</span>
+                  {['IA', 'Desenvolvimento', 'Tráfego', 'Automação', 'E-commerce'].map(tag => (
+                    <span key={tag} className={`text-xs font-medium px-3 py-1.5 rounded-full border ${t.badgeTech}`}>{tag}</span>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Services Section */}
-        <section id="servicos" className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-50">
+        {/* ─── Services Section ─── */}
+        <section id="servicos" className={`py-20 md:py-28 px-4 sm:px-6 lg:px-8 ${t.sectionBg}`}>
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+            <div className="text-center mb-14">
+              <p className={`text-sm font-semibold uppercase tracking-widest ${t.accent} mb-3`}>O que eu faço</p>
+              <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold ${t.heading} mb-5`}>
                 Como posso ajudar você
               </h2>
-              <p className="text-lg text-slate-600 max-w-2xl mx-auto mb-8">
-                Escolha a área que melhor atende às suas necessidades
+              <p className={`text-lg ${t.textSecondary} max-w-2xl mx-auto mb-10`}>
+                Duas áreas de atuação, um mesmo propósito: gerar transformação real.
               </p>
 
               {/* Tab Selector */}
-              <div className="inline-flex bg-white p-1 rounded-full shadow-sm border border-slate-200">
+              <div className={`inline-flex ${t.tabBg} border p-1.5 rounded-full`}>
                 <button
                   onClick={() => setActiveTab('tech')}
-                  className={`px-6 py-3 rounded-full font-medium transition-all flex items-center gap-2 ${activeTab === 'tech'
-                    ? 'bg-emerald-500 text-white shadow-lg'
-                    : 'text-slate-600 hover:text-slate-900'
+                  className={`px-6 py-3 rounded-full font-semibold text-sm transition-all flex items-center gap-2 ${activeTab === 'tech'
+                      ? `${t.tabActive} ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`
+                      : `${t.textSecondary} hover:${t.heading}`
                     }`}
                 >
                   <CodeIcon className="h-4 w-4" />
@@ -347,9 +478,9 @@ function App() {
                 </button>
                 <button
                   onClick={() => setActiveTab('pastoral')}
-                  className={`px-6 py-3 rounded-full font-medium transition-all flex items-center gap-2 ${activeTab === 'pastoral'
-                    ? 'bg-amber-500 text-white shadow-lg'
-                    : 'text-slate-600 hover:text-slate-900'
+                  className={`px-6 py-3 rounded-full font-semibold text-sm transition-all flex items-center gap-2 ${activeTab === 'pastoral'
+                      ? `${t.tabActive} ${isDark ? 'text-amber-400' : 'text-amber-600'}`
+                      : `${t.textSecondary} hover:${t.heading}`
                     }`}
                 >
                   <HeartIcon className="h-4 w-4" />
@@ -358,123 +489,110 @@ function App() {
               </div>
             </div>
 
-            {/* Skills Grid */}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Cards Grid */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {(activeTab === 'tech' ? SKILLS_TECH : SKILLS_PASTORAL).map((skill, index) => (
                 <div
                   key={skill.title}
-                  className={`group bg-white rounded-2xl p-6 border transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${activeTab === 'tech'
-                    ? 'border-emerald-100 hover:border-emerald-200'
-                    : 'border-amber-100 hover:border-amber-200'
-                    }`}
-                  style={{ animationDelay: `${index * 100}ms` }}
+                  className={`group ${t.bgCard} border rounded-2xl p-6 transition-all duration-300 ${t.bgCardHover} hover:shadow-xl hover:-translate-y-1`}
+                  style={{ animationDelay: `${index * 80}ms` }}
                 >
-                  <div className={`text-4xl mb-4`}>{skill.icon}</div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-2">{skill.title}</h3>
-                  <p className="text-slate-600 text-sm">{skill.description}</p>
+                  <div className="text-4xl mb-5">{skill.icon}</div>
+                  <h3 className={`text-lg font-bold ${t.heading} mb-2`}>{skill.title}</h3>
+                  <p className={`${t.textSecondary} text-sm leading-relaxed`}>{skill.description}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        {/* ─── CTA Section ─── */}
+        <section className={`${t.ctaBg} py-20 md:py-28 px-4 sm:px-6 lg:px-8 border-y ${t.divider}`}>
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
-              Pronto para dar o próximo passo?
+            <div className="mb-8">
+              <span className="text-5xl">🚀</span>
+            </div>
+            <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold ${t.heading} mb-6`}>
+              Pronto para dar o<br />próximo passo?
             </h2>
-            <p className="text-lg text-slate-300 mb-8 max-w-2xl mx-auto">
-              Seja para transformar seu negócio com tecnologia ou buscar orientação espiritual,
-              estou aqui para ajudar.
+            <p className={`text-lg ${t.textSecondary} mb-10 max-w-2xl mx-auto leading-relaxed`}>
+              Seja para impulsionar seu negócio com tecnologia de ponta ou encontrar orientação espiritual,
+              estou aqui para caminhar com você.
             </p>
-            <a
-              href={SOCIAL_LINKS.whatsapp}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 bg-emerald-500 hover:bg-emerald-400 text-white px-10 py-5 rounded-full font-bold text-lg transition-all shadow-xl shadow-emerald-500/30 hover:shadow-emerald-500/40 hover:scale-105"
-            >
-              <WhatsAppIcon className="h-6 w-6" />
-              Fale Comigo Agora
-            </a>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <a
+                href={SOCIAL_LINKS.whatsapp}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-emerald-500 hover:bg-emerald-400 text-white px-10 py-5 rounded-full font-bold text-lg transition-all shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:scale-[1.02]"
+              >
+                <WhatsAppIcon className="h-6 w-6" />
+                Fale Comigo
+              </a>
+              <a
+                href="/curriculum"
+                className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 border-2 ${isDark ? 'border-slate-700 text-slate-300 hover:border-slate-600' : 'border-stone-200 text-stone-600 hover:border-stone-300'} px-8 py-5 rounded-full font-semibold transition-all`}
+              >
+                📄 Ver Currículo
+              </a>
+            </div>
           </div>
         </section>
 
-        {/* Contact Section */}
-        <section id="contato" className="py-20 px-4 sm:px-6 lg:px-8">
+        {/* ─── Contact & Social ─── */}
+        <section id="contato" className="py-20 md:py-28 px-4 sm:px-6 lg:px-8">
           <div className="max-w-6xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+            <p className={`text-sm font-semibold uppercase tracking-widest ${t.accent} mb-3`}>Redes Sociais</p>
+            <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold ${t.heading} mb-5`}>
               Conecte-se comigo
             </h2>
-            <p className="text-lg text-slate-600 mb-12 max-w-2xl mx-auto">
-              Me siga nas redes sociais para acompanhar<br />
-              conteúdos sobre tecnologia, fé e vida.
+            <p className={`text-lg ${t.textSecondary} mb-12 max-w-2xl mx-auto`}>
+              Acompanhe conteúdos sobre tecnologia, fé e vida nas minhas redes.
             </p>
 
-            <div className="flex justify-center items-center gap-6 mb-12">
-              <a
-                href={SOCIAL_LINKS.instagram}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center text-white hover:scale-110 transition-transform shadow-lg"
-                aria-label="Instagram"
-              >
-                <InstagramIcon className="h-7 w-7" />
-              </a>
-              <a
-                href={SOCIAL_LINKS.youtube}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-14 h-14 bg-red-500 rounded-2xl flex items-center justify-center text-white hover:scale-110 transition-transform shadow-lg"
-                aria-label="YouTube"
-              >
-                <YoutubeIcon className="h-7 w-7" />
-              </a>
-              <a
-                href={SOCIAL_LINKS.linkedin}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white hover:scale-110 transition-transform shadow-lg"
-                aria-label="LinkedIn"
-              >
-                <LinkedInIcon className="h-6 w-6" />
-              </a>
-              <a
-                href={SOCIAL_LINKS.email}
-                className="w-14 h-14 bg-slate-700 rounded-2xl flex items-center justify-center text-white hover:scale-110 transition-transform shadow-lg"
-                aria-label="Email"
-              >
-                <MailIcon className="h-7 w-7" />
-              </a>
+            {/* Social Icons */}
+            <div className="flex justify-center items-center gap-4 mb-16">
+              {[
+                { href: SOCIAL_LINKS.instagram, icon: <InstagramIcon className="h-6 w-6" />, label: 'Instagram', gradient: 'from-purple-500 to-pink-500' },
+                { href: SOCIAL_LINKS.youtube, icon: <YoutubeIcon className="h-6 w-6" />, label: 'YouTube', gradient: 'from-red-500 to-red-600' },
+                { href: SOCIAL_LINKS.linkedin, icon: <LinkedInIcon className="h-5 w-5" />, label: 'LinkedIn', gradient: 'from-blue-600 to-blue-700' },
+                { href: SOCIAL_LINKS.email, icon: <MailIcon className="h-6 w-6" />, label: 'Email', gradient: isDark ? 'from-slate-600 to-slate-700' : 'from-stone-600 to-stone-700' },
+              ].map(social => (
+                <a
+                  key={social.label}
+                  href={social.href}
+                  target={social.label !== 'Email' ? '_blank' : undefined}
+                  rel={social.label !== 'Email' ? 'noopener noreferrer' : undefined}
+                  className={`w-14 h-14 bg-gradient-to-br ${social.gradient} rounded-2xl flex items-center justify-center text-white hover:scale-110 hover:rotate-3 transition-all duration-300 shadow-lg`}
+                  aria-label={social.label}
+                >
+                  {social.icon}
+                </a>
+              ))}
             </div>
 
-            {/* Testimony Video Section */}
-            <div className="mt-8 max-w-lg mx-auto">
+            {/* Video Testimony */}
+            <div className="max-w-md mx-auto">
               <div
                 onClick={() => setIsVideoOpen(true)}
-                className="group relative bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border border-amber-100/80 cursor-pointer hover:shadow-lg hover:border-amber-200 transition-all duration-300"
+                className={`group ${t.cardPastor} border rounded-2xl p-5 cursor-pointer transition-all duration-300 hover:shadow-xl`}
               >
                 <div className="flex items-center gap-4">
-                  {/* Play Button */}
-                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/25 group-hover:scale-105 transition-transform">
-                    <svg className="h-5 w-5 text-white ml-0.5" viewBox="0 0 24 24" fill="currentColor">
+                  <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/25 group-hover:scale-105 transition-transform">
+                    <svg className="h-6 w-6 text-white ml-0.5" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M8 5v14l11-7z" />
                     </svg>
                   </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-bold text-slate-900 group-hover:text-amber-700 transition-colors">
+                  <div className="flex-1 min-w-0 text-left">
+                    <h3 className={`text-base font-bold ${t.heading} group-hover:${t.accent} transition-colors`}>
                       Olha o que Deus fez comigo
                     </h3>
-                    <p className="text-slate-500 text-sm">
+                    <p className={`${t.textMuted} text-sm`}>
                       Minha história de transformação e fé
                     </p>
                   </div>
-
-                  {/* Arrow */}
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white/60 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
-                    <svg className="w-4 h-4 text-amber-600 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className={`flex-shrink-0 w-9 h-9 rounded-full ${isDark ? 'bg-slate-800' : 'bg-white/60'} flex items-center justify-center group-hover:${isDark ? 'bg-amber-500/10' : 'bg-amber-100'} transition-colors`}>
+                    <svg className={`w-4 h-4 ${isDark ? 'text-amber-400' : 'text-amber-600'} group-hover:translate-x-0.5 transition-transform`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
@@ -484,20 +602,16 @@ function App() {
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="bg-slate-900 text-white py-12 px-4 sm:px-6 lg:px-8">
+        {/* ─── Footer ─── */}
+        <footer className={`${t.footerBg} text-white py-12 px-4 sm:px-6 lg:px-8`}>
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="text-center md:text-left">
-                <div className="flex items-center gap-3 justify-center md:justify-start font-bold text-xl mb-2">
+                <div className="flex items-center gap-3 justify-center md:justify-start font-bold text-lg mb-2">
                   <div className="w-8 h-8 flex-shrink-0">
-                    <img
-                      src={profileImageUrl}
-                      alt="Marcio Rolim"
-                      className="w-8 h-8 rounded-full object-cover border-2 border-slate-700"
-                    />
+                    <img src={profileImageUrl} alt="Marcio Rolim" className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-700" />
                   </div>
-                  Rolim
+                  Marcio <span className="text-amber-400">Rolim</span>
                 </div>
                 <p className="text-slate-400 text-sm">
                   Transformando vidas através da fé e tecnologia.
@@ -505,17 +619,17 @@ function App() {
               </div>
               <div className="text-slate-400 text-sm text-center md:text-right">
                 <p>© {new Date().getFullYear()} Marcio Rolim. Todos os direitos reservados.</p>
-                <p className="mt-1 text-amber-400/70">Eu creio em Deus.</p>
+                <p className="mt-1 text-amber-400/60 italic">❤️ Eu creio em Deus.</p>
               </div>
             </div>
           </div>
         </footer>
       </div>
 
-      {/* Video Modal */}
+      {/* ─── Video Modal ─── */}
       {isVideoOpen && (
         <div
-          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={() => setIsVideoOpen(false)}
         >
           <div
@@ -527,23 +641,16 @@ function App() {
               className="absolute top-4 right-4 z-10 bg-white/20 hover:bg-white/30 text-white rounded-full p-2 transition-colors"
               aria-label="Fechar vídeo"
             >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <CloseIcon className="h-6 w-6" />
             </button>
-            <video
-              src={videoUrl}
-              controls
-              autoPlay
-              className="w-full h-full object-contain"
-            >
+            <video src={videoUrl} controls autoPlay className="w-full h-full object-contain">
               Seu navegador não suporta a tag de vídeo.
             </video>
           </div>
         </div>
       )}
 
-      {/* Chat Widget */}
+      {/* ─── Chat Widget ─── */}
       <ChatWidget isOpen={isChatOpen} onOpenChange={setIsChatOpen} />
     </>
   );

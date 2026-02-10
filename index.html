@@ -8,7 +8,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Marcio Rolim - Consultor de Tecnologia & Pastor | IA, Desenvolvimento Web, Mentoria</title>
 
-
   <!-- SEO Meta Tags -->
   <meta name="description"
     content="Marcio Rolim: Consultor de Tecnologia especialista em IA, Desenvolvimento Web e Marketing Digital. Pastor com experiência em mentoria e aconselhamento. Transformando vidas e negócios." />
@@ -44,13 +43,15 @@
     content="https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=1200&h=630&fit=cover&output=webp" />
 
   <!-- Theme Colors -->
-  <meta name="theme-color" content="#f8fafc" />
-  <meta name="msapplication-TileColor" content="#f8fafc" />
+  <meta name="theme-color" content="#f5f5f4" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#020617" media="(prefers-color-scheme: dark)" />
+  <meta name="msapplication-TileColor" content="#f5f5f4" />
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
 
   <!-- PWA -->
   <link rel="manifest" href="/manifest.json" />
@@ -147,29 +148,35 @@
       -moz-osx-font-smoothing: grayscale;
     }
 
-    /* Smooth scrollbar */
+    /* Selection */
+    ::selection {
+      background: rgba(245, 158, 11, 0.2);
+      color: inherit;
+    }
+
+    /* Custom Scrollbar */
     ::-webkit-scrollbar {
-      width: 10px;
+      width: 8px;
     }
 
     ::-webkit-scrollbar-track {
-      background: #f1f5f9;
+      background: transparent;
     }
 
     ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 5px;
+      background: rgba(148, 163, 184, 0.4);
+      border-radius: 100px;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
+      background: rgba(148, 163, 184, 0.6);
     }
 
-    /* Animation classes */
+    /* Animations */
     @keyframes fadeInUp {
       from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(24px);
       }
 
       to {
@@ -178,13 +185,51 @@
       }
     }
 
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0px);
+      }
+
+      50% {
+        transform: translateY(-8px);
+      }
+    }
+
     .animate-fade-in-up {
-      animation: fadeInUp 0.6s ease-out forwards;
+      animation: fadeInUp 0.7s ease-out forwards;
+    }
+
+    .animate-scale-in {
+      animation: scaleIn 0.6s ease-out forwards;
+    }
+
+    .animate-float {
+      animation: float 6s ease-in-out infinite;
+    }
+
+    /* Smooth transitions on all elements */
+    * {
+      transition-property: background-color, border-color, color;
+      transition-duration: 0ms;
     }
   </style>
 </head>
 
-<body class="bg-slate-50">
+<body class="bg-stone-50">
   <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
   <script>
