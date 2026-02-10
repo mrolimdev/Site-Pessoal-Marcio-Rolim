@@ -513,6 +513,8 @@ const CurriculumPage: React.FC = () => {
                                     { name: 'Agentes de IA', key: 'agents' },
                                     { name: 'META Ads', key: 'vibe' },
                                     { name: 'Google ADS', key: 'gemini' },
+                                    { name: 'n8n', key: 'claude' },
+                                    { name: 'Maker', key: 'openai' },
                                 ].map((tool) => (
                                     <span
                                         key={tool.name}
@@ -540,15 +542,12 @@ const CurriculumPage: React.FC = () => {
                             period="2012 – 2020"
                             company="Igreja Plenitude"
                             role="Gerente de Tecnologia"
-                            description="Responsável pela implantação completa da infraestrutura de TI de uma igreja de grande porte com templo para 15 mil membros (sede) e mais de 120 congregações, totalizando mais de 50 mil membros no Brasil. Gestão abrangente incluindo administração de rádio e TV."
+                            description="Responsável pela implantação completa da infraestrutura de TI de uma igreja de grande porte com templo para 15 mil membros (sede) e mais de 120 congregações, totalizando mais de 50 mil membros no Brasil. Gestão abrangente, incluindo Central de Atendimento com 220 pontos telefônicos e +50 mil ligações/mês, além de administração de rádio e TV."
                             highlights={[
                                 'Infraestrutura de TI',
                                 'Rádio & TV',
                                 'Central de Atendimento',
-                                '220 pontos telefônicos',
-                                '+50 mil ligações/mês',
                                 'Gestão de equipes',
-                                '120 congregações',
                             ]}
                             isDark={isDark}
                         />
@@ -575,6 +574,8 @@ const CurriculumPage: React.FC = () => {
                             description="Atuação diversificada na área de tecnologia com foco em suporte técnico e desenvolvimento de soluções departamentais. Criação de planilhas, pequenos sistemas e ferramentas para otimização de processos em diferentes setores corporativos."
                             highlights={[
                                 'Suporte técnico',
+                                'Suporte a Usuários',
+                                'Pacote Office',
                                 'Sistemas departamentais',
                                 'Planilhas avançadas',
                                 'Otimização de processos',
