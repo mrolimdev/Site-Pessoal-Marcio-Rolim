@@ -316,11 +316,6 @@ function App() {
                   <div className={`w-44 h-44 md:w-56 md:h-56 rounded-3xl overflow-hidden ring-4 ${isDark ? 'ring-amber-500/20' : 'ring-amber-200/60'} shadow-2xl ${isDark ? 'shadow-amber-500/10' : 'shadow-amber-200/40'} rotate-3 hover:rotate-0 transition-transform duration-700`}>
                     <img src={heroImageUrl} alt="Marcio Rolim - Consultor de Tecnologia e Pastor" className="w-full h-full object-cover" loading="eager" />
                   </div>
-                  {/* Status badge */}
-                  <div className="absolute -bottom-3 -right-3 bg-emerald-500 text-white text-xs font-bold px-3.5 py-2 rounded-full shadow-lg shadow-emerald-500/30 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                    Disponível
-                  </div>
                 </div>
               </div>
 
