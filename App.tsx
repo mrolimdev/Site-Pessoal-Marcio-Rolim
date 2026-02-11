@@ -601,7 +601,7 @@ function App() {
                   <div className="w-8 h-8 flex-shrink-0">
                     <img src={profileImageUrl} alt="Marcio Rolim" className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-700" />
                   </div>
-                  Marcio <span className="text-amber-400">Rolim</span>
+                  <span className="tracking-tight">Marcio <span className="text-amber-400">Rolim</span></span>
                 </div>
                 <p className="text-slate-400 text-sm">
                   Transformando vidas através da fé e tecnologia.
