@@ -311,7 +311,7 @@ function App() {
           <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 lg:py-28">
             <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16">
               {/* Profile */}
-              <div className="relative flex-shrink-0 order-1 md:order-none">
+              <div className="relative flex-shrink-0">
                 <div className="relative">
                   <div className={`w-44 h-44 md:w-56 md:h-56 rounded-3xl overflow-hidden ring-4 ${isDark ? 'ring-amber-500/20' : 'ring-amber-200/60'} shadow-2xl ${isDark ? 'shadow-amber-500/10' : 'shadow-amber-200/40'} rotate-3 hover:rotate-0 transition-transform duration-700`}>
                     <img src={heroImageUrl} alt="Marcio Rolim - Consultor de Tecnologia e Pastor" className="w-full h-full object-cover" loading="eager" />
