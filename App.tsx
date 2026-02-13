@@ -204,6 +204,14 @@ function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [mobileMenuOpen]);
+
   const toggleTheme = () => {
     setIsDark(prev => {
       const next = !prev;
@@ -225,13 +233,19 @@ function App() {
   return (
     <>
       <div className={`min-h-screen ${t.bg} ${t.text} transition-colors duration-500`}>
+        {/* Backdrop for Mobile Menu */}
+        <div
+          className={`fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+          onClick={() => setMobileMenuOpen(false)}
+        />
+
         {/* ─── Navigation ─── */}
-        <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? `${t.navBg} shadow-xl shadow-black/5` : 'bg-transparent'} border-b ${isScrolled ? t.divider : 'border-transparent'}`}>
+        <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${(isScrolled || mobileMenuOpen) ? `${t.navBg} shadow-xl shadow-black/5` : 'bg-transparent'} border-b ${(isScrolled || mobileMenuOpen) ? t.divider : 'border-transparent'}`}>
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16 md:h-18">
               {/* Logo */}
               <a href="#" className={`flex items-center gap-3 font-bold text-lg ${t.heading} transition-colors`}>
-                <div className={`transition-all duration-500 flex-shrink-0 ${isScrolled ? 'w-8 h-8 opacity-100' : 'w-0 h-0 opacity-0'} overflow-hidden`}>
+                <div className={`transition-all duration-500 flex-shrink-0 ${(isScrolled || mobileMenuOpen) ? 'w-8 h-8 opacity-100' : 'w-0 h-0 opacity-0'} overflow-hidden`}>
                   <img src={profileImageUrl} alt="Marcio Rolim" className="w-8 h-8 rounded-full object-cover ring-2 ring-amber-500/30" />
                 </div>
                 <span className="tracking-tight">Marcio <span className={t.accent}>Rolim</span></span>
