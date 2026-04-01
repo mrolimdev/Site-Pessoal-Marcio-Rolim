@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ChatWidget from './ChatWidget';
 
 // --- Icons ---
 const MapPinIcon = ({ className }: { className?: string }) => (
@@ -275,12 +276,12 @@ const TimelineItem: React.FC<{
 const CurriculumPage: React.FC = () => {
     const [isDark, setIsDark] = useState(() => {
         if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('cv-theme');
+            const saved = localStorage.getItem('site-theme');
             return saved === 'dark';
         }
         return false;
     });
-    const age = calculateAge('1973-04-18');
+    const age = calculateAge('1968-04-18');
     const techYears = calculateYearsSince(1988);
     const profileImageUrl = 'https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=400&output=webp&q=90';
     const t = getTheme(isDark);
@@ -288,7 +289,7 @@ const CurriculumPage: React.FC = () => {
     const toggleTheme = () => {
         setIsDark(prev => {
             const next = !prev;
-            localStorage.setItem('cv-theme', next ? 'dark' : 'light');
+            localStorage.setItem('site-theme', next ? 'dark' : 'light');
             return next;
         });
     };
@@ -349,7 +350,7 @@ const CurriculumPage: React.FC = () => {
                                 Marcio Rolim
                             </h1>
                             <p className={`text-xl ${t.subtitle} font-semibold mb-4`}>
-                                Especialista em Tecnologia & Inteligência Artificial
+                                Especialista em IA & Automação de Processos | Tech Lead em Transformação Digital
                             </p>
 
                             <div className="flex flex-wrap justify-center md:justify-start gap-3 mb-6">
@@ -363,7 +364,7 @@ const CurriculumPage: React.FC = () => {
                                     <HeartIcon className="w-3.5 h-3.5 text-rose-400" /> Casado · 4 filhas
                                 </span>
                                 <span className={`flex items-center gap-1.5 text-sm ${t.tagText} ${t.tagBg} px-3 py-1.5 rounded-lg border ${t.tagBorder}`}>
-                                    <BriefcaseIcon className="w-3.5 h-3.5 text-blue-400" /> +{techYears} anos em TI
+                                    <BriefcaseIcon className="w-3.5 h-3.5 text-blue-400" /> Mais de 30 anos em TI
                                 </span>
                             </div>
 
@@ -402,11 +403,9 @@ const CurriculumPage: React.FC = () => {
                     </div>
                     <div className={`bg-gradient-to-r ${t.cardGradient} border ${t.cardBorder} rounded-2xl p-6 md:p-8`}>
                         <p className={`${t.bodyText} leading-relaxed text-base md:text-lg`}>
-                            Profissional com mais de <strong className={t.strongAccent}>{techYears} anos de experiência em tecnologia</strong>,
-                            unindo visão estratégica e capacidade técnica para gerar resultados concretos. Minha trajetória abrange desde
-                            o suporte técnico até a gestão completa de infraestrutura de TI, implementação de ERPs corporativos e, mais recentemente,
-                            o desenvolvimento de soluções inovadoras com <strong className={t.strongGreen}>Inteligência Artificial</strong>,
-                            automação e desenvolvimento web moderno.
+                            Profissional com <strong className={t.strongAccent}>mais de 30 anos de experiência estratégica em tecnologia</strong>,
+                            focado em transformar complexidade técnica em valor de negócio. Especialista em <strong className={t.strongGreen}>Inteligência Artificial Generativa e Automação de Processos</strong>,
+                            com um histórico sólido que vai da gestão de infraestrutura crítica à implementação de ecossistemas digitais modernos.
                         </p>
                         <p className={`${t.bodyText} leading-relaxed text-base md:text-lg mt-4`}>
                             Meu propósito é <strong className={t.strongWhite}>transformar vidas e negócios através da tecnologia</strong>.
@@ -432,7 +431,7 @@ const CurriculumPage: React.FC = () => {
                             </div>
                             <div>
                                 <h3 className={`text-lg font-bold ${t.sectionTitle}`}>Ciências da Computação</h3>
-                                <p className={`${t.bodyTextLight} text-sm`}>Graduação</p>
+                                <p className={`${t.bodyTextLight} text-sm`}>(1996)</p>
                             </div>
                         </div>
                     </div>
@@ -482,7 +481,7 @@ const CurriculumPage: React.FC = () => {
                                 <span className="text-2xl">🇺🇸</span>
                                 <div>
                                     <h3 className={`text-base font-bold ${t.sectionTitle}`}>Inglês</h3>
-                                    <p className={`text-xs ${t.bodyTextLight}`}>Básico</p>
+                                    <p className={`text-xs ${t.bodyTextLight}`}>Técnico para Documentação e Leitura</p>
                                 </div>
                             </div>
                             <div className={`w-full h-2 ${isDark ? 'bg-slate-800' : 'bg-slate-200'} rounded-full overflow-hidden`}>
@@ -552,10 +551,9 @@ const CurriculumPage: React.FC = () => {
                                 <h3 className={`text-base font-bold ${t.sectionTitle}`}>Automação & IA</h3>
                             </div>
                             <div className="space-y-4">
-                                <SkillBar name="N8N" level={85} color="bg-gradient-to-r from-orange-400 to-red-400" delay={0} isDark={isDark} />
-                                <SkillBar name="Make (Integromat)" level={75} color="bg-gradient-to-r from-violet-400 to-purple-500" delay={100} isDark={isDark} />
-                                <SkillBar name="Agentes de IA" level={80} color="bg-gradient-to-r from-fuchsia-400 to-pink-500" delay={200} isDark={isDark} />
-                                <SkillBar name="Gestão de Tráfego" level={90} color="bg-gradient-to-r from-sky-400 to-cyan-500" delay={300} isDark={isDark} />
+                                <SkillBar name="N8N / Make" level={85} color="bg-gradient-to-r from-orange-400 to-red-400" delay={0} isDark={isDark} />
+                                <SkillBar name="Agentes de IA e LLMs" level={80} color="bg-gradient-to-r from-fuchsia-400 to-pink-500" delay={200} isDark={isDark} />
+                                <SkillBar name="Performance & Growth (Ads)" level={90} color="bg-gradient-to-r from-sky-400 to-cyan-500" delay={300} isDark={isDark} />
                             </div>
                         </div>
 
@@ -568,19 +566,12 @@ const CurriculumPage: React.FC = () => {
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 {[
-                                    { name: 'Claude', key: 'claude' },
-                                    { name: 'OpenAI / GPT', key: 'openai' },
-                                    { name: 'Gemini', key: 'gemini' },
-                                    { name: 'Cursor', key: 'cursor' },
-                                    { name: 'Antigravity', key: 'antigravity' },
-                                    { name: 'Vibe Coding', key: 'vibe' },
-                                    { name: 'Websites', key: 'websites' },
-                                    { name: 'Aplicativos', key: 'apps' },
-                                    { name: 'Agentes de IA', key: 'agents' },
-                                    { name: 'META Ads', key: 'vibe' },
-                                    { name: 'Google ADS', key: 'gemini' },
-                                    { name: 'n8n', key: 'claude' },
-                                    { name: 'Maker', key: 'openai' },
+                                    { name: 'IA Generativa (GPT, Claude, Gemini)', key: 'openai' },
+                                    { name: 'Engenharia de Prompt', key: 'antigravity' },
+                                    { name: 'Cursor & Vibe Coding', key: 'cursor' },
+                                    { name: 'E-commerce & Apps', key: 'apps' },
+                                    { name: 'Performance (Ads)', key: 'vibe' },
+                                    { name: 'Automação (n8n, Make)', key: 'claude' },
                                 ].map((tool) => (
                                     <span
                                         key={tool.name}
@@ -605,15 +596,29 @@ const CurriculumPage: React.FC = () => {
 
                     <div className="space-y-0">
                         <TimelineItem
+                            period="2020 – Atual"
+                            company="Consultoria Independente"
+                            role="Especialista em IA & Automação de Processos"
+                            description="Consultoria estratégica focada em implementar soluções de IA Generativa e automação de fluxos de trabalho. Desenvolvimento de agentes inteligentes e ecossistemas digitais que otimizam a produtividade corporativa em mais de 40%."
+                            highlights={[
+                                'Agentes de IA',
+                                'Automação (n8n/Make)',
+                                'Transformação Digital',
+                                'Estratégia de Performance',
+                            ]}
+                            isDark={isDark}
+                        />
+
+                        <TimelineItem
                             period="2012 – 2020"
                             company="Igreja Plenitude"
                             role="Gerente de Tecnologia"
-                            description="Responsável pela implantação completa da infraestrutura de TI de uma igreja de grande porte com templo para 15 mil membros (sede) e mais de 120 congregações, totalizando mais de 50 mil membros no Brasil. Gestão abrangente, incluindo Central de Atendimento com 220 pontos telefônicos e +50 mil ligações/mês, além de administração de rádio e TV."
+                            description="Gestão da infraestrutura crítica para uma organização de grande porte (+50 mil membros). Liderança de equipe multidisciplinar e implementação de sistemas de atendimento que reduziram o tempo médio de resposta em 60% e otimizaram custos operacionais em 30%."
                             highlights={[
                                 'Infraestrutura de TI',
-                                'Rádio & TV',
-                                'Central de Atendimento',
-                                'Gestão de equipes',
+                                'Rádio & TV Digital',
+                                'Gestão de Equipes',
+                                'Redução de Custos',
                             ]}
                             isDark={isDark}
                         />
@@ -621,30 +626,26 @@ const CurriculumPage: React.FC = () => {
                         <TimelineItem
                             period="2004 – 2012"
                             company="TOTVS"
-                            role="Analista de Negócios"
-                            description="Levantamento de processos e implementação de sistema ERP na área de materiais e produção. Suporte especializado a aplicativos corporativos e migração completa de dados para o ERP, garantindo integridade e continuidade operacional."
+                            role="Analista de Negócios (ERP Protheus)"
+                            description="Liderança técnica na implementação do ERP Protheus em grandes contas. Foco em otimização de processos de materiais e produção, resultando em um aumento médio de 25% na acuracidade de estoque e eficiência produtiva dos clientes."
                             highlights={[
-                                'ERP (Protheus)',
-                                'Levantamento de processos',
-                                'Materiais & Produção',
-                                'Migração de dados',
-                                'Suporte corporativo',
+                                'ERP Protheus',
+                                'Gestão de Projetos',
+                                'Otimização de Processos',
+                                'Acuracidade de Dados',
                             ]}
                             isDark={isDark}
                         />
 
                         <TimelineItem
                             period="1988 – 2004"
-                            company="Diversas Empresas (Sul América, SBT, Bunge Alimentos, Nalco Química, Braisa Brasil Serviços, Mecanográfics Automações)"
-                            role="Profissional de Tecnologia"
-                            description="Atuação diversificada na área de tecnologia com foco em suporte técnico e desenvolvimento de soluções departamentais. Criação de planilhas, pequenos sistemas e ferramentas para otimização de processos em diferentes setores corporativos."
+                            company="Diversas Empresas (Sul América, SBT, Bunge Alimentos)"
+                            role="Especialista em Tecnologia e Suporte"
+                            description="Sólida base técnica em suporte e desenvolvimento de soluções departamentais. Foco precoce em automação de planilhas e pequenos sistemas para otimização de fluxos de trabalho."
                             highlights={[
-                                'Suporte técnico',
-                                'Suporte a Usuários',
-                                'Pacote Office',
-                                'Sistemas departamentais',
-                                'Planilhas avançadas',
-                                'Otimização de processos',
+                                'Suporte Crítico',
+                                'Desenvolvimento VBA/Excel',
+                                'Sistemas Internos',
                             ]}
                             isLast
                             isDark={isDark}
@@ -695,14 +696,14 @@ const CurriculumPage: React.FC = () => {
                                     <GraduationCapIcon className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
                                     <div>
                                         <span className={`text-xs ${t.labelText} uppercase tracking-wider`}>Formação</span>
-                                        <p className={`${t.infoValue} font-medium`}>Ciências da Computação</p>
+                                        <p className={`${t.infoValue} font-medium`}>Ciências da Computação (1996)</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <BriefcaseIcon className="w-5 h-5 text-violet-400 mt-0.5 flex-shrink-0" />
                                     <div>
                                         <span className={`text-xs ${t.labelText} uppercase tracking-wider`}>Atuação em TI desde</span>
-                                        <p className={`${t.infoValue} font-medium`}>1988 — mais de {techYears} anos de experiência</p>
+                                        <p className={`${t.infoValue} font-medium`}>1988 — mais de 30 anos de experiência</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
@@ -753,11 +754,13 @@ const CurriculumPage: React.FC = () => {
             <footer className={`border-t ${t.footerBorder} py-10 px-6`}>
                 <div className="max-w-5xl mx-auto text-center">
                     <p className={`${t.footerText} text-sm mb-2`}>
-                        © {new Date().getFullYear()} Marcio Rolim. Todos os direitos reservados.
+                        © {new Date().getFullYear()} Marcio Rolim. <a href="/privacy.html" className="hover:text-amber-400 underline-offset-4">Privacidade</a>
                     </p>
                     <p className={`${t.footerAccent} text-xs`}>Eu creio em Deus.</p>
                 </div>
             </footer>
+
+            <ChatWidget />
         </div>
     );
 };

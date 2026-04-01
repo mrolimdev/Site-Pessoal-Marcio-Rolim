@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import ChatWidget from './components/ChatWidget';
 import CountUp from './components/CountUp';
 import ChatBubbleIcon from './components/icons/ChatBubbleIcon';
+import CurriculumPage from './components/CurriculumPage';
+import PrivacyPolicy from './components/PrivacyPolicy';
 
 // ─── Icons ──────────────────────────────────────────────────────────
 const ChevronDownIcon = ({ className }: { className?: string }) => (
@@ -192,8 +194,28 @@ function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const age = calculateAge('1973-04-18');
-  const techYears = calculateYearsSince(1988);
+  const [currentView, setCurrentView] = useState<'home' | 'curriculum' | 'privacy'>('home');
+
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash;
+      if (hash === '#curriculo') setCurrentView('curriculum');
+      else if (hash === '#privacidade') setCurrentView('privacy');
+      else setCurrentView('home');
+    };
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
+
+  const navigateTo = (view: 'home' | 'curriculum' | 'privacy') => {
+    setCurrentView(view);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.history.pushState(null, '', view === 'home' ? '/' : `#${view === 'curriculum' ? 'curriculo' : 'privacidade'}`);
+  };
+
+  const age = calculateAge('1968-04-18');
+  const techYears = 30;
   const ministryYears = calculateYearsSince(2012);
 
   const t = getTheme(isDark);
@@ -228,7 +250,32 @@ function App() {
     { href: '#sobre', label: 'Sobre' },
     { href: '#servicos', label: 'Serviços' },
     { href: '#contato', label: 'Contato' },
+    { 
+      label: 'Currículo', 
+      onClick: () => { navigateTo('curriculum'); setMobileMenuOpen(false); },
+      className: `px-4 py-2 rounded-full text-sm font-bold text-amber-500 hover:text-amber-400 transition-colors cursor-pointer border border-amber-500/20 bg-amber-500/5`
+    },
   ];
+
+  if (currentView === 'curriculum') {
+    return (
+      <>
+        <div className="fixed top-4 right-4 z-[60]">
+          <button 
+            onClick={() => navigateTo('home')}
+            className={`px-4 py-2 rounded-full bg-amber-500 text-white font-bold shadow-lg hover:bg-amber-400 transition-all`}
+          >
+            Voltar ao Início
+          </button>
+        </div>
+        <CurriculumPage onReturn={() => navigateTo('home')} />
+      </>
+    );
+  }
+
+  if (currentView === 'privacy') {
+    return <PrivacyPolicy />;
+  }
 
   return (
     <>
@@ -254,7 +301,17 @@ function App() {
               {/* Desktop Nav */}
               <div className="hidden md:flex items-center gap-1">
                 {navLinks.map(link => (
-                  <a key={link.href} href={link.href} className={`px-4 py-2 rounded-full text-sm font-medium ${t.textSecondary} hover:${t.heading} transition-colors`}>
+                  <a 
+                    key={link.label} 
+                    href={link.href || '#'} 
+                    onClick={(e) => {
+                      if (link.onClick) {
+                        e.preventDefault();
+                        link.onClick();
+                      }
+                    }}
+                    className={link.className || `px-4 py-2 rounded-full text-sm font-medium ${t.textSecondary} hover:${t.heading} transition-colors`}
+                  >
                     {link.label}
                   </a>
                 ))}
@@ -293,10 +350,17 @@ function App() {
             <div className={`md:hidden ${t.bgGlass} border-t ${t.divider} px-4 py-4 space-y-1`}>
               {navLinks.map(link => (
                 <a
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-4 py-3 rounded-xl text-sm font-medium ${t.textSecondary} hover:${t.heading} transition-colors`}
+                  key={link.label}
+                  href={link.href || '#'}
+                  onClick={(e) => {
+                    if (link.onClick) {
+                      e.preventDefault();
+                      link.onClick();
+                    } else {
+                      setMobileMenuOpen(false);
+                    }
+                  }}
+                  className={`block px-4 py-3 rounded-xl text-sm font-medium ${t.textSecondary} hover:${t.heading} transition-colors cursor-pointer`}
                 >
                   {link.label}
                 </a>
@@ -352,7 +416,7 @@ function App() {
                   <strong className={t.heading}>Pastor</strong>.
                 </p>
                 <p className={`text-base ${t.textMuted} mb-8 max-w-lg leading-relaxed`}>
-                  Unindo mais de {techYears} anos de experiência em tecnologia com chamado espiritual para transformar vidas e negócios. Especialista em IA, desenvolvimento web e gestão de tráfego.
+                  Unindo mais de 30 anos de experiência em tecnologia com chamado espiritual para transformar vidas e negócios. Especialista em IA, desenvolvimento web e gestão de tráfego.
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center gap-3 justify-center md:justify-start">
@@ -384,7 +448,7 @@ function App() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
               {[
                 { end: age, label: 'Anos de vida', suffix: '' },
-                { end: techYears, label: 'Anos em tecnologia', suffix: '+' },
+                { end: 30, label: 'Anos em tecnologia', suffix: '+' },
                 { end: ministryYears, label: 'Anos de ministério', suffix: '+' },
                 { end: 4, label: 'Filhas abençoadas', suffix: '' },
               ].map((stat, i) => (
@@ -448,7 +512,7 @@ function App() {
                 </div>
                 <h3 className={`text-2xl font-bold ${t.heading} mb-3`}>Especialista em Tecnologia</h3>
                 <p className={`${t.textSecondary} leading-relaxed mb-6`}>
-                  Com mais de {techYears} anos no mercado de tecnologia, atuo com desenvolvimento de aplicativos, websites, automação com
+                  Com mais de 30 anos no mercado de tecnologia, atuo com desenvolvimento de aplicativos, websites, automação com
                   Inteligência Artificial e gestão de tráfego. Transformo ideias em soluções digitais que geram impacto real,
                   unindo estratégia, criatividade e resultados mensuráveis.
                 </p>
@@ -622,7 +686,7 @@ function App() {
                 </p>
               </div>
               <div className="text-slate-400 text-sm text-center md:text-right">
-                <p>© {new Date().getFullYear()} Marcio Rolim. Todos os direitos reservados.</p>
+                <p>© {new Date().getFullYear()} Marcio Rolim. <button onClick={() => navigateTo('privacy')} className="hover:text-amber-400 underline underline-offset-4 bg-transparent border-none p-0 cursor-pointer font-normal">Privacidade</button></p>
                 <p className="mt-1 text-amber-400/60 italic">❤️ Eu creio em Deus.</p>
               </div>
             </div>
@@ -655,9 +719,8 @@ function App() {
       )}
 
       {/* ─── Chat Widget ─── */}
-      {/* ChatWidget temporariamente desativado
+      {/* ChatWidget habilitado para interações */}
       <ChatWidget isOpen={isChatOpen} onOpenChange={setIsChatOpen} />
-      */}
     </>
   );
 }
