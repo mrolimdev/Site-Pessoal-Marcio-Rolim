@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import ChatWidget from './components/ChatWidget';
+
 import CountUp from './components/CountUp';
 import ChatBubbleIcon from './components/icons/ChatBubbleIcon';
 import CurriculumPage from './components/CurriculumPage';
@@ -191,7 +191,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<'pastoral' | 'tech'>('tech');
   const [isScrolled, setIsScrolled] = useState(false);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [currentView, setCurrentView] = useState<'home' | 'curriculum' | 'privacy'>('home');
@@ -719,8 +719,7 @@ function App() {
       )}
 
       {/* ─── Chat Widget ─── */}
-      {/* ChatWidget habilitado para interações */}
-      <ChatWidget isOpen={isChatOpen} onOpenChange={setIsChatOpen} />
+
     </>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import ChatWidget from './ChatWidget';
+
 
 // --- Icons ---
 const MapPinIcon = ({ className }: { className?: string }) => (
@@ -760,7 +760,7 @@ const CurriculumPage: React.FC = () => {
                 </div>
             </footer>
 
-            <ChatWidget />
+
         </div>
     );
 };
