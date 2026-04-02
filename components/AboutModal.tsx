@@ -87,7 +87,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
     return age;
   };
 
-  const age = calculateAge('1968-04-18');
+  const age = calculateAge('1973-04-18');
 
   const togglePlayPause = () => {
     if (audioRef.current) {

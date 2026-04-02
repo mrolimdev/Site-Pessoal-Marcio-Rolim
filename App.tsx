@@ -214,7 +214,7 @@ function App() {
     window.history.pushState(null, '', view === 'home' ? '/' : `#${view === 'curriculum' ? 'curriculo' : 'privacidade'}`);
   };
 
-  const age = calculateAge('1968-04-18');
+  const age = calculateAge('1973-04-18');
   const techYears = 30;
   const ministryYears = calculateYearsSince(2012);
 
