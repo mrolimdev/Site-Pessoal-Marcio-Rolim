@@ -669,7 +669,7 @@ const CurriculumPage: React.FC = () => {
                                     <CalendarIcon className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
                                     <div>
                                         <span className={`text-xs ${t.labelText} uppercase tracking-wider`}>Data de Nascimento</span>
-                                        <p className={`${t.infoValue} font-medium`}>18 de Abril de 1973 ({age} anos)</p>
+                                        <p className={`${t.infoValue} font-medium`}>18 de Abril de 1973</p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">

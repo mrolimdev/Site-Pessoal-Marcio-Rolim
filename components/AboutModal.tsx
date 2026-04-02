@@ -76,19 +76,6 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
   const profileImageUrl = 'https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=500&output=webp&q=85';
   const audioUrl = 'https://sites.arquivo.download/Diversos/Audio%20sobre%20mim%20marcio%20rolim.mp3';
 
-  const calculateAge = (birthDate: string): number => {
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDifference = today.getMonth() - birth.getMonth();
-    if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birth.getDate())) {
-      age--;
-    }
-    return age;
-  };
-
-  const age = calculateAge('1973-04-18');
-
   const togglePlayPause = () => {
     if (audioRef.current) {
       if (isPlaying) {
@@ -166,7 +153,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
                     Minha missão é clara: crescer e contribuir. Acredito que cada conhecimento adquirido deve ser compartilhado e colocado a serviço das pessoas, seja através da transformação espiritual ou da inovação digital.
                   </p>
                   <p>
-                    Hoje, aos {age} anos, sigo construindo um legado que une fé, família e tecnologia, sempre com o objetivo de impactar vidas de forma positiva e duradoura.
+                    Hoje, sigo construindo um legado que une fé, família e tecnologia, sempre com o objetivo de impactar vidas de forma positiva e duradoura.
                   </p>
                 </div>
 
