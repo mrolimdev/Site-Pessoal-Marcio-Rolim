@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 
 import CountUp from './components/CountUp';
 import ChatBubbleIcon from './components/icons/ChatBubbleIcon';
-import CurriculumPage from './components/CurriculumPage';
 import PrivacyPolicy from './components/PrivacyPolicy';
 
 // ─── Icons ──────────────────────────────────────────────────────────
@@ -194,13 +193,12 @@ function App() {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const [currentView, setCurrentView] = useState<'home' | 'curriculum' | 'privacy'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'privacy'>('home');
 
   useEffect(() => {
     const handleHash = () => {
       const hash = window.location.hash;
-      if (hash === '#curriculo') setCurrentView('curriculum');
-      else if (hash === '#privacidade') setCurrentView('privacy');
+      if (hash === '#privacidade') setCurrentView('privacy');
       else setCurrentView('home');
     };
     handleHash();
@@ -208,10 +206,10 @@ function App() {
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
 
-  const navigateTo = (view: 'home' | 'curriculum' | 'privacy') => {
+  const navigateTo = (view: 'home' | 'privacy') => {
     setCurrentView(view);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    window.history.pushState(null, '', view === 'home' ? '/' : `#${view === 'curriculum' ? 'curriculo' : 'privacidade'}`);
+    window.history.pushState(null, '', view === 'home' ? '/' : `#privacidade`);
   };
 
   const age = calculateAge('1973-04-18');
@@ -246,32 +244,11 @@ function App() {
   const heroImageUrl = 'https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=500&output=webp&q=90';
   const videoUrl = 'https://sites.arquivo.download/marciorolim/Olhe%20o%20que%20Deus%20fez%20comigo.mp4';
 
-  const navLinks = [
+  const navLinks: { href?: string; label: string; onClick?: () => void; className?: string }[] = [
     { href: '#sobre', label: 'Sobre' },
     { href: '#servicos', label: 'Serviços' },
     { href: '#contato', label: 'Contato' },
-    { 
-      label: 'Currículo', 
-      onClick: () => { navigateTo('curriculum'); setMobileMenuOpen(false); },
-      className: `px-4 py-2 rounded-full text-sm font-bold text-amber-500 hover:text-amber-400 transition-colors cursor-pointer border border-amber-500/20 bg-amber-500/5`
-    },
   ];
-
-  if (currentView === 'curriculum') {
-    return (
-      <>
-        <div className="fixed top-4 right-4 z-[60]">
-          <button 
-            onClick={() => navigateTo('home')}
-            className={`px-4 py-2 rounded-full bg-amber-500 text-white font-bold shadow-lg hover:bg-amber-400 transition-all`}
-          >
-            Voltar ao Início
-          </button>
-        </div>
-        <CurriculumPage onReturn={() => navigateTo('home')} />
-      </>
-    );
-  }
 
   if (currentView === 'privacy') {
     return <PrivacyPolicy />;

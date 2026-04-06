@@ -355,7 +355,7 @@ const CurriculumPage: React.FC = () => {
 
                             <div className="flex flex-wrap justify-center md:justify-start gap-3 mb-6">
                                 <span className={`flex items-center gap-1.5 text-sm ${t.tagText} ${t.tagBg} px-3 py-1.5 rounded-lg border ${t.tagBorder}`}>
-                                    <MapPinIcon className="w-3.5 h-3.5 text-emerald-400" /> São Paulo, SP
+                                    <MapPinIcon className="w-3.5 h-3.5 text-emerald-400" /> Zona Leste - São Paulo - SP
                                 </span>
                                 <span className={`flex items-center gap-1.5 text-sm ${t.tagText} ${t.tagBg} px-3 py-1.5 rounded-lg border ${t.tagBorder}`}>
                                     <CalendarIcon className="w-3.5 h-3.5 text-amber-400" /> {age} anos
@@ -682,9 +682,8 @@ const CurriculumPage: React.FC = () => {
                                 <div className="flex items-start gap-3">
                                     <MapPinIcon className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <span className={`text-xs ${t.labelText} uppercase tracking-wider`}>Endereço</span>
-                                        <p className={`${t.infoValue} font-medium`}>Rua Guaraitá, 1290 - Vila Curuçá</p>
-                                        <p className={`${t.bodyTextLight} text-sm`}>CEP 08030-310 - São Paulo - SP</p>
+                                        <span className={`text-xs ${t.labelText} uppercase tracking-wider`}>Localização</span>
+                                        <p className={`${t.infoValue} font-medium`}>Zona Leste - São Paulo - SP</p>
                                     </div>
                                 </div>
                             </div>
