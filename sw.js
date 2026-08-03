@@ -5,7 +5,7 @@ const URLS_TO_CACHE = [
   '/sobre.html',
   '/login.html',
   'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=Inter:wght@400;500;700&display=swap',
-  'https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=512&h=512&fit=cover&output=png' // PWA Icon
+  'https://files.restaure.online/marciorolim/FotoRostoRolim.jpeg' // PWA Icon
 ];
 
 self.addEventListener('install', event => {

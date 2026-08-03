@@ -283,7 +283,7 @@ const CurriculumPage: React.FC = () => {
     });
     const age = calculateAge('1973-04-18');
     const techYears = calculateYearsSince(1988);
-    const profileImageUrl = 'https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=400&output=webp&q=90';
+    const profileImageUrl = 'https://files.restaure.online/marciorolim/FotoRostoRolim.jpeg';
     const t = getTheme(isDark);
 
     const toggleTheme = () => {

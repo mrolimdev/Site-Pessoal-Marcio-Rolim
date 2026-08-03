@@ -73,7 +73,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  const profileImageUrl = 'https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=500&output=webp&q=85';
+  const profileImageUrl = 'https://files.restaure.online/marciorolim/FotoRostoRolim.jpeg';
   const audioUrl = 'https://sites.arquivo.download/Diversos/Audio%20sobre%20mim%20marcio%20rolim.mp3';
 
   const togglePlayPause = () => {

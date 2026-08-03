@@ -1,7 +1,7 @@
 import React from 'react';
 
 const Header: React.FC = () => {
-  const logoUrl = 'https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=240&h=240&fit=cover&output=webp&q=85';
+  const logoUrl = 'https://files.restaure.online/marciorolim/FotoRostoRolim.jpeg';
 
   return (
     <header className="absolute top-0 w-full z-20 flex justify-center pt-[80px]">

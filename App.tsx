@@ -240,8 +240,8 @@ function App() {
     });
   };
 
-  const profileImageUrl = 'https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=100&output=webp&q=85';
-  const heroImageUrl = 'https://images.weserv.nl/?url=sites.arquivo.download/marciorolim/FotoRostoRolim.jpeg&w=500&output=webp&q=90';
+  const profileImageUrl = 'https://files.restaure.online/marciorolim/FotoRostoRolim.jpeg';
+  const heroImageUrl = 'https://files.restaure.online/marciorolim/FotoRostoRolim.jpeg';
   const videoUrl = 'https://sites.arquivo.download/marciorolim/Olhe%20o%20que%20Deus%20fez%20comigo.mp4';
 
   const navLinks: { href?: string; label: string; onClick?: () => void; className?: string }[] = [
