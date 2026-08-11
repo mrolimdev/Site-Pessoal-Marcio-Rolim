@@ -81,6 +81,9 @@ function tipoDoPai(parent: JSONNodeType | undefined): string {
   return typeof parent?.type === 'string' ? parent.type : ''
 }
 
+const REGEX_REFERENCIA_BIBLICA =
+  /\b((?:[123]\s*)?(?:Gênesis|Êxodo|Levítico|Números|Deuteronômio|Josué|Juízes|Rute|Samuel|Reis|Crônicas|Esdras|Neemias|Ester|Jó|Salmos?|Provérbios|Eclesiastes|Cânticos|Isaías|Jeremias|Lamentações|Ezequiel|Daniel|Oséias|Joel|Amós|Obadias|Jonas|Miquéias|Naum|Habacuque|Sofonias|Ageu|Zacarias|Malaquias|Mateus|Marcos|Lucas|João|Atos|Romanos|Coríntios|Gálatas|Efésios|Filipenses|Colossenses|Tessalonicenses|Timóteo|Tito|Filemom|Hebreus|Tiago|Pedro|Judas|Apocalipse|Gn|Êx|Lv|Nm|Dt|Js|Jz|Rt|1Sm|2Sm|1Rs|2Rs|1Cr|2Cr|Ed|Ne|Et|Sl|Pv|Ec|Ct|Is|Jr|Lm|Ez|Dn|Os|Jl|Am|Ob|Jn|Mq|Na|Hc|Sf|Ag|Zc|Ml|Mt|Mc|Lc|Jo|At|Rm|1Co|2Co|Gl|Ef|Fp|Col|1Ts|2Ts|1Tm|2Tm|Tt|Fm|Hb|Tg|1Pe|2Pe|1Jo|2Jo|3Jo|Jd|Ap)\s+\d+(?::\d+(?:-\d+)?)?)\b/gi
+
 const NOS: Record<string, (props: PropsNo) => ReactNode> = {
   doc: ({ children }) => <>{children}</>,
 
@@ -91,7 +94,31 @@ const NOS: Record<string, (props: PropsNo) => ReactNode> = {
     return <p className={aninhado ? 'leading-[1.8]' : TEXTO}>{children}</p>
   },
 
-  text: ({ node }) => <>{node.text ?? ''}</>,
+  text: ({ node }) => {
+    const texto = node.text ?? ''
+    if (!texto) return null
+
+    const partes = texto.split(REGEX_REFERENCIA_BIBLICA)
+    if (partes.length <= 1) return <>{texto}</>
+
+    return (
+      <>
+        {partes.map((parte, i) =>
+          i % 2 === 1 ? (
+            <strong
+              key={i}
+              className="font-bold text-slate-900 underline decoration-amber-500/40 decoration-2 underline-offset-2 dark:text-white"
+            >
+              {parte}
+            </strong>
+          ) : (
+            parte
+          )
+        )}
+      </>
+    )
+  },
+
 
   heading: ({ children, node }) => {
     const nivel = numeroAttr(node, 'level') ?? 2
