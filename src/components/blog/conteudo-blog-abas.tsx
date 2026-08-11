@@ -147,9 +147,9 @@ export function ConteudoBlogAbas({
           )}
         </div>
 
-        {/* COLUNA DIREITA: ÁREA DE WIDGETS (4 colunas no desktop) */}
+        {/* COLUNA DIREITA: ÁREA DE WIDGETS COM SCROLL INDEPENDENTE NO DESKTOP */}
         <div className="flex flex-col gap-8 lg:col-span-4">
-          <div className="sticky top-24 flex flex-col gap-8">
+          <div className="flex flex-col gap-8 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-2 lg:overscroll-contain">
             {/* Card 1: Nuvem de Tags */}
             <CardNuvemDeTags tags={dadosWidgets.nuvemTags} />
 
@@ -157,6 +157,7 @@ export function ConteudoBlogAbas({
             <CardArvoreDeCategorias ramos={dadosWidgets.arvoreCategorias} />
           </div>
         </div>
+
       </div>
     </div>
   )
