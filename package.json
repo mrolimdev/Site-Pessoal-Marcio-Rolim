@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "engines": {
-    "node": ">=20.9"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "NODE_OPTIONS=--max-http-header-size=65536 next dev",
