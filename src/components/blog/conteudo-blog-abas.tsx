@@ -107,10 +107,7 @@ export function ConteudoBlogAbas({
 
         {/* SEÇÃO VIDA CRISTÃ */}
         {(abaAtiva === 'todas' || abaAtiva === 'fe') && (
-          <section
-            id="vida-crista"
-            className="animate-fade-in flex flex-col gap-8 rounded-3xl border border-amber-500/25 bg-gradient-to-b from-amber-500/5 via-amber-500/[0.02] to-transparent p-6 sm:p-8 dark:from-amber-950/20 dark:via-amber-950/5 dark:to-transparent"
-          >
+          <section id="vida-crista" className="animate-fade-in flex flex-col gap-8">
             <div className="flex items-center justify-between border-b border-amber-500/20 pb-4">
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-xl text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
@@ -120,12 +117,13 @@ export function ConteudoBlogAbas({
                   <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                     Vida Cristã & Reflexões
                   </h2>
-                  <p className="text-sm text-amber-900/80 dark:text-amber-300/80">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     Fé, propósito, sabedoria e vida com Deus no mundo hiperconectado
                   </p>
                 </div>
               </div>
             </div>
+
 
             {postsVidaCrista.length === 0 ? (
               <p className="text-sm text-slate-500">Em breve reflexões sobre fé e vida cristã.</p>
