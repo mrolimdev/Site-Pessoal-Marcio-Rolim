@@ -161,7 +161,7 @@ export function ModalGeradorIa({
 
         {/* CONTEÚDO DINÂMICO DOS PASSOS */}
         {passo === 'formulario' && (
-          <form onSubmit={handleGerarTitulos} className="mt-5 flex flex-col gap-4">
+          <div className="mt-5 flex flex-col gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                 🎯 Tema ou Assunto do Post
@@ -170,6 +170,12 @@ export function ModalGeradorIa({
                 type="text"
                 value={tema}
                 onChange={(e) => setTema(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleGerarTitulos(e)
+                  }
+                }}
                 placeholder="Ex: RAG com Supabase Vector, ou Devocional na Rotina Intensa..."
                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-all focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
                 required
@@ -217,7 +223,8 @@ export function ModalGeradorIa({
               </button>
 
               <button
-                type="submit"
+                type="button"
+                onClick={handleGerarTitulos}
                 disabled={carregando}
                 className="cursor-pointer inline-flex items-center gap-2 rounded-2xl bg-amber-600 px-6 py-3 text-xs font-bold text-white shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-500 disabled:opacity-50"
               >
@@ -231,7 +238,7 @@ export function ModalGeradorIa({
                 )}
               </button>
             </div>
-          </form>
+          </div>
         )}
 
         {/* PASSO 2: SELEÇÃO DE TÍTULOS SUGERIDOS */}

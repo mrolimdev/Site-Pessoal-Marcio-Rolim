@@ -235,13 +235,14 @@ export function PostForm({ post }: Props) {
   }
 
   return (
-    <form ref={refFormulario} action={executar} className="flex flex-col gap-6">
+    <>
       <ModalGeradorIa
         aberto={modalIaAberto}
         onFechar={() => setModalIaAberto(false)}
         onAplicarAoFormulario={aoAplicarPostIa}
       />
-      {!modoNovo && <input type="hidden" name="id" value={post.id} />}
+      <form ref={refFormulario} action={executar} className="flex flex-col gap-6">
+        {!modoNovo && <input type="hidden" name="id" value={post.id} />}
 
       {/* content_json inteiro. content_html e content_text NÃO são enviados:
           quem os produz é lib/blog/derivar, no servidor, a partir daqui. */}
@@ -621,5 +622,6 @@ export function PostForm({ post }: Props) {
         </aside>
       </div>
     </form>
-  )
+  </>
+)
 }
