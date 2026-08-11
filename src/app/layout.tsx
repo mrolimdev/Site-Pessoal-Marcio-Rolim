@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
+import { Suspense } from 'react'
+import { Tracker } from '@/analytics/tracker'
 import './globals.css'
 
 // next/font baixa e auto-hospeda a fonte em build time.
@@ -51,7 +53,14 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        {children}
+        {/* O Tracker usa useSearchParams; sem <Suspense> a rota inteira cai
+            para renderização no cliente e perde o pré-render. */}
+        <Suspense fallback={null}>
+          <Tracker />
+        </Suspense>
+      </body>
     </html>
   )
 }

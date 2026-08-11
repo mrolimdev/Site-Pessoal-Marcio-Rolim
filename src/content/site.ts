@@ -42,6 +42,16 @@ export const SITE = {
     'Transformando vidas e negócios através da tecnologia e fé. Especialista em IA, Desenvolvimento Web e Mentoria.', // index.html:30-31
 } as const satisfies SiteIdentity
 
+// Origem absoluta, SEM barra final. DERIVADO de SITE.canonicalUrl.
+// As rotas de metadata (robots.ts, sitemap.ts) exigem URLs absolutas.
+export const BASE_URL = 'https://marciorolim.com.br' as const
+
+// Monta a URL absoluta de um caminho do site. A barra final na base é
+// necessária: sem ela, `new URL('/x', 'https://a.com')` ainda funciona, mas a
+// base perde o significado de diretório e qualquer caminho relativo quebra.
+export const urlAbsoluta = (caminho: string): string =>
+  new URL(caminho, `${BASE_URL}/`).toString()
+
 // ─── Contato ────────────────────────────────────────────────────────
 
 export type PhoneNumber = {
@@ -53,6 +63,8 @@ export type PhoneNumber = {
 export type SiteContact = {
   readonly email: string
   readonly emailHref: string
+  readonly privacyEmail: string
+  readonly privacyEmailHref: string
   readonly phone: PhoneNumber
   readonly whatsappUrl: string
 }
@@ -61,6 +73,10 @@ export type SiteContact = {
 export const CONTACT = {
   email: 'contato@marciorolim.com.br', // App.tsx:166 (extraído do mailto:)
   emailHref: 'mailto:contato@marciorolim.com.br', // App.tsx:166
+  // NOVO (não vem do legado): canal qualificado e exclusivo de proteção de dados.
+  // A ANPD pede um canal identificado como tal; 'contato@' é genérico demais.
+  privacyEmail: 'privacidade@marciorolim.com.br',
+  privacyEmailHref: 'mailto:privacidade@marciorolim.com.br',
   phone: {
     raw: '5511980888880', // App.tsx:167 (número dentro de https://wa.me/)
     e164: '+5511980888880', // index.html:119 ("telephone" do schema ProfessionalService)
@@ -221,3 +237,118 @@ export const ADDRESS = {
   addressRegion: 'SP',
   addressCountry: 'BR',
 } as const satisfies PostalAddress
+
+// ─── Dados estruturados (JSON-LD) ───────────────────────────────────
+// Os dois <script type="application/ld+json"> de index.html:62-124 viviam soltos
+// no <head>. Aqui ficam como dados; a home monta o JSON a partir deles.
+
+// origem: index.html:68 — "description" do schema Person.
+// É um texto PRÓPRIO: difere de SITE.description (sem o prefixo 'Marcio Rolim: '
+// e sem a frase final 'Transformando vidas e negócios.').
+export const PERSON_SCHEMA_DESCRIPTION =
+  'Consultor de Tecnologia especialista em IA, Desenvolvimento Web e Marketing Digital. Pastor com experiência em mentoria e aconselhamento.' as const
+
+export type KnowsAboutItem = {
+  readonly name: string
+  readonly description: string
+}
+
+// origem: index.html:76-97 — "knowsAbout" do schema Person.
+// Na origem cada item é um nó {"@type": "Text", name, description}; o "@type"
+// é remontado na página, aqui ficam só os dados.
+export const KNOWS_ABOUT = [
+  {
+    name: 'Inteligência Artificial',
+    description: 'Implementação de soluções de IA para negócios e automação.',
+  },
+  {
+    name: 'Desenvolvimento de Software',
+    description: 'Criação de aplicações web modernas e escaláveis.',
+  },
+  {
+    name: 'Marketing Digital',
+    description: 'Gestão de tráfego e estratégias de conversão online.',
+  },
+  {
+    name: 'Liderança Pastoral',
+    description: 'Aconselhamento espiritual e mentoria familiar.',
+  },
+] as const satisfies readonly KnowsAboutItem[]
+
+export type ProfessionalServiceSchema = {
+  readonly name: string
+  readonly description: string
+  readonly url: string
+  readonly telephone: string
+  readonly priceRange: string
+  readonly areaServed: string
+  readonly serviceType: readonly string[]
+}
+
+// origem: index.html:112-124 — schema ProfessionalService, cópia literal.
+export const PROFESSIONAL_SERVICE = {
+  name: 'Marcio Rolim - Consultoria em Tecnologia',
+  description:
+    'Serviços de consultoria em tecnologia, desenvolvimento web, IA e marketing digital.',
+  url: 'https://marciorolim.com.br/',
+  telephone: '+5511980888880',
+  priceRange: '$$',
+  areaServed: 'BR',
+  serviceType: [
+    'Consultoria em Tecnologia',
+    'Desenvolvimento Web',
+    'IA',
+    'Marketing Digital',
+  ],
+} as const satisfies ProfessionalServiceSchema
+
+// ─── PWA (textos do manifest) ───────────────────────────────────────
+
+export type PwaContent = {
+  readonly name: string
+  readonly shortName: string
+  readonly description: string
+  readonly startUrl: string
+  readonly backgroundColor: string
+  readonly themeColor: string
+}
+
+// origem: manifest.json (raiz do repositório), cópia literal.
+// NOTA para o dono: backgroundColor/themeColor são #1a1a1a, um cinza que não
+// corresponde a nenhum dos dois temas do site (claro #f5f5f4, escuro #020617,
+// ver THEME_COLOR_META). Sobrou de um design anterior e aparece na splash
+// screen do app instalado. Mantido literal aqui porque trocá-lo é decisão de
+// design, não de migração.
+export const PWA = {
+  name: 'Marcio Rolim - Página Pessoal', // manifest.json:2
+  shortName: 'Marcio Rolim', // manifest.json:3
+  description:
+    'Página Pessoal de Marcio Rolim, Consultor de Tecnologia, Pastor e Especialista em IA. Conheça meus projetos, habilidades e entre em contato.', // manifest.json:4
+  startUrl: '/', // manifest.json:5
+  backgroundColor: '#1a1a1a', // manifest.json:7
+  themeColor: '#1a1a1a', // manifest.json:8
+} as const satisfies PwaContent
+
+// ─── Página 404 ─────────────────────────────────────────────────────
+
+export type NotFoundContent = {
+  readonly code: string
+  readonly title: string
+  readonly description: string
+  readonly homeLabel: string
+  readonly contactLabel: string
+}
+
+// Texto NOVO: não há origem no projeto legado. O site Vite nunca teve uma
+// página 404 — o catch-all do vercel.json ("/((?!api/|curriculum).*)" ->
+// /index.html) devolvia a home, com status 200, para qualquer caminho
+// desconhecido. Ou seja: nenhum endereço quebrado jamais foi sinalizado ao
+// visitante nem ao buscador.
+export const NOT_FOUND = {
+  code: '404',
+  title: 'Página não encontrada',
+  description:
+    'O endereço que você abriu não existe ou foi movido. Se você chegou por um link antigo, ele provavelmente mudou de lugar.',
+  homeLabel: 'Voltar para a home',
+  contactLabel: 'Falar no WhatsApp',
+} as const satisfies NotFoundContent

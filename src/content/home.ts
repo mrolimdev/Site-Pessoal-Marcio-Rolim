@@ -45,6 +45,8 @@ export type NavLink = {
 export const NAV_LINKS = [
   { href: '#sobre', label: 'Sobre' },
   { href: '#servicos', label: 'Serviços' },
+  // Rota real, não âncora: o blog é uma página própria.
+  { href: '/blog', label: 'Blog' },
   { href: '#contato', label: 'Contato' },
 ] as const satisfies readonly NavLink[]
 
