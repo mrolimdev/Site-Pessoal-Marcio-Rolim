@@ -249,3 +249,31 @@ export function TargetIcon({ className }: IconProps) {
     </svg>
   )
 }
+
+// ─── Conteúdo: widgets do blog ──────────────────────────────────────────────
+
+export function TagIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" />
+    </svg>
+  )
+}
+
+/** Hierarquia de categorias: um nó raiz e dois galhos. Substitui o 🌳 do widget. */
+export function FolderTreeIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="8" height="5" rx="1.5" /><rect x="14" y="9.5" width="8" height="5" rx="1.5" /><rect x="14" y="17" width="8" height="5" rx="1.5" /><path d="M6 8v11.5h8M6 12h8" />
+    </svg>
+  )
+}
+
+/** Cruz cristã — o ramo "Vida Cristã & Fé" da árvore de categorias. */
+export function CrossIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M10 2h4v6h5v4h-5v10h-4V12H5V8h5V2z" />
+    </svg>
+  )
+}
