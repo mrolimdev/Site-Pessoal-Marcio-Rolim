@@ -14,10 +14,6 @@ export function CardNuvemDeTags({ tags }: { tags: TagComContagem[] }) {
   // Limita à caixa de 30 tags
   const tagsExibidas = tags.slice(0, 30)
 
-  // Maior e menor contagem para calcular escala relativa
-  const maxCount = Math.max(...tagsExibidas.map((t) => t.count), 1)
-  const minCount = Math.min(...tagsExibidas.map((t) => t.count), 1)
-
   return (
     <aside className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
       <div className="flex items-center gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
@@ -29,49 +25,23 @@ export function CardNuvemDeTags({ tags }: { tags: TagComContagem[] }) {
         </h3>
       </div>
 
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2.5 pt-1">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-1">
         {tagsExibidas.map((t) => {
-          // Peso normalizado entre 0 e 1
-          const proporcao = maxCount === minCount ? 1 : (t.count - minCount) / (maxCount - minCount)
-
-          // Estilo de cor diferenciado por origem
           const eTech = t.origem === 'tecnologia'
           const eFe = t.origem === 'fe'
 
-          let classeEstilo = ''
-
+          let classeCor = 'text-emerald-700 hover:text-emerald-500 dark:text-emerald-300 dark:hover:text-emerald-200'
           if (eTech) {
-            if (proporcao > 0.7) {
-              classeEstilo = 'text-xl font-extrabold text-sky-600 dark:text-sky-400 hover:text-sky-500'
-            } else if (proporcao > 0.4) {
-              classeEstilo = 'text-base font-semibold text-sky-700/90 dark:text-sky-300 hover:text-sky-500'
-            } else {
-              classeEstilo = 'text-xs font-medium text-sky-800/70 dark:text-sky-400/80 hover:text-sky-500'
-            }
+            classeCor = 'text-sky-700 hover:text-sky-500 dark:text-sky-300 dark:hover:text-sky-200'
           } else if (eFe) {
-            if (proporcao > 0.7) {
-              classeEstilo = 'text-xl font-extrabold text-amber-600 dark:text-amber-400 hover:text-amber-500'
-            } else if (proporcao > 0.4) {
-              classeEstilo = 'text-base font-semibold text-amber-700/90 dark:text-amber-300 hover:text-amber-500'
-            } else {
-              classeEstilo = 'text-xs font-medium text-amber-800/70 dark:text-amber-400/80 hover:text-amber-500'
-            }
-          } else {
-            // Ambas
-            if (proporcao > 0.7) {
-              classeEstilo = 'text-xl font-extrabold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500'
-            } else if (proporcao > 0.4) {
-              classeEstilo = 'text-base font-semibold text-emerald-700/90 dark:text-emerald-300 hover:text-emerald-500'
-            } else {
-              classeEstilo = 'text-xs font-medium text-emerald-800/70 dark:text-emerald-400/80 hover:text-emerald-500'
-            }
+            classeCor = 'text-amber-700 hover:text-amber-500 dark:text-amber-300 dark:hover:text-amber-200'
           }
 
           return (
             <Link
               key={t.nome}
               href={`/blog/tag/${encodeURIComponent(t.nome)}`}
-              className={`${classeEstilo} transition-all duration-300 hover:scale-110 hover:underline decoration-current/40 underline-offset-4`}
+              className={`text-sm font-semibold ${classeCor} transition-all duration-200 hover:scale-105 hover:underline decoration-current/40 underline-offset-4`}
               title={`${t.count} ${t.count === 1 ? 'post' : 'posts'} (${t.origem === 'tecnologia' ? 'Tecnologia' : t.origem === 'fe' ? 'Vida Cristã' : 'Geral'})`}
             >
               #{t.nome}
@@ -82,6 +52,7 @@ export function CardNuvemDeTags({ tags }: { tags: TagComContagem[] }) {
     </aside>
   )
 }
+
 
 
 
