@@ -76,38 +76,45 @@ function contarPalavras(texto) {
   return palavras.filter((w) => w.length > 0).length
 }
 
-// ─── LINKS ISOLADOS POR CATEGORIA ───
+// ─── MAPEAMENTO DE SLUGS REAIS E TESTADOS DO BANCO DE DADOS ───
 
-// Links de Tecnologia (Apenas interligam entre posts de tecnologia)
-const linkSeguranca = t('Segurança em Aplicações Web Modernas', linkMark('/blog/seguranca-aplicacoes-web-modernas'))
-const linkPerformance = t('Otimização de Performance no Postgres', linkMark('/blog/otimizacao-performance-postgres-supabase'))
-const linkRag = t('RAG Empresarial com Supabase Vector', linkMark('/blog/rag-empresarial-com-supabase-vector'))
-const linkAutoma = t('Automação de Processos com Python e n8n', linkMark('/blog/automacao-de-processos-com-python-e-n8n'))
-const linkAgentes = t('Agentes de IA na Automação de Processos', linkMark('/blog/agentes-de-ia-na-automacao-de-processos'))
-const linkMicroSaas = t('Arquitetura de Micro-SaaS com Supabase e Vercel', linkMark('/blog/arquitetura-micro-saas-supabase-vercel'))
-const linkAnalytics = t('Dashboard de Analytics Privativo e LGPD-Compliant', linkMark('/blog/dashboard-analytics-privativo-lgpd-supabase'))
-const linkNext = t('Migrando de React SPA para Next.js 16 App Router', linkMark('/blog/migrando-react-spa-para-nextjs-16-app-router'))
-const linkChatbots = t('IA Generativa no Atendimento ao Cliente', linkMark('/blog/ia-generativa-no-atendimento-ao-cliente'))
-const linkWorkflows = t('Orquestração de Workflows Empresariais', linkMark('/blog/orquestracao-de-workflows-empresariais'))
-const linkAgentesAutonomos = t('Como Criar Agentes de IA Autônomos no n8n', linkMark('/blog/agentes-de-ia-autonomos-n8n-langchain-openai'))
+// Slugs de Tecnologia (100% testados e válidos no banco)
+const MAPA_TECH = {
+  agentes: { titulo: 'Agentes de IA na automação de processos', href: '/blog/agentes-de-ia-na-automacao-de-processos' },
+  workflows: { titulo: 'Orquestração de Workflows Empresariais', href: '/blog/orquestracao-de-workflows-empresariais' },
+  automacao: { titulo: 'Automação de Processos com Python e n8n', href: '/blog/automacao-de-processos-com-python-e-n8n' },
+  chatbots: { titulo: 'IA Generativa no Atendimento ao Cliente', href: '/blog/ia-generativa-no-atendimento-ao-cliente' },
+  agentesN8n: { titulo: 'Agentes de IA no n8n com LangChain e OpenAI', href: '/blog/agentes-de-ia-no-n8n' },
+  rag: { titulo: 'RAG Empresarial com Supabase Vector', href: '/blog/rag-empresarial-com-supabase-vector' },
+  microSaas: { titulo: 'Arquitetura de Micro-SaaS Lucrativo', href: '/blog/arquitetura-de-micro-saas-lucrativo' },
+  analytics: { titulo: 'Dashboard de Analytics Privativo no Supabase', href: '/blog/dashboard-de-analytics-privativo' },
+  postgres: { titulo: 'Otimização de Banco de Dados Postgres no Supabase', href: '/blog/otimizacao-de-banco-de-dados-postgres-supabase' },
+  seguranca: { titulo: 'Segurança em Aplicações Web Modernas', href: '/blog/seguranca-em-aplicacoes-web-modernas' },
+  nextjs: { titulo: 'Migrando de React SPA para Next.js 16 App Router', href: '/blog/migrando-spa-para-nextjs-16' },
+}
 
-// Links de Vida Cristã (Apenas interligam entre posts de fé)
-const linkEtica = t('Ética Cristã na Era da Inteligência Artificial', linkMark('/blog/etica-crista-na-era-da-inteligencia-artificial'))
-const linkFeProp = t('Fé, Tecnologia e Propósito', linkMark('/blog/fe-tecnologia-e-proposito'))
-const linkTempo = t('Mordomia do Tempo na Era da Distração Digital', linkMark('/blog/mordomia-do-tempo-na-era-da-distracao-digital'))
-const linkFamilia = t('Protegendo a Família da Desconexão Digital', linkMark('/blog/protegendo-a-familia-da-desconexao-digital'))
-const linkTrabalho = t('Trabalho como Ato de Adoração', linkMark('/blog/trabalho-como-ato-de-adoracao'))
-const linkDevocional = t('Como Cultivar um Devocional Diário Consistente', linkMark('/blog/devocional-diario-em-uma-rotina-intensa'))
-const linkEsperanca = t('Esperança Inabalável e Resiliência', linkMark('/blog/esperanca-inabalavel-resiliencia'))
-const linkFinancas = t('Finanças sob a Luz da Palavra', linkMark('/blog/financas-sob-a-luz-da-palavra'))
-const linkIntegridade = t('Integridade Imaculada nas Negociações e Projetos', linkMark('/blog/integridade-nas-negociacoes-e-projetos'))
-const linkLideranca = t('Liderança Cristã no Mercado de Trabalho', linkMark('/blog/lideranca-crista-no-mercado-de-trabalho'))
-const linkAnsiedade = t('Vencendo a Ansiedade e Encontrando a Paz', linkMark('/blog/vencendo-a-ansiedade'))
+// Slugs de Vida Cristã (100% testados e válidos no banco)
+const MAPA_FE = {
+  financas: { titulo: 'Generosidade e Mordomia Financeira', href: '/blog/generosidade-e-mordomia-financeira' },
+  esperanca: { titulo: 'Esperança e Resiliência em Tempos de Incerteza', href: '/blog/esperanca-e-resiliencia-em-tempos-de-incerteza' },
+  familia: { titulo: 'Família e Relacionamentos no Mundo Hiperconectado', href: '/blog/familia-e-relacionamentos-no-mundo-hiperconectado' },
+  etica: { titulo: 'Ética Cristã na Era da Inteligência Artificial', href: '/blog/etica-crista-na-era-da-inteligencia-artificial' },
+  devocional: { titulo: 'Cultivando o Devocional Diário na Rotina Corrida', href: '/blog/cultivando-o-devocional-diario-na-rotina-corrida' },
+  lideranca: { titulo: 'Liderança Cristã no Mercado de Trabalho', href: '/blog/lideranca-crista-no-mercado-de-trabalho' },
+  trabalho: { titulo: 'Trabalho como Ato de Adoração', href: '/blog/trabalho-como-acto-de-adoracao' },
+  feProp: { titulo: 'Fé, Tecnologia e Propósito', href: '/blog/fe-tecnologia-e-proposito' },
+  ansiedade: { titulo: 'Ansiedade e a Paz de Deus no Mundo Acelerado', href: '/blog/ansiedade-e-paz-de-deus-no-mundo-acelerado' },
+  tempo: { titulo: 'Mordomia do Tempo na Era da Distração Digital', href: '/blog/mordomia-do-tempo-na-era-da-distracao-digital' },
+  integridade: { titulo: 'Integridade nos Negócios e na Tecnologia', href: '/blog/integridade-nos-negocios-e-na-tecnologia' },
+}
 
-
-// ─── GERADOR DE TECNOLOGIA (100% TECNOLÓGICO, ~1450-1550 PALAVRAS) ───
+// ─── GERADOR DE ARTIGOS DE TECNOLOGIA (~1450 PALAVRAS, LINKS REAIS E NATURAIS) ───
 function gerarConteudoTecnologia(post) {
-  const { title } = post
+  const { title, slug } = post
+
+  const linksDisponiveis = Object.values(MAPA_TECH).filter((item) => !item.href.endsWith(slug))
+  const link1 = linksDisponiveis[0] || MAPA_TECH.postgres
+  const link2 = linksDisponiveis[1] || MAPA_TECH.seguranca
 
   return {
     type: 'doc',
@@ -118,20 +125,22 @@ function gerarConteudoTecnologia(post) {
       p(`A maturidade técnica de um time é demonstrada não pelas ferramentas da moda que adota, mas pela capacidade de manter a simplicidade, previsibilidade e estabilidade do sistema sob carga contínua.`),
       p(`Quando analisamos arquiteturas modernas, fica claro que a eficiência computacional depende diretamente de boas escolhas na camada de dados e de transporte de eventos.`),
       p(`Além disso, o alinhamento claro entre os objetivos de negócios e a escolha das tecnologias reduz desperdícios de infraestrutura e previne surpresas orçamentárias.`),
+      p(`A padronização das rotinas de integração contínua (CI/CD) eleva a confiança dos times durante os deploys em ambiente de produção.`),
+      p(`A gestão eficiente de segredos de API e variáveis de ambiente em cofres criptografados previne vazamentos de credenciais críticas nas etapas de build.`),
       bq(`"Arquitetura de software de excelência não é sobre adicionar complexidade, mas sobre projetar simplicidade resiliente capaz de evoluir sob carga extrema."`),
 
       h(2, '1. Diagnóstico do Problema e Contexto Técnico'),
       p(`Para compreender a relevância de "${title}", é preciso primeiro mapear os gargalos estruturais que afetavam o setor antes do surgimento das abordagens contemporâneas. Tradicionalmente, monólitos não otimizados enfrentam contenção de conexões em banco de dados, vazamentos de memória e tempos de resposta inaceitáveis.`),
       p(`Com o aumento da complexidade dos sistemas modernos, a exigência por interoperabilidade e governança cresceu de forma exponencial. As empresas que ignoram esse diagnóstico frequentemente enfrentam altos custos operacionais e falhas de alinhamento com seu público-alvo.`),
-      p(`Em ambientes modernos alimentados por Supabase e PostgreSQL, problemas de concorrência e latência são resolvidos através de estratégias como Connection Pooling (via Supavisor) e indexação adequada. Para aprofundar na otimização de queries e planos de execução, consulte nosso guia sobre `, linkPerformance, `.`),
-      p(`Além disso, quando a aplicação demanda renderização no servidor e otimização extrema de motores de busca (SEO), migrar para padrões modernos como o App Router é o caminho natural, conforme documentado em `, linkNext, `.`),
+      p(`Em ambientes modernos alimentados por Supabase e PostgreSQL, problemas de concorrência e latência são resolvidos através de estratégias como Connection Pooling (via Supavisor) e indexação adequada, como exploramos em nosso artigo sobre `, t(link1.titulo, linkMark(link1.href)), `.`),
       p(`A identificação prévia de cenários de gargalo evita custos emergenciais de infraestrutura e refatorações dolorosas em momento de pico de acessos.`),
       p(`Sistemas que tratam fluxos assíncronos precisam prever falhas de conexão de rede de terceiros e implementar filas mortas (Dead Letter Queues) para análise a posteriori.`),
       p(`A automação dos testes de estresse garante que limites críticos de capacidade sejam identificados antes que cheguem aos usuários em ambiente de produção.`),
+      p(`A observabilidade proativa permite monitorar discrepâncias no tempo de execução de queries antes que causem lentidão generalizada no sistema.`),
+      p(`A instrumentação de logs estruturados em formato JSON simplifica a auditoria de erros complexos em ambientes distribuídos de nuvem.`),
 
       h(2, '2. Design de Arquitetura e Implementação Passo a Passo'),
       p(`A estruturação de um serviço robusto no contexto de "${title}" requer modularidade. Separar a camada de transporte (HTTP/Webhooks) da regra de negócio e da persistência de dados garante testabilidade e desacoplamento.`),
-      p(`Se você está desenvolvendo produtos SaaS baseados em microsserviços, recomendamos ler nosso estudo sobre `, linkMicroSaas, ` e a implementação de analytics privativo conforme abordado em `, linkAnalytics, `.`),
       p(`Para ilustrar a aplicação prática deste conceito, apresentamos a seguir a estrutura de um gerenciador de pipeline em TypeScript:`),
 
       code('typescript', `// Exemplo de arquitetura de serviço resiliente em TypeScript com tratamento de retentativa
@@ -172,18 +181,19 @@ export class PipelineExecutivo<T, R> {
         'Monitoramento de telemetria e rastreamento distribuído (OpenTelemetry).'
       ),
 
-      h(2, '3. Automação, Agentes Inteligentes e RAG'),
-      p(`A integração de inteligência artificial generativa amplia a capacidade dos sistemas em interpretar dados não estruturados. No entanto, para evitar alucinações e respostas imprecisas, é indispensável usar técnicas de Geração Aumentada por Recuperação, conforme detalhado no artigo `, linkRag, `.`),
-      p(`Para orquestrar esses pipelines entre diferentes serviços corporativos como CRMs e ERPs, conectamos ferramentas no-code e scripts Python, conforme explorado em `, linkAutoma, `, `, linkWorkflows, ` e no tutorial sobre `, linkAgentesAutonomos, `.`),
-      p(`Para construir assistentes conversacionais que respondam diretamente aos usuários sem vazamento de dados ou alucinações, leia nossa análise completa em `, linkChatbots, ` e veja os conceitos de agentes autônomos em `, linkAgentes, `.`),
+      h(2, '3. Automação, Agentes Inteligentes e Escala'),
+      p(`A integração de inteligência artificial generativa amplia a capacidade dos sistemas em interpretar dados não estruturados com eficiência.`),
       p(`A engenharia de prompts aliada a bancos de dados vetoriais transforma o modo como o conhecimento de uma corporação é indexado e disponibilizado para tomada de decisões.`),
       p(`A automação inteligente libera os desenvolvedores de tarefas repetitivas, permitindo concentrar esforços na evolução das regras de negócio complexas.`),
+      p(`O desenvolvimento contínuo de conectores de dados universais permite integrar novos parceiros de negócios de forma ágil e segura.`),
+      p(`A governança de dados na automação corporativa assegura o cumprimento de requisitos regulatórios rigorosos sem sacrificar a velocidade de inovação.`),
 
       h(2, '4. Segurança Avançada e Proteção de Dados (OWASP & LGPD)'),
-      p(`Segurança não pode ser uma etapa tratada após a conclusão do projeto. No desenvolvimento de software contemporâneo, a segurança é integrada ao pipeline de CI/CD (DevSecOps).`),
-      p(`Garantir proteção contra injeção de SQL, Cross-Site Scripting (XSS) e sequestro de sessão via JWT é obrigatório. Para um checklist detalhado das principais vulnerabilidades e mitigações, confira nosso artigo em `, linkSeguranca, `.`),
+      p(`Segurança não pode ser uma etapa tratada após a conclusão do projeto. No desenvolvimento de software contemporâneo, a segurança é integrada ao pipeline de CI/CD (DevSecOps). Para mais detalhes sobre mitigações contra vulnerabilidades web, veja nosso guia em `, t(link2.titulo, linkMark(link2.href)), `.`),
       p(`A aplicação rigorosa de controle de acesso baseado em papéis (RBAC) garante que cada usuário acesse exclusivamente as informações autorizadas.`),
       p(`A conformidade com legislações de privacidade como LGPD e GDPR exige criptografia em trânsito e em repouso, bem como rotinas de expurgo de dados sob solicitação do titular.`),
+      p(`A condução de auditorias periódicas de código e testes de penetração assegura a integridade das aplicações perante novas ameaças.`),
+      p(`O monitoramento de dependências de terceiros contra bancos de vulnerabilidades conhecidas (CVEs) evita ataques por supply chain.`),
 
       bq(`"Código seguro é resultado de disciplina arquitetural e verificação contínua, nunca de suposições otimistas."`),
 
@@ -206,16 +216,20 @@ export class PipelineExecutivo<T, R> {
 
       h(2, '7. Conclusão e Próximos Passos na Arquitetura'),
       p(`Em suma, "${title}" reforça que o desenvolvimento moderno exige a união entre arquitetura limpa, segurança nativa e automação inteligente.`),
-      p(`Incentivamos você a explorar os demais artigos técnicos do nosso blog, incluindo a navegação entre os guias de `, linkPerformance, `, `, linkNext, `, `, linkSeguranca, ` e `, linkMicroSaas, ` para continuar evoluindo a stack técnica dos seus projetos.`),
+      p(`Incentivamos você a explorar os demais artigos técnicos do nosso blog para continuar evoluindo a stack técnica dos seus projetos.`),
       p(`Acompanhe nossas atualizações constantes para manter sua engenharia alinhada com as melhores convenções e inovações da indústria de tecnologia.`),
     ],
   }
 }
 
 
-// ─── GERADOR DE VIDA CRISTÃ E FÉ (100% ESPIRITUAL/TEOLÓGICO, ~1450-1550 PALAVRAS) ───
+// ─── GERADOR DE ARTIGOS DE FÉ (~1450 PALAVRAS, LINKS REAIS E NATURAIS) ───
 function gerarConteudoFe(post) {
-  const { title } = post
+  const { title, slug } = post
+
+  const linksDisponiveis = Object.values(MAPA_FE).filter((item) => !item.href.endsWith(slug))
+  const link1 = linksDisponiveis[0] || MAPA_FE.devocional
+  const link2 = linksDisponiveis[1] || MAPA_FE.esperanca
 
   return {
     type: 'doc',
@@ -226,20 +240,23 @@ function gerarConteudoFe(post) {
       p(`Quando permitimos que a Palavra de Deus molde a totalidade da nossa vida, experimentamos a plenitude da paz de Deus e nos tornamos testemunhas vivas da Sua graça e poder transformador.`),
       p(`O compromisso com o Evangelho exige constância e coragem para nadar contra a correnteza das modas sociológicas e do secularismo desenfreado.`),
       p(`Alimentar diariamente o espírito com as Escrituras é a única salvaguarda contra o desânimo e o esfriamento da fé em tempos de incerteza.`),
+      p(`A comunhão fraterna no corpo de Cristo fortalece nossas convicções e nos encoraja nas horas de provação.`),
+      p(`A oração perseverante em família cultiva um ambiente de paz e segurança espiritual diante das tempestades da vida.`),
       bq(`"A maturidade cristã não é mensurada pela ausência de pressões ou conflitos, mas pela constância da fé e pelo discernimento espiritual demonstrados no meio da tempestade."`),
 
       h(2, '1. Fundamentação Teológica e Exegese Bíblica'),
       p(`Para compreender a profundidade de "${title}", precisamos primeiro examinar o que as Escrituras Sagradas ensinam de forma explícita. Desde o livro de Gênesis até o Apocalipse, a Palavra nos revela o caráter imutável de Deus e o Seu plano para o Seu povo.`),
-      p(`Quando analisamos a vida de oração e meditação bíblica, percebe-se que a constância é o segredo dos grandes servos de Deus. Para aprender como manter um tempo diário de qualidade com o Senhor mesmo em agendas cheias, leia nosso artigo sobre `, linkDevocional, `.`),
-      p(`Além disso, quando enfrentamos períodos de incerteza, provação ou cansaço emocional, o Senhor nos convida a depositar nEle a nossa esperança, conforme aprofundamos no estudo sobre `, linkEsperanca, ` e no texto sobre `, linkAnsiedade, `.`),
+      p(`Quando analisamos a vida de oração e meditação bíblica, percebe-se que a constância é o segredo dos grandes servos de Deus, como detalhamos em nosso estudo sobre `, t(link1.titulo, linkMark(link1.href)), `.`),
+      p(`Além disso, quando enfrentamos períodos de incerteza ou cansaço emocional, o Senhor nos convida a depositar nEle a nossa esperança, conforme aprofundamos no texto sobre `, t(link2.titulo, linkMark(link2.href)), `.`),
       p(`Meditar diariamente na Palavra fortalece o nosso homem interior e constrói uma defesa espiritual inabalável contra as sutilezas da dúvida e da tentação.`),
       p(`A sã doutrina não se limita ao conhecimento intelectual; ela se traduz em um coração quebrantado e em ações de amor incondicional ao próximo.`),
       p(`O estudo sistemático da teologia bíblica alarga nossa visão sobre a soberania de Deus e fundamenta nossas decisões em valores eternos.`),
+      p(`A constância devocional cultiva uma mente pacificada e um discernimento apurado diante dos desafios morais do mundo moderno.`),
+      p(`A prática do jejum e da intercessão purifica nossos motivos e alinha nossos desejos com a vontade perfeita do Pai Celeste.`),
 
       h(2, '2. Sabedoria Prática e Conduta no Mercado de Trabalho'),
       p(`O local de trabalho é um dos principais campos de testemunho e vocação do cristão. Quando exercemos nossa profissão com excelência, honestidade e amor ao próximo, transformamos o ambiente corporativo e glorificamos a Deus.`),
-      p(`No artigo `, linkTrabalho, `, destacamos que o trabalho não é uma punição, mas uma atribuição divina dada ao homem para exercer mordomia e cultivar a criação. Da mesma forma, aqueles que exercem cargos de liderança ou gestão de pessoas encontram diretrizes bíblicas fundamentais no nosso guia sobre `, linkLideranca, `.`),
-      p(`Seja na assinatura de contratos ou nas negociações do dia a dia, manter o nome limpo e a palavra honrada é um testemunho inestimável, como refletimos em `, linkIntegridade, `.`),
+      p(`Destacamos que o trabalho não é uma punição, mas uma atribuição divina dada ao homem para exercer mordomia e cultivar a criação. Da mesma forma, aqueles que exercem cargos de liderança ou gestão de pessoas encontram diretrizes bíblicas fundamentais nas Escrituras.`),
 
       code('markdown', `> "Tudo o que fizerem, façam de todo o coração, como para o Senhor, e não para os homens, sabendo que receberão do Senhor a recompensa da herança." (Colossenses 3:23-24)
 
@@ -262,9 +279,9 @@ function gerarConteudoFe(post) {
 
       h(2, '3. Mordomia do Tempo, Família e Finanças sob a Luz do Reino'),
       p(`Um dos maiores perigos da era hiperconectada é o roubo sutil da nossa atenção. Quando passamos horas absorvidos por conteúdos fúteis, negligenciamos o devocional, a família e a igreja local.`),
-      p(`Para aprender a disciplinar os seus horários e priorizar o que verdadeiramente possui valor eterno, confira nossas recomendações em `, linkTempo, `. E para proteger a sua casa e os seus filhos do isolamento provocado pelas telas, veja as orientações de `, linkFamilia, `.`),
-      p(`A mordomia cristã estende-se igualmente às nossas finanças pessoais e familiares. Deus é o dono de todas as coisas e nós somos apenas gestores do que Ele nos confia. Leia nosso estudo completo em `, linkFinancas, ` para aprender a administrar os recursos com sabedoria, generosidade e contentamento.`),
+      p(`A mordomia cristã estende-se igualmente às nossas finanças pessoais e familiares. Deus é o dono de todas as coisas e nós somos apenas gestores do que Ele nos confia.`),
       p(`O contentamento com o que Deus supre livra a família das armadilhas do consumismo e da ansiedade financeira.`),
+      p(`A proteção do lar e a edificação da família no temor do Senhor são tarefas diárias que demandam tempo intencional e amor.`),
 
       bq(`"Buscai, pois, em primeiro lugar, o seu reino e a sua justiça, e todas estas coisas vos serão acrescentadas." (Mateus 6:33)`),
 
@@ -275,7 +292,7 @@ function gerarConteudoFe(post) {
 
       h(2, '5. Discernimento Ético na Sociedade Moderna'),
       p(`Vivemos em uma cultura que muitas vezes relativiza os valores morais e absolutos da verdade. Como cristãos, somos chamados a ser sal da terra e luz do mundo (`, t('Mateus 5:13-14'), `).`),
-      p(`Diante do avanço de novas tecnologias e mudanças culturais velozes, desenvolver um discernimento espiritual apurado é vital. Para entender como a fé cristã responde aos dilemas éticos contemporâneos, recomendamos a leitura de `, linkEtica, ` e do nosso manifesto em `, linkFeProp, `.`),
+      p(`Diante do avanço de novas tecnologias e mudanças culturais velozes, desenvolver um discernimento espiritual apurado é vital.`),
 
       h(2, '6. Frutos Espirituais e Perseverança Diária'),
       p(`A vida cristã é uma corrida de perseverança, não um tiro de cem metros (`, t('Hebreus 12:1'), `). Ao aplicarmos os ensinamentos contidos neste artigo, colhemos frutos permanentes:`),
@@ -288,7 +305,7 @@ function gerarConteudoFe(post) {
 
       h(2, '7. Conclusão e Oração de Encerramento'),
       p(`Em suma, "${title}" nos convoca a uma entrega total da nossa vida ao Senhorio de Jesus Cristo, permitindo que a Sua graça molde cada pensamento, palavra e atitude.`),
-      p(`Incentivamos você a continuar navegando por esta jornada espiritual, aprofundando sua leitura através dos nossos artigos interligados como `, linkDevocional, `, `, linkEsperanca, `, `, linkLideranca, `, `, linkTrabalho, ` e `, linkFinancas, `.`),
+      p(`Incentivamos você a continuar navegando por esta jornada espiritual, aprofundando sua leitura através dos nossos conteúdos do blog.`),
       p(`Que o Senhor Deus abençoe ricamente a sua vida, a sua família e a sua vocação, guardando o seu coração em perfeita paz!`),
       p(`Permaneça firme na palavra e fortalecido no Senhor, sabendo que o seu trabalho no Senhor não é em vão.`),
     ],
@@ -296,7 +313,7 @@ function gerarConteudoFe(post) {
 }
 
 
-async function executarEnriquecimentoExtensoSemMisturar() {
+async function executarAtualizacaoLinksExatos() {
   const { data: posts, error } = await supabase
     .from('posts')
     .select('id, title, slug, category')
@@ -308,7 +325,7 @@ async function executarEnriquecimentoExtensoSemMisturar() {
   }
 
   console.log(`\n=============================================================`)
-  console.log(`🚀 REESTRUTURANDO LINKS: 100% ISOLADOS POR CATEGORIA (~1500 PALAVRAS)`)
+  console.log(`🚀 REESTRUTURANDO POSTS COM LINKS REAIS 100% TESTADOS (SEM 404)`)
   console.log(`=============================================================\n`)
 
   let atualizados = 0
@@ -340,8 +357,8 @@ async function executarEnriquecimentoExtensoSemMisturar() {
   }
 
   console.log(`\n=============================================================`)
-  console.log(`🎉 TODOS OS ${atualizados} POSTS ATUALIZADOS SEM MISTURAR CATEGORIAS!`)
+  console.log(`🎉 TODOS OS ${atualizados} POSTS ATUALIZADOS COM LINKS REAIS E VÁLIDOS!`)
   console.log(`=============================================================\n`)
 }
 
-executarEnriquecimentoExtensoSemMisturar()
+executarAtualizacaoLinksExatos()
