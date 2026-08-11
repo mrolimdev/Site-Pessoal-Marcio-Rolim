@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { CabecalhoBlog, CascaBlog } from '@/components/blog/casca-blog'
 import { ConteudoBlogAbas } from '@/components/blog/conteudo-blog-abas'
 import { MEDIA, SITE, urlAbsoluta } from '@/content/site'
-import { listarPostsAgrupadosPorSecoes } from '@/lib/blog/queries'
+import { listarPostsAgrupadosPorSecoes, obterEstatisticasWidgets } from '@/lib/blog/queries'
 
 export const revalidate = 60
 
@@ -33,7 +33,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function BlogPage() {
-  const { postsTecnologia, postsVidaCrista } = await listarPostsAgrupadosPorSecoes()
+  const [{ postsTecnologia, postsVidaCrista }, dadosWidgets] = await Promise.all([
+    listarPostsAgrupadosPorSecoes(),
+    obterEstatisticasWidgets(),
+  ])
 
   return (
     <CascaBlog voltar={{ href: '/', rotulo: 'Início' }}>
@@ -80,6 +83,7 @@ export default async function BlogPage() {
         <ConteudoBlogAbas
           postsTecnologia={postsTecnologia}
           postsVidaCrista={postsVidaCrista}
+          dadosWidgets={dadosWidgets}
         />
       </main>
     </CascaBlog>

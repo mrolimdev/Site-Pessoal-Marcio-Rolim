@@ -3,16 +3,19 @@
 import { useState } from 'react'
 
 import { PostCard, PostCardDestaque } from '@/components/blog/post-card'
-import type { PostResumo } from '@/lib/blog/queries'
+import { CardArvoreDeCategorias, CardNuvemDeTags } from '@/components/blog/widgets-blog'
+import type { DadosWidgets, PostResumo } from '@/lib/blog/queries'
 
 type Aba = 'todas' | 'tecnologia' | 'fe'
 
 export function ConteudoBlogAbas({
   postsTecnologia,
   postsVidaCrista,
+  dadosWidgets,
 }: {
   postsTecnologia: PostResumo[]
   postsVidaCrista: PostResumo[]
+  dadosWidgets: DadosWidgets
 }) {
   const [abaAtiva, setAbaAtiva] = useState<Aba>('todas')
 
@@ -67,80 +70,93 @@ export function ConteudoBlogAbas({
         </button>
       </div>
 
-      {/* ─── CONTEÚDO DAS ABAS ─── */}
-      <div className="flex flex-col gap-16">
-        {/* SEÇÃO TECNOLOGIA */}
-        {(abaAtiva === 'todas' || abaAtiva === 'tecnologia') && (
-          <section id="tecnologia" className="animate-fade-in flex flex-col gap-8">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-800">
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10 text-xl text-sky-600 dark:bg-sky-500/20 dark:text-sky-400">
-                  💻
-                </span>
-                <div>
-                  <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    Tecnologia, IA & Automação
-                  </h2>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Engenharia de software, inteligência artificial, agentes e automação de processos
-                  </p>
+      {/* ─── ÁREA PRINCIPAL + SIDEBAR DE WIDGETS ─── */}
+      <div className="grid grid-cols-1 gap-12 lg:grid-cols-12">
+        {/* COLUNA ESQUERDA: POSTS DO BLOG (8 colunas no desktop) */}
+        <div className="flex flex-col gap-16 lg:col-span-8">
+          {/* SEÇÃO TECNOLOGIA */}
+          {(abaAtiva === 'todas' || abaAtiva === 'tecnologia') && (
+            <section id="tecnologia" className="animate-fade-in flex flex-col gap-8">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-800">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10 text-xl text-sky-600 dark:bg-sky-500/20 dark:text-sky-400">
+                    💻
+                  </span>
+                  <div>
+                    <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                      Tecnologia, IA & Automação
+                    </h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Engenharia de software, inteligência artificial, agentes e automação de processos
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {postsTecnologia.length === 0 ? (
-              <p className="text-sm text-slate-500">Nenhum post em tecnologia ainda.</p>
-            ) : (
-              <div className="flex flex-col gap-6">
-                {destaqueTech && <PostCardDestaque post={destaqueTech} />}
-                {demaisTech.length > 0 && (
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {demaisTech.map((post) => (
-                      <PostCard key={post.slug} post={post} />
-                    ))}
+              {postsTecnologia.length === 0 ? (
+                <p className="text-sm text-slate-500">Nenhum post em tecnologia ainda.</p>
+              ) : (
+                <div className="flex flex-col gap-6">
+                  {destaqueTech && <PostCardDestaque post={destaqueTech} />}
+                  {demaisTech.length > 0 && (
+                    <div className="grid gap-6 sm:grid-cols-2">
+                      {demaisTech.map((post) => (
+                        <PostCard key={post.slug} post={post} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* SEÇÃO VIDA CRISTÃ */}
+          {(abaAtiva === 'todas' || abaAtiva === 'fe') && (
+            <section id="vida-crista" className="animate-fade-in flex flex-col gap-8">
+              <div className="flex items-center justify-between border-b border-amber-500/20 pb-4">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-xl text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+                    ✝️
+                  </span>
+                  <div>
+                    <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                      Vida Cristã & Reflexões
+                    </h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Fé, propósito, sabedoria e vida com Deus no mundo hiperconectado
+                    </p>
                   </div>
-                )}
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* SEÇÃO VIDA CRISTÃ */}
-        {(abaAtiva === 'todas' || abaAtiva === 'fe') && (
-          <section id="vida-crista" className="animate-fade-in flex flex-col gap-8">
-            <div className="flex items-center justify-between border-b border-amber-500/20 pb-4">
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-xl text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
-                  ✝️
-                </span>
-                <div>
-                  <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                    Vida Cristã & Reflexões
-                  </h2>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Fé, propósito, sabedoria e vida com Deus no mundo hiperconectado
-                  </p>
                 </div>
               </div>
-            </div>
 
+              {postsVidaCrista.length === 0 ? (
+                <p className="text-sm text-slate-500">Em breve reflexões sobre fé e vida cristã.</p>
+              ) : (
+                <div className="flex flex-col gap-6">
+                  {destaqueFe && <PostCardDestaque post={destaqueFe} />}
+                  {demaisFe.length > 0 && (
+                    <div className="grid gap-6 sm:grid-cols-2">
+                      {demaisFe.map((post) => (
+                        <PostCard key={post.slug} post={post} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+          )}
+        </div>
 
-            {postsVidaCrista.length === 0 ? (
-              <p className="text-sm text-slate-500">Em breve reflexões sobre fé e vida cristã.</p>
-            ) : (
-              <div className="flex flex-col gap-6">
-                {destaqueFe && <PostCardDestaque post={destaqueFe} />}
-                {demaisFe.length > 0 && (
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {demaisFe.map((post) => (
-                      <PostCard key={post.slug} post={post} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </section>
-        )}
+        {/* COLUNA DIREITA: ÁREA DE WIDGETS (4 colunas no desktop) */}
+        <div className="flex flex-col gap-8 lg:col-span-4">
+          <div className="sticky top-24 flex flex-col gap-8">
+            {/* Card 1: Nuvem de Tags */}
+            <CardNuvemDeTags tags={dadosWidgets.nuvemTags} />
+
+            {/* Card 2: Árvore de Categorias */}
+            <CardArvoreDeCategorias ramos={dadosWidgets.arvoreCategorias} />
+          </div>
+        </div>
       </div>
     </div>
   )

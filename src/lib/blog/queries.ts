@@ -417,3 +417,98 @@ export async function listarPostsAgrupadosPorSecoes(): Promise<PostsPorSecao> {
   }
 }
 
+export type TagComContagem = {
+  nome: string
+  count: number
+}
+
+export type CategoriaNo = {
+  chave: string
+  rotulo: string
+  count: number
+}
+
+export type RamoCategoria = {
+  titulo: string
+  icone: string
+  subcategorias: CategoriaNo[]
+  totalRamo: number
+}
+
+export type DadosWidgets = {
+  nuvemTags: TagComContagem[]
+  arvoreCategorias: RamoCategoria[]
+}
+
+/**
+ * Retorna dados estruturados para a Nuvem de Tags e a Árvore de Categorias dos Widgets do blog.
+ */
+export async function obterEstatisticasWidgets(): Promise<DadosWidgets> {
+  const { data, error } = await supabase
+    .from('posts')
+    .select('category, tags')
+    .eq('status', 'published')
+    .not('published_at', 'is', null)
+    .limit(LIMITE_VARREDURA)
+    .returns<{ category: string; tags: string[] | null }[]>()
+
+  if (error) {
+    console.error('[widgets] Erro ao carregar estatísticas:', error.message)
+    return { nuvemTags: [], arvoreCategorias: [] }
+  }
+
+  // 1. Contagem de Tags
+  const mapaTags = new Map<string, number>()
+  const mapaCategorias = new Map<string, number>()
+
+  for (const linha of data ?? []) {
+    // Categorias
+    const cat = normalizarCategoria(linha.category)
+    mapaCategorias.set(cat, (mapaCategorias.get(cat) ?? 0) + 1)
+
+    // Tags
+    for (const t of linha.tags ?? []) {
+      const limpa = t.trim().toLowerCase()
+      if (limpa) {
+        mapaTags.set(limpa, (mapaTags.get(limpa) ?? 0) + 1)
+      }
+    }
+  }
+
+  const nuvemTags: TagComContagem[] = Array.from(mapaTags.entries())
+    .map(([nome, count]) => ({ nome, count }))
+    .sort((a, b) => b.count - a.count || a.nome.localeCompare(b.nome, 'pt-BR'))
+
+  // 2. Árvore de Categorias Hierárquica
+  const ramoTech: RamoCategoria = {
+    titulo: 'Tecnologia & Inovação',
+    icone: '💻',
+    subcategorias: [
+      { chave: 'ia', rotulo: 'Inteligência Artificial', count: mapaCategorias.get('ia') ?? 0 },
+      { chave: 'automacao', rotulo: 'Automação & n8n', count: mapaCategorias.get('automacao') ?? 0 },
+      { chave: 'tecnologia', rotulo: 'Engenharia & Web', count: mapaCategorias.get('tecnologia') ?? 0 },
+      { chave: 'negocios', rotulo: 'Estratégia & Negócios', count: mapaCategorias.get('negocios') ?? 0 },
+    ],
+    totalRamo:
+      (mapaCategorias.get('ia') ?? 0) +
+      (mapaCategorias.get('automacao') ?? 0) +
+      (mapaCategorias.get('tecnologia') ?? 0) +
+      (mapaCategorias.get('negocios') ?? 0),
+  }
+
+  const ramoFe: RamoCategoria = {
+    titulo: 'Vida Cristã & Fé',
+    icone: '✝️',
+    subcategorias: [
+      { chave: 'fe', rotulo: 'Fé, Devocional & Família', count: mapaCategorias.get('fe') ?? 0 },
+    ],
+    totalRamo: mapaCategorias.get('fe') ?? 0,
+  }
+
+  return {
+    nuvemTags,
+    arvoreCategorias: [ramoTech, ramoFe],
+  }
+}
+
+
