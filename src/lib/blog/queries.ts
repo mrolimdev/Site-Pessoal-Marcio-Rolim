@@ -37,7 +37,12 @@ export const TAG_CACHE_POSTS = 'posts'
  * o segmento e os fetches que ele faz. Um fetch de 60s aqui transformaria
  * `revalidate = 3600` da página em 60s sem nenhum aviso.
  */
-const SEGUNDOS_DE_CACHE = 3600
+/**
+ * Em desenvolvimento ou revalidação rápida, usa 0s para que alterações no
+ * banco reflitam imediatamente na página ao atualizar o navegador.
+ */
+const SEGUNDOS_DE_CACHE = process.env.NODE_ENV === 'development' ? 0 : 60
+
 
 /**
  * O supabase-js usa o `fetch` global, que no servidor do Next é o fetch
