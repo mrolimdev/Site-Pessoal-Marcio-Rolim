@@ -19,35 +19,47 @@ export function CardNuvemDeTags({ tags }: { tags: TagComContagem[] }) {
       {/* Mancha de brilho de fundo */}
       <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-amber-500/10 blur-2xl transition-all group-hover:bg-amber-500/20" />
 
-      <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3.5 dark:border-slate-800/80">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 text-base text-amber-600 shadow-xs dark:from-amber-500/30 dark:to-orange-500/20 dark:text-amber-400">
-          🏷️
+      <div className="flex items-center justify-between border-b border-slate-100 pb-3.5 dark:border-slate-800/80">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 text-base text-amber-600 shadow-xs dark:from-amber-500/30 dark:to-orange-500/20 dark:text-amber-400">
+            🏷️
+          </span>
+          <h3 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">
+            Nuvem de Tags
+          </h3>
+        </div>
+
+        <span className="rounded-full bg-slate-100 px-2.5 py-1 font-mono text-[0.7rem] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+          {tagsExibidas.length} tags
         </span>
-        <h3 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">
-          Nuvem de Tags
-        </h3>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-3">
+      <div className="flex flex-wrap items-center gap-2 pt-4">
         {tagsExibidas.map((t) => {
           const eTech = t.origem === 'tecnologia'
           const eFe = t.origem === 'fe'
 
-          let classeCor = 'text-emerald-700 hover:text-emerald-500 dark:text-emerald-300 dark:hover:text-emerald-200'
+          let classeTag =
+            'border border-emerald-500/30 bg-emerald-500/10 text-emerald-800 hover:bg-emerald-500/20 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300'
           if (eTech) {
-            classeCor = 'text-sky-700 hover:text-sky-500 dark:text-sky-300 dark:hover:text-sky-200'
+            classeTag =
+              'border border-sky-500/30 bg-sky-500/10 text-sky-800 hover:bg-sky-500/20 dark:border-sky-500/30 dark:bg-sky-500/15 dark:text-sky-300'
           } else if (eFe) {
-            classeCor = 'text-amber-700 hover:text-amber-500 dark:text-amber-300 dark:hover:text-amber-200'
+            classeTag =
+              'border border-amber-500/30 bg-amber-500/10 text-amber-800 hover:bg-amber-500/20 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-300'
           }
 
           return (
             <Link
               key={t.nome}
               href={`/blog/tag/${encodeURIComponent(t.nome)}`}
-              className={`text-sm font-semibold ${classeCor} transition-all duration-200 hover:scale-110 hover:underline decoration-current/40 underline-offset-4`}
+              className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xs ${classeTag}`}
               title={`${t.count} ${t.count === 1 ? 'post' : 'posts'} (${t.origem === 'tecnologia' ? 'Tecnologia' : t.origem === 'fe' ? 'Vida Cristã' : 'Geral'})`}
             >
-              #{t.nome}
+              <span>#{t.nome}</span>
+              <span className="rounded-md bg-white/60 px-1.5 py-0.2 font-mono text-[0.65rem] opacity-80 dark:bg-slate-900/60">
+                {t.count}
+              </span>
             </Link>
           )
         })}
