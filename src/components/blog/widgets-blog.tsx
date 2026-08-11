@@ -6,7 +6,7 @@ import Link from 'next/link'
 import type { RamoCategoria, TagComContagem } from '@/lib/blog/queries'
 
 /**
- * Card 1: Nuvem de Tags
+ * Card 1: Nuvem de Tags com Estética Premium
  */
 export function CardNuvemDeTags({ tags }: { tags: TagComContagem[] }) {
   if (!tags || tags.length === 0) return null
@@ -15,17 +15,20 @@ export function CardNuvemDeTags({ tags }: { tags: TagComContagem[] }) {
   const tagsExibidas = tags.slice(0, 30)
 
   return (
-    <aside className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
-      <div className="flex items-center gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-base text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+    <aside className="group relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-md backdrop-blur-xl transition-all duration-300 hover:border-slate-300 hover:shadow-xl dark:border-slate-800/80 dark:bg-slate-900/80 dark:hover:border-slate-700">
+      {/* Mancha de brilho de fundo */}
+      <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-amber-500/10 blur-2xl transition-all group-hover:bg-amber-500/20" />
+
+      <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3.5 dark:border-slate-800/80">
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 text-base text-amber-600 shadow-xs dark:from-amber-500/30 dark:to-orange-500/20 dark:text-amber-400">
           🏷️
         </span>
-        <h3 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+        <h3 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">
           Nuvem de Tags
         </h3>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-1">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-3">
         {tagsExibidas.map((t) => {
           const eTech = t.origem === 'tecnologia'
           const eFe = t.origem === 'fe'
@@ -41,7 +44,7 @@ export function CardNuvemDeTags({ tags }: { tags: TagComContagem[] }) {
             <Link
               key={t.nome}
               href={`/blog/tag/${encodeURIComponent(t.nome)}`}
-              className={`text-sm font-semibold ${classeCor} transition-all duration-200 hover:scale-105 hover:underline decoration-current/40 underline-offset-4`}
+              className={`text-sm font-semibold ${classeCor} transition-all duration-200 hover:scale-110 hover:underline decoration-current/40 underline-offset-4`}
               title={`${t.count} ${t.count === 1 ? 'post' : 'posts'} (${t.origem === 'tecnologia' ? 'Tecnologia' : t.origem === 'fe' ? 'Vida Cristã' : 'Geral'})`}
             >
               #{t.nome}
@@ -53,13 +56,18 @@ export function CardNuvemDeTags({ tags }: { tags: TagComContagem[] }) {
   )
 }
 
-
-
-
 /**
- * Card 2: Árvore de Categorias
+ * Card 2: Árvore de Categorias Interativa com Filtro ao Clicar na Linha
  */
-export function CardArvoreDeCategorias({ ramos }: { ramos: RamoCategoria[] }) {
+export function CardArvoreDeCategorias({
+  ramos,
+  categoriaSelecionada,
+  onSelecionarCategoria,
+}: {
+  ramos: RamoCategoria[]
+  categoriaSelecionada?: string | null
+  onSelecionarCategoria?: (categoriaChave: string | null) => void
+}) {
   const [ramosAbertos, setRamosAbertos] = useState<Record<string, boolean>>({
     'Tecnologia & Inovação': true,
     'Vida Cristã & Fé': true,
@@ -72,17 +80,32 @@ export function CardArvoreDeCategorias({ ramos }: { ramos: RamoCategoria[] }) {
   if (!ramos || ramos.length === 0) return null
 
   return (
-    <aside className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
-      <div className="flex items-center gap-2 border-b border-slate-100 pb-3 dark:border-slate-800">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-base text-sky-600 dark:bg-sky-500/20 dark:text-sky-400">
-          🌳
-        </span>
-        <h3 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
-          Árvore de Categorias
-        </h3>
+    <aside className="group relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-md backdrop-blur-xl transition-all duration-300 hover:border-slate-300 hover:shadow-xl dark:border-slate-800/80 dark:bg-slate-900/80 dark:hover:border-slate-700">
+      {/* Mancha de brilho de fundo */}
+      <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-sky-500/10 blur-2xl transition-all group-hover:bg-sky-500/20" />
+
+      <div className="flex items-center justify-between border-b border-slate-100 pb-3.5 dark:border-slate-800/80">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500/20 to-blue-500/10 text-base text-sky-600 shadow-xs dark:from-sky-500/30 dark:to-blue-500/20 dark:text-sky-400">
+            🌳
+          </span>
+          <h3 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">
+            Árvore de Categorias
+          </h3>
+        </div>
+
+        {categoriaSelecionada && onSelecionarCategoria && (
+          <button
+            type="button"
+            onClick={() => onSelecionarCategoria(null)}
+            className="cursor-pointer font-mono text-xs font-bold text-amber-600 hover:underline dark:text-amber-400"
+          >
+            Ver todas
+          </button>
+        )}
       </div>
 
-      <div className="flex flex-col gap-3 font-mono text-sm">
+      <div className="flex flex-col gap-3 pt-3 font-mono text-sm">
         {ramos.map((ramo) => {
           const aberto = ramosAbertos[ramo.titulo] ?? true
 
@@ -92,39 +115,65 @@ export function CardArvoreDeCategorias({ ramos }: { ramos: RamoCategoria[] }) {
               <button
                 type="button"
                 onClick={() => alternarRamo(ramo.titulo)}
-                className="flex w-full cursor-pointer items-center justify-between rounded-xl bg-slate-100/80 px-3 py-2 text-left font-bold text-slate-800 transition-colors hover:bg-slate-200/80 dark:bg-slate-800/60 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="flex w-full cursor-pointer items-center justify-between rounded-xl bg-slate-100/90 px-3.5 py-2.5 text-left font-bold text-slate-800 shadow-2xs transition-all hover:bg-slate-200/90 dark:bg-slate-800/70 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 <div className="flex items-center gap-2">
-                  <span>{aberto ? '📂' : '📁'}</span>
-                  <span>
+                  <span className="text-base">{aberto ? '📂' : '📁'}</span>
+                  <span className="text-xs font-bold">
                     {ramo.icone} {ramo.titulo}
                   </span>
                 </div>
-                <span className="rounded-md bg-white px-2 py-0.5 text-xs text-slate-600 shadow-xs dark:bg-slate-900 dark:text-slate-400">
+                <span className="rounded-md bg-white px-2 py-0.5 font-mono text-[0.7rem] text-slate-600 shadow-2xs dark:bg-slate-900 dark:text-slate-300">
                   {ramo.totalRamo}
                 </span>
               </button>
 
-              {/* Galhos / Subcategorias */}
+              {/* Galhos / Subcategorias Clicáveis */}
               {aberto && (
-                <div className="ml-3 flex flex-col border-l-2 border-slate-200 pl-3 dark:border-slate-800">
+                <div className="ml-3.5 flex flex-col border-l-2 border-slate-200/80 pl-3.5 dark:border-slate-800">
                   {ramo.subcategorias.map((sub, idx) => {
                     const eUltimo = idx === ramo.subcategorias.length - 1
+                    const selecionado = categoriaSelecionada === sub.chave
+
                     return (
-                      <div
+                      <button
+                        type="button"
                         key={sub.chave}
-                        className="flex items-center justify-between py-1.5 text-xs transition-colors hover:text-amber-600 dark:hover:text-amber-400"
+                        onClick={() => {
+                          if (onSelecionarCategoria) {
+                            onSelecionarCategoria(selecionado ? null : sub.chave)
+                          }
+                        }}
+                        className={`group/linha flex w-full cursor-pointer items-center justify-between rounded-lg px-2 py-1.5 text-left transition-all ${
+                          selecionado
+                            ? 'bg-amber-500/15 font-bold text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
+                            : 'hover:bg-slate-100/80 dark:hover:bg-slate-800/50'
+                        }`}
                       >
-                        <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
-                          <span className="text-slate-400 dark:text-slate-600">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-slate-400 transition-colors group-hover/linha:text-amber-500 dark:text-slate-600">
                             {eUltimo ? '└─' : '├─'}
                           </span>
-                          <span>{sub.rotulo}</span>
+                          <span
+                            className={`text-xs transition-colors ${
+                              selecionado
+                                ? 'font-bold text-amber-700 dark:text-amber-300'
+                                : 'text-slate-600 group-hover/linha:text-slate-900 dark:text-slate-300 dark:group-hover/linha:text-white'
+                            }`}
+                          >
+                            {sub.rotulo}
+                          </span>
                         </div>
-                        <span className="font-semibold text-slate-500 dark:text-slate-500">
+                        <span
+                          className={`font-mono text-[0.7rem] ${
+                            selecionado
+                              ? 'font-bold text-amber-700 dark:text-amber-300'
+                              : 'text-slate-400 group-hover/linha:text-slate-600 dark:text-slate-500 dark:group-hover/linha:text-slate-400'
+                          }`}
+                        >
                           ({sub.count})
                         </span>
-                      </div>
+                      </button>
                     )
                   })}
                 </div>
