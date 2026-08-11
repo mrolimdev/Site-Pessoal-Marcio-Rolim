@@ -1,15 +1,16 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 
 import { CabecalhoBlog, CascaBlog } from '@/components/blog/casca-blog'
 import { PostCard, PostCardDestaque } from '@/components/blog/post-card'
-import { SITE, urlAbsoluta } from '@/content/site'
+import { MEDIA, SITE, urlAbsoluta } from '@/content/site'
 import { listarPostsAgrupadosPorSecoes } from '@/lib/blog/queries'
 
-export const revalidate = 3600
+export const revalidate = 60
 
-const TITULO = 'Blog'
+const TITULO = 'Blog do Marcio Rolim'
 const DESCRICAO =
-  'Artigos sobre inteligência artificial, automação e negócios, lado a lado com reflexões sobre fé e vida cristã.'
+  'Artigos sobre inteligência artificial, automação e desenvolvimento de software, lado a lado com reflexões sobre fé, sabedoria e vida cristã.'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -44,26 +45,58 @@ export default async function BlogPage() {
   return (
     <CascaBlog voltar={{ href: '/', rotulo: 'Início' }}>
       <CabecalhoBlog>
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <a
-            href="#tecnologia"
-            className="w-fit rounded-full border border-sky-500/30 bg-sky-500/10 px-3.5 py-1.5 font-mono text-xs font-semibold text-sky-700 transition-all hover:bg-sky-500/20 dark:text-sky-300"
-          >
-            💻 Tecnologia & Automação ({totalTecnologia})
-          </a>
-          <a
-            href="#vida-crista"
-            className="w-fit rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1.5 font-mono text-xs font-semibold text-amber-700 transition-all hover:bg-amber-500/20 dark:text-amber-300"
-          >
-            ✝️ Vida Cristã & Fé ({totalVidaCrista})
-          </a>
+        <div className="flex flex-col items-center gap-6 text-center md:flex-row md:items-start md:text-left">
+          {/* Foto de Perfil */}
+          <div className="relative group flex-none">
+            <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-sky-500 opacity-75 blur transition duration-500 group-hover:opacity-100" />
+            <div className="relative h-28 w-28 overflow-hidden rounded-full border-2 border-white shadow-xl dark:border-slate-800 md:h-32 md:w-32">
+              <Image
+                src={MEDIA.profileImageUrl}
+                alt={SITE.name}
+                fill
+                sizes="(min-width: 768px) 8rem, 7rem"
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                priority
+              />
+            </div>
+          </div>
+
+          {/* Informações do Autor */}
+          <div className="flex flex-1 flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-2 md:justify-start">
+              <span className="w-fit rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 font-mono text-xs font-semibold text-amber-700 dark:text-amber-300">
+                Consultor de Tecnologia
+              </span>
+              <span className="w-fit rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 font-mono text-xs font-semibold text-sky-700 dark:text-sky-300">
+                Pastor Evangélico
+              </span>
+            </div>
+
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl dark:text-white">
+              {SITE.name}
+            </h1>
+
+            <p className="max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-300">
+              {DESCRICAO}
+            </p>
+
+            {/* Badges de Navegação por Área */}
+            <div className="mt-2 flex flex-wrap items-center justify-center gap-3 md:justify-start">
+              <a
+                href="#tecnologia"
+                className="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-4 py-2 font-mono text-xs font-bold text-sky-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-sky-500/20 dark:text-sky-300"
+              >
+                <span>💻</span> Tecnologia & Automação ({totalTecnologia})
+              </a>
+              <a
+                href="#vida-crista"
+                className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2 font-mono text-xs font-bold text-amber-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-amber-500/20 dark:text-amber-300"
+              >
+                <span>✝️</span> Vida Cristã & Fé ({totalVidaCrista})
+              </a>
+            </div>
+          </div>
         </div>
-        <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl dark:text-white">
-          {TITULO}
-        </h1>
-        <p className="max-w-2xl text-lg leading-relaxed text-slate-600 dark:text-slate-300">
-          {DESCRICAO}
-        </p>
       </CabecalhoBlog>
 
       <main className="mx-auto flex max-w-5xl flex-col gap-16 px-6 py-12">
