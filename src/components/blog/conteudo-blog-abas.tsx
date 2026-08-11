@@ -194,9 +194,9 @@ export function ConteudoBlogAbas({
           )}
         </div>
 
-        {/* COLUNA DIREITA: ÁREA DE WIDGETS COM SCROLL INDEPENDENTE NO DESKTOP */}
+        {/* COLUNA DIREITA: ÁREA DE WIDGETS COM SCROLL INTELEGINTE E BARRA OCULTA NO DESKTOP */}
         <div className="flex flex-col gap-8 lg:col-span-4">
-          <div className="flex flex-col gap-8 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-2 lg:overscroll-contain">
+          <div className="flex flex-col gap-8 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             {/* Card 1: Nuvem de Tags Dinâmica por Aba e Origem */}
             <CardNuvemDeTags tags={tagsFiltradas} />
 
@@ -204,6 +204,7 @@ export function ConteudoBlogAbas({
             <CardArvoreDeCategorias ramos={dadosWidgets.arvoreCategorias} />
           </div>
         </div>
+
       </div>
     </div>
   )
