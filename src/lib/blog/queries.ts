@@ -514,13 +514,16 @@ export async function obterEstatisticasWidgets(): Promise<DadosWidgets> {
 }
 
 /**
- * Busca 3 posts relacionados (preferencialmente dentro da mesma categoria, excluindo o post atual).
+ * Busca 3 posts relacionados (ESTRITAMENTE dentro da mesma área: Tecnologia com Tecnologia, Fé com Fé).
  */
 export async function obterPostsRelacionados(
   slugAtual: string,
   categoria: Categoria,
   limite = 3
 ): Promise<PostResumo[]> {
+  const eFe = categoria === 'fe'
+
+  // 1. Busca da mesma categoria exata primeiro
   const { data: daMesmaCategoria } = await supabase
     .from('posts')
     .select(COLUNAS_RESUMO)
@@ -534,15 +537,26 @@ export async function obterPostsRelacionados(
 
   const resultados = (daMesmaCategoria ?? []).map(paraResumo)
 
+  // 2. Se faltar para completar 3, busca posts dentro da MESMA ÁREA (sem misturar Fé e Tech)
   if (resultados.length < limite) {
     const slugsExistentes = new Set([slugAtual, ...resultados.map((p) => p.slug)])
-    const { data: complementares } = await supabase
+
+    let queryComplementar = supabase
       .from('posts')
       .select(COLUNAS_RESUMO)
       .eq('status', 'published')
       .not('published_at', 'is', null)
+      .neq('slug', slugAtual)
+
+    if (eFe) {
+      queryComplementar = queryComplementar.eq('category', 'fe')
+    } else {
+      queryComplementar = queryComplementar.neq('category', 'fe')
+    }
+
+    const { data: complementares } = await queryComplementar
       .order('published_at', { ascending: false })
-      .limit(limite * 2)
+      .limit(limite * 3)
       .returns<LinhaResumo[]>()
 
     for (const linha of complementares ?? []) {
