@@ -420,7 +420,9 @@ export async function listarPostsAgrupadosPorSecoes(): Promise<PostsPorSecao> {
 export type TagComContagem = {
   nome: string
   count: number
+  origem?: 'tecnologia' | 'fe' | 'ambas'
 }
+
 
 export type CategoriaNo = {
   chave: string

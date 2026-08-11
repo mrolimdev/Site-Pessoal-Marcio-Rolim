@@ -34,24 +34,45 @@ export function CardNuvemDeTags({ tags }: { tags: TagComContagem[] }) {
           // Peso normalizado entre 0 e 1
           const proporcao = maxCount === minCount ? 1 : (t.count - minCount) / (maxCount - minCount)
 
-          // Escala de tamanho e peso visual baseada na contagem
-          let classeTamanho = 'text-xs font-normal text-slate-500 dark:text-slate-400'
-          if (proporcao > 0.8) {
-            classeTamanho = 'text-xl font-extrabold text-amber-600 dark:text-amber-400'
-          } else if (proporcao > 0.6) {
-            classeTamanho = 'text-lg font-bold text-slate-900 dark:text-white'
-          } else if (proporcao > 0.4) {
-            classeTamanho = 'text-base font-semibold text-slate-800 dark:text-slate-200'
-          } else if (proporcao > 0.2) {
-            classeTamanho = 'text-sm font-medium text-slate-600 dark:text-slate-300'
+          // Estilo de cor diferenciado por origem
+          const eTech = t.origem === 'tecnologia'
+          const eFe = t.origem === 'fe'
+
+          let classeEstilo = ''
+
+          if (eTech) {
+            if (proporcao > 0.7) {
+              classeEstilo = 'text-xl font-extrabold text-sky-600 dark:text-sky-400 hover:text-sky-500'
+            } else if (proporcao > 0.4) {
+              classeEstilo = 'text-base font-semibold text-sky-700/90 dark:text-sky-300 hover:text-sky-500'
+            } else {
+              classeEstilo = 'text-xs font-medium text-sky-800/70 dark:text-sky-400/80 hover:text-sky-500'
+            }
+          } else if (eFe) {
+            if (proporcao > 0.7) {
+              classeEstilo = 'text-xl font-extrabold text-amber-600 dark:text-amber-400 hover:text-amber-500'
+            } else if (proporcao > 0.4) {
+              classeEstilo = 'text-base font-semibold text-amber-700/90 dark:text-amber-300 hover:text-amber-500'
+            } else {
+              classeEstilo = 'text-xs font-medium text-amber-800/70 dark:text-amber-400/80 hover:text-amber-500'
+            }
+          } else {
+            // Ambas
+            if (proporcao > 0.7) {
+              classeEstilo = 'text-xl font-extrabold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500'
+            } else if (proporcao > 0.4) {
+              classeEstilo = 'text-base font-semibold text-emerald-700/90 dark:text-emerald-300 hover:text-emerald-500'
+            } else {
+              classeEstilo = 'text-xs font-medium text-emerald-800/70 dark:text-emerald-400/80 hover:text-emerald-500'
+            }
           }
 
           return (
             <Link
               key={t.nome}
               href={`/blog/tag/${encodeURIComponent(t.nome)}`}
-              className={`${classeTamanho} transition-all duration-300 hover:scale-110 hover:text-amber-600 dark:hover:text-amber-300 hover:underline decoration-amber-500/40 underline-offset-4`}
-              title={`${t.count} ${t.count === 1 ? 'post' : 'posts'}`}
+              className={`${classeEstilo} transition-all duration-300 hover:scale-110 hover:underline decoration-current/40 underline-offset-4`}
+              title={`${t.count} ${t.count === 1 ? 'post' : 'posts'} (${t.origem === 'tecnologia' ? 'Tecnologia' : t.origem === 'fe' ? 'Vida Cristã' : 'Geral'})`}
             >
               #{t.nome}
             </Link>
@@ -61,6 +82,7 @@ export function CardNuvemDeTags({ tags }: { tags: TagComContagem[] }) {
     </aside>
   )
 }
+
 
 
 /**

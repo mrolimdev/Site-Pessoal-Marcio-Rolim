@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { PostCard, PostCardDestaque } from '@/components/blog/post-card'
 import { CardArvoreDeCategorias, CardNuvemDeTags } from '@/components/blog/widgets-blog'
-import type { DadosWidgets, PostResumo } from '@/lib/blog/queries'
+import type { DadosWidgets, PostResumo, TagComContagem } from '@/lib/blog/queries'
 
 type Aba = 'todas' | 'tecnologia' | 'fe'
 
@@ -28,6 +28,53 @@ export function ConteudoBlogAbas({
 
   const destaqueFe = postsVidaCrista[0]
   const demaisFe = postsVidaCrista.slice(1)
+
+  // ─── TAGS DINÂMICAS POR ABA E POR ORIGEM ───
+  const tagsFiltradas = useMemo<TagComContagem[]>(() => {
+    const mapaTech = new Map<string, number>()
+    const mapaFe = new Map<string, number>()
+
+    postsTecnologia.forEach((p) => {
+      p.tags?.forEach((t) => {
+        const limpa = t.trim().toLowerCase()
+        if (limpa) mapaTech.set(limpa, (mapaTech.get(limpa) ?? 0) + 1)
+      })
+    })
+
+    postsVidaCrista.forEach((p) => {
+      p.tags?.forEach((t) => {
+        const limpa = t.trim().toLowerCase()
+        if (limpa) mapaFe.set(limpa, (mapaFe.get(limpa) ?? 0) + 1)
+      })
+    })
+
+    if (abaAtiva === 'tecnologia') {
+      return Array.from(mapaTech.entries())
+        .map(([nome, count]) => ({ nome, count, origem: 'tecnologia' as const }))
+        .sort((a, b) => b.count - a.count || a.nome.localeCompare(b.nome, 'pt-BR'))
+    }
+
+    if (abaAtiva === 'fe') {
+      return Array.from(mapaFe.entries())
+        .map(([nome, count]) => ({ nome, count, origem: 'fe' as const }))
+        .sort((a, b) => b.count - a.count || a.nome.localeCompare(b.nome, 'pt-BR'))
+    }
+
+    // Aba 'todas': mostra todas as tags com origem marcada
+    const todasChaves = new Set([...mapaTech.keys(), ...mapaFe.keys()])
+    return Array.from(todasChaves)
+      .map((nome) => {
+        const countTech = mapaTech.get(nome) ?? 0
+        const countFe = mapaFe.get(nome) ?? 0
+        const total = countTech + countFe
+        let origem: 'tecnologia' | 'fe' | 'ambas' = 'ambas'
+        if (countTech > 0 && countFe === 0) origem = 'tecnologia'
+        if (countFe > 0 && countTech === 0) origem = 'fe'
+
+        return { nome, count: total, origem }
+      })
+      .sort((a, b) => b.count - a.count || a.nome.localeCompare(b.nome, 'pt-BR'))
+  }, [abaAtiva, postsTecnologia, postsVidaCrista])
 
   return (
     <div className="flex flex-col gap-10">
@@ -150,14 +197,13 @@ export function ConteudoBlogAbas({
         {/* COLUNA DIREITA: ÁREA DE WIDGETS COM SCROLL INDEPENDENTE NO DESKTOP */}
         <div className="flex flex-col gap-8 lg:col-span-4">
           <div className="flex flex-col gap-8 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-2 lg:overscroll-contain">
-            {/* Card 1: Nuvem de Tags */}
-            <CardNuvemDeTags tags={dadosWidgets.nuvemTags} />
+            {/* Card 1: Nuvem de Tags Dinâmica por Aba e Origem */}
+            <CardNuvemDeTags tags={tagsFiltradas} />
 
             {/* Card 2: Árvore de Categorias */}
             <CardArvoreDeCategorias ramos={dadosWidgets.arvoreCategorias} />
           </div>
         </div>
-
       </div>
     </div>
   )
