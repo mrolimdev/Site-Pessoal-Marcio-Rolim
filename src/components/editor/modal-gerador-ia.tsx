@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 
 import {
   gerarPostCompletoComIaAction,
@@ -25,6 +26,7 @@ export function ModalGeradorIa({
 }: Props) {
   const [apiKey, setApiKey] = useState('')
   const [mostrarApiKey, setMostrarApiKey] = useState(false)
+  const [modeloId, setModeloId] = useState('gemini-2.0-flash')
 
   const [tema, setTema] = useState('')
   const [categoria, setCategoria] = useState<Categoria>(categoriaAtual)
@@ -37,13 +39,16 @@ export function ModalGeradorIa({
   const [sugestoesTitulos, setSugestoesTitulos] = useState<SugestaoTitulo[]>([])
   const [tituloSelecionado, setTituloSelecionado] = useState<string | null>(null)
 
-  // Carrega a chave salva no localStorage no client-side
+  // Carrega a chave e o modelo selecionado no localStorage
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const salva = localStorage.getItem('gemini_admin_api_key')
-      if (salva) setApiKey(salva)
+    if (typeof window !== 'undefined' && aberto) {
+      const salvaKey = localStorage.getItem('gemini_admin_api_key')
+      const salvaMod = localStorage.getItem('gemini_admin_model_id')
+
+      if (salvaKey) setApiKey(salvaKey)
+      if (salvaMod) setModeloId(salvaMod)
     }
-  }, [])
+  }, [aberto])
 
   // Salva a chave no localStorage ao alterar
   const salvarApiKeyLocal = (val: string) => {
@@ -65,12 +70,13 @@ export function ModalGeradorIa({
 
     setErro(null)
     setCarregando(true)
-    setStatusMensagem('Consultando tendências no Google Trends e gerando títulos com a Gemini API...')
+    setStatusMensagem(`Consultando tendências no Google e gerando títulos com o modelo ${modeloId}...`)
 
     const resp = await obterSugestoesDeTitulosAction({
       tema,
       categoria,
       apiKeyInformada: apiKey,
+      modeloId,
     })
 
     setCarregando(false)
@@ -91,7 +97,7 @@ export function ModalGeradorIa({
     setCarregando(true)
     setPasso('gerando_post')
     setStatusMensagem(
-      'Redigindo artigo extenso (~1500 palavras), Tiptap JSON, SEO, tags e imagem de capa...'
+      `Redigindo artigo extenso (~1500 palavras), Tiptap JSON e SEO com o modelo ${modeloId}...`
     )
 
     const resp = await gerarPostCompletoComIaAction({
@@ -99,6 +105,7 @@ export function ModalGeradorIa({
       tema,
       categoria,
       apiKeyInformada: apiKey,
+      modeloId,
     })
 
     setCarregando(false)
@@ -124,11 +131,23 @@ export function ModalGeradorIa({
               ✨
             </span>
             <div>
-              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-                Assistente de Criação de Post com IA
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                  Assistente de Criação de Post com IA
+                </h3>
+                <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 font-mono text-[0.65rem] font-bold text-amber-700 dark:text-amber-300">
+                  {modeloId}
+                </span>
+              </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Alimentado pela API do Google Gemini com análise de tendências
+                Modelo ativo selecionado nas{' '}
+                <Link
+                  href="/admin/configuracoes"
+                  target="_blank"
+                  className="text-amber-600 underline dark:text-amber-400"
+                >
+                  Configurações IA
+                </Link>
               </p>
             </div>
           </div>
@@ -237,7 +256,7 @@ export function ModalGeradorIa({
                 {carregando ? (
                   <>
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Analisando...
+                    Analisando com {modeloId}...
                   </>
                 ) : (
                   <>🔍 Buscar Tendências & Gerar Títulos</>
