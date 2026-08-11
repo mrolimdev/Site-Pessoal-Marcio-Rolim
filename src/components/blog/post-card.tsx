@@ -53,13 +53,16 @@ function CapaOuPlaceholder({
 export function PostCard({
   post,
   prioridade = false,
+  className = '',
 }: {
   post: PostResumo
   /** `true` só no primeiro cartão visível: pré-carrega a capa acima da dobra. */
   prioridade?: boolean
+  /** Usado pela esteira, que precisa de `h-full` para igualar as alturas. */
+  className?: string
 }) {
   return (
-    <article className={CARTAO}>
+    <article className={`${CARTAO} ${className}`}>
       <div className="relative aspect-[16/9] overflow-hidden bg-stone-100 dark:bg-slate-800">
         <CapaOuPlaceholder
           post={post}
@@ -99,7 +102,17 @@ export function PostCard({
 }
 
 /** Primeiro post da primeira página: mesma informação, mais presença. */
-export function PostCardDestaque({ post }: { post: PostResumo }) {
+export function PostCardDestaque({
+  post,
+  rotulo = 'Mais recente',
+}: {
+  post: PostResumo
+  /**
+   * Texto da tarja. Na aba "Todas" há um destaque por área, e duas tarjas
+   * dizendo "Mais recente" lado a lado não diriam qual é o quê.
+   */
+  rotulo?: string
+}) {
   return (
     <article className={`${CARTAO} md:flex-row`}>
       <div className="relative aspect-[16/9] overflow-hidden bg-stone-100 md:aspect-auto md:w-1/2 dark:bg-slate-800">
@@ -113,7 +126,7 @@ export function PostCardDestaque({ post }: { post: PostResumo }) {
       <div className="flex flex-1 flex-col gap-4 p-6 md:p-8">
         <div className="flex flex-wrap items-center gap-2">
           <span className="w-fit rounded-full bg-gradient-to-r from-amber-500 to-orange-600 px-3 py-1 text-xs font-bold tracking-wide text-white uppercase">
-            Mais recente
+            {rotulo}
           </span>
           <CategoriaBadge categoria={post.categoria} />
         </div>
