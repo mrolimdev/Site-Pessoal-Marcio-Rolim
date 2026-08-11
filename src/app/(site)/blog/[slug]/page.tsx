@@ -110,24 +110,16 @@ export default async function PostPage({ params }: Props) {
   const postsRelacionados = await obterPostsRelacionados(post.slug, post.categoria, 3)
 
   return (
-    <CascaBlog>
+    <CascaBlog voltar={{ href: '/blog', rotulo: 'Blog' }}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdDoPost(post) }}
       />
 
       {/* ─── CABEÇALHO MODERNO DO POST ─── */}
-      <header className="relative overflow-hidden border-b border-slate-200/80 bg-gradient-to-b from-stone-100/90 via-stone-50/50 to-white py-12 dark:border-slate-800/80 dark:from-slate-900/90 dark:via-slate-900/50 dark:to-slate-950">
+      <header className="relative overflow-hidden border-b border-slate-200/80 bg-gradient-to-b from-stone-100/90 via-stone-50/50 to-white pt-24 pb-12 dark:border-slate-800/80 dark:from-slate-900/90 dark:via-slate-900/50 dark:to-slate-950">
         <div className="mx-auto flex max-w-4xl flex-col gap-6 px-6">
-          <div className="flex items-center justify-between">
-            <Link
-              href="/blog"
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-4 py-1.5 font-mono text-xs font-bold text-slate-600 shadow-2xs backdrop-blur-md transition-all hover:border-amber-500/40 hover:text-amber-600 dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:text-amber-400"
-            >
-              <ArrowLeftIcon className="h-3.5 w-3.5" />
-              Voltar ao Blog
-            </Link>
-
+          <div>
             <CategoriaBadge categoria={post.categoria} />
           </div>
 
