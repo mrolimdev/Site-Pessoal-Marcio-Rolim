@@ -95,6 +95,14 @@
   }
   ::-webkit-scrollbar-thumb:hover { background: rgb(148 163 184 / 0.6); }
 
+  /* As sentinelas de scroll do analytics são posicionadas em pixels da tela.
+     Na impressão elas esticariam o documento com páginas em branco. */
+  @media print {
+    [data-mr-sentinelas] {
+      display: none !important;
+    }
+  }
+
   /* Respeita quem pediu menos movimento no sistema. */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {

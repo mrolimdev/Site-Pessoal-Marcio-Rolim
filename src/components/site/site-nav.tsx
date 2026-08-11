@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 import { CloseIcon, MenuIcon, WhatsAppIcon } from '@/components/icons'
@@ -29,6 +30,7 @@ const TEXTO_LINK =
   'text-stone-500 hover:text-stone-900 dark:text-slate-400 dark:hover:text-white'
 
 export function SiteNav() {
+  const router = useRouter()
   const [rolou, setRolou] = useState(false)
   const [menuAberto, setMenuAberto] = useState(false)
 
@@ -68,10 +70,21 @@ export function SiteNav() {
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 md:h-18">
-            {/* Logo */}
+            {/* Logo. Triplo clique é a porta discreta do painel: não há link
+                visível para /admin em lugar nenhum do site público, de propósito.
+                `event.detail` é o contador de cliques do próprio browser, então
+                não precisamos de temporizador nem de estado.
+                Isso não é segurança — é só discrição. Quem digitar /admin cai no
+                login igual, e a autorização continua sendo o requireAdmin(). */}
             <a
               href="#"
-              className="flex items-center gap-3 font-bold text-lg text-stone-900 dark:text-white transition-colors"
+              onClick={(e) => {
+                if (e.detail === 3) {
+                  e.preventDefault()
+                  router.push('/admin')
+                }
+              }}
+              className="flex items-center gap-3 font-bold text-lg text-stone-900 dark:text-white transition-colors select-none"
             >
               <div
                 className={`transition-all duration-500 flex-shrink-0 ${

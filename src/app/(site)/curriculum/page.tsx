@@ -155,6 +155,11 @@ export default function CurriculumPage() {
             <div className="cv-photo animate-scale-in shrink-0">
               <div className="relative">
                 <div className="cv-photo-frame h-40 w-40 rotate-3 overflow-hidden rounded-2xl shadow-2xl shadow-amber-500/10 ring-4 ring-amber-500/30 transition-transform duration-500 hover:rotate-0 md:h-48 md:w-48">
+                  {/* NÃO trocar por `fill`: já tentei, e o posicionamento
+                      absoluto escapa do contêiner no contexto de impressão —
+                      o PDF do currículo saltou de 2 para 6 páginas. As
+                      dimensões explícitas com h-full/w-full são o que mantém
+                      a paginação correta. */}
                   <Image
                     src={FOTO_PERFIL_URL}
                     alt={NOME}

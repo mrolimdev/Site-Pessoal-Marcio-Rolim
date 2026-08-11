@@ -43,18 +43,29 @@ export async function proxy(request: NextRequest) {
 
   const caminho = request.nextUrl.pathname
 
-  // Checagem OTIMISTA apenas: "tem cookie de sessão?". A autorização de
-  // verdade é requireAdmin(), chamada dentro de cada página e action de
-  // /admin. Confiar só nisto seria errado — o proxy não sabe se o usuário
-  // é admin, e uma refatoração pode tirar uma rota da cobertura em silêncio.
-  if (caminho.startsWith('/admin') && !autenticado) {
+  // SÓ redirecionamos navegação de documento (GET).
+  //
+  // Server Actions chegam como POST para a URL da própria página — o formulário
+  // de login faz POST /auth/login, e uma action do painel faz POST /admin/...
+  // Responder a esses POSTs com um redirect entrega ao React um documento HTML
+  // onde ele espera o formato de resposta de action, e o resultado é o erro
+  // "An unexpected response was received from the server", que não diz nada a
+  // quem está usando o site.
+  //
+  // Deixando o POST passar, quem decide é a própria action: `entrar` devolve
+  // erro de credencial, e `requireAdmin()` lança, virando um erro tratável pelo
+  // boundary. Isso também é coerente com o desenho: este proxy é uma checagem
+  // otimista de navegação, nunca a autorização de verdade.
+  const navegacao = request.method === 'GET'
+
+  if (navegacao && caminho.startsWith('/admin') && !autenticado) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
     url.searchParams.set('proximo', caminho)
     return NextResponse.redirect(url)
   }
 
-  if (caminho === '/auth/login' && autenticado) {
+  if (navegacao && caminho === '/auth/login' && autenticado) {
     const url = request.nextUrl.clone()
     url.pathname = '/admin'
     url.search = ''

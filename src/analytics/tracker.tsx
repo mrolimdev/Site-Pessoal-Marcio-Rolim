@@ -159,6 +159,12 @@ function reposicionar() {
 function montarSentinelas() {
   const container = document.createElement('div')
   container.setAttribute('aria-hidden', 'true')
+  // O atributo existe para o CSS poder esconder isto na impressão. As
+  // sentinelas recebem `top` em pixels calculado sobre o scrollHeight DA TELA;
+  // ao imprimir, o leiaute reflui para A4 mas esses deslocamentos permanecem,
+  // e um `top: 3000px` estica o documento com páginas em branco no fim.
+  // Custou 4 páginas fantasma no PDF do currículo até ser encontrado.
+  container.dataset.mrSentinelas = ''
   container.style.cssText =
     'position:absolute;top:0;left:0;width:0;height:0;pointer-events:none;'
 
