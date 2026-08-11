@@ -11,8 +11,12 @@ import type { RamoCategoria, TagComContagem } from '@/lib/blog/queries'
 export function CardNuvemDeTags({ tags }: { tags: TagComContagem[] }) {
   if (!tags || tags.length === 0) return null
 
-  // Maior contagem para calcular escala relativa
-  const maxCount = Math.max(...tags.map((t) => t.count), 1)
+  // Limita à caixa de 30 tags
+  const tagsExibidas = tags.slice(0, 30)
+
+  // Maior e menor contagem para calcular escala relativa
+  const maxCount = Math.max(...tagsExibidas.map((t) => t.count), 1)
+  const minCount = Math.min(...tagsExibidas.map((t) => t.count), 1)
 
   return (
     <aside className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/60">
@@ -25,22 +29,31 @@ export function CardNuvemDeTags({ tags }: { tags: TagComContagem[] }) {
         </h3>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 pt-1">
-        {tags.map((t) => {
-          // Varia o tamanho visual de acordo com a frequência
-          const peso = t.count / maxCount
-          const tamanho = peso > 0.6 ? 'text-sm font-bold' : peso > 0.3 ? 'text-xs font-semibold' : 'text-[0.75rem] font-medium'
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2.5 pt-1">
+        {tagsExibidas.map((t) => {
+          // Peso normalizado entre 0 e 1
+          const proporcao = maxCount === minCount ? 1 : (t.count - minCount) / (maxCount - minCount)
+
+          // Escala de tamanho e peso visual baseada na contagem
+          let classeTamanho = 'text-xs font-normal text-slate-500 dark:text-slate-400'
+          if (proporcao > 0.8) {
+            classeTamanho = 'text-xl font-extrabold text-amber-600 dark:text-amber-400'
+          } else if (proporcao > 0.6) {
+            classeTamanho = 'text-lg font-bold text-slate-900 dark:text-white'
+          } else if (proporcao > 0.4) {
+            classeTamanho = 'text-base font-semibold text-slate-800 dark:text-slate-200'
+          } else if (proporcao > 0.2) {
+            classeTamanho = 'text-sm font-medium text-slate-600 dark:text-slate-300'
+          }
 
           return (
             <Link
               key={t.nome}
               href={`/blog/tag/${encodeURIComponent(t.nome)}`}
-              className={`inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 ${tamanho} text-slate-700 transition-all hover:-translate-y-0.5 hover:border-amber-500/50 hover:bg-amber-500/10 hover:text-amber-800 dark:border-slate-800 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:border-amber-500/40 dark:hover:bg-amber-500/20 dark:hover:text-amber-300`}
+              className={`${classeTamanho} transition-all duration-300 hover:scale-110 hover:text-amber-600 dark:hover:text-amber-300 hover:underline decoration-amber-500/40 underline-offset-4`}
+              title={`${t.count} ${t.count === 1 ? 'post' : 'posts'}`}
             >
-              <span>#{t.nome}</span>
-              <span className="rounded-full bg-slate-200/80 px-1.5 py-0.5 font-mono text-[0.65rem] text-slate-600 dark:bg-slate-700 dark:text-slate-400">
-                {t.count}
-              </span>
+              #{t.nome}
             </Link>
           )
         })}
@@ -48,6 +61,7 @@ export function CardNuvemDeTags({ tags }: { tags: TagComContagem[] }) {
     </aside>
   )
 }
+
 
 /**
  * Card 2: Árvore de Categorias
