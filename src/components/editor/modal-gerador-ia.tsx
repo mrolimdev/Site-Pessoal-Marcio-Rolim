@@ -25,7 +25,6 @@ export function ModalGeradorIa({
   categoriaAtual = 'tecnologia',
 }: Props) {
   const [apiKey, setApiKey] = useState('')
-  const [mostrarApiKey, setMostrarApiKey] = useState(false)
   const [modeloId, setModeloId] = useState('gemini-2.0-flash')
 
   const [tema, setTema] = useState('')
@@ -49,14 +48,6 @@ export function ModalGeradorIa({
       if (salvaMod) setModeloId(salvaMod)
     }
   }, [aberto])
-
-  // Salva a chave no localStorage ao alterar
-  const salvarApiKeyLocal = (val: string) => {
-    setApiKey(val)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('gemini_admin_api_key', val.trim())
-    }
-  }
 
   if (!aberto) return null
 
@@ -167,29 +158,6 @@ export function ModalGeradorIa({
             ⚠️ {erro}
           </div>
         )}
-
-        {/* CAMPO DE API KEY DO GEMINI */}
-        <div className="mt-5 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              🔑 Chave da API do Gemini (API Key)
-            </label>
-            <button
-              type="button"
-              onClick={() => setMostrarApiKey(!mostrarApiKey)}
-              className="text-[0.7rem] font-bold text-amber-600 hover:underline dark:text-amber-400"
-            >
-              {mostrarApiKey ? 'Ocultar' : 'Mostrar'}
-            </button>
-          </div>
-          <input
-            type={mostrarApiKey ? 'text' : 'password'}
-            value={apiKey}
-            onChange={(e) => salvarApiKeyLocal(e.target.value)}
-            placeholder="AIzaSy... (será salva com segurança no seu navegador)"
-            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-          />
-        </div>
 
         {/* CONTEÚDO DINÂMICO DOS PASSOS */}
         {passo === 'formulario' && (
