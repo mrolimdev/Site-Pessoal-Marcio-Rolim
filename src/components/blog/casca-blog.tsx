@@ -1,5 +1,6 @@
 import Link from 'next/link'
 
+import { BotaoVoltarAoTopo } from '@/components/blog/botao-voltar-topo'
 import { ArrowLeftIcon } from '@/components/icons'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { LOGO } from '@/content/home'
@@ -42,6 +43,8 @@ export function CascaBlog({
       </div>
 
       {children}
+
+      <BotaoVoltarAoTopo />
 
       <footer className="border-t border-slate-200 px-6 py-10 dark:border-slate-800">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 text-center">
