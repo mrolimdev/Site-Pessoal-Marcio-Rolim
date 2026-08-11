@@ -186,261 +186,596 @@
             animation: scaleIn 0.5s ease-out forwards;
         }
 
+        /* ============================================================
+           IMPRESSÃO / PDF — currículo diagramado em A4
+           Os seletores usam os hooks .cv-* do CurriculumPage.tsx.
+           A ordem importa: o reset de tema vem primeiro, os estilos
+           de componente depois (mesma especificidade, o último vence).
+           ============================================================ */
         @media print {
             @page {
                 size: A4;
-                margin: 8mm 10mm;
+                margin: 13mm 13mm 12mm;
+            }
+
+            @page :first {
+                margin-top: 10mm;
             }
 
             * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
+                animation: none !important;
+                transition: none !important;
+                text-shadow: none !important;
             }
 
             html,
             body {
-                width: 210mm;
-                background: white !important;
-                color: #1e293b !important;
-                font-size: 7.5pt !important;
-                line-height: 1.25 !important;
+                width: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+                font-size: 9pt !important;
+                line-height: 1.45 !important;
                 -webkit-font-smoothing: auto;
             }
 
-            /* Hide non-essential elements */
-            .no-print,
-            header .absolute.inset-0,
-            footer,
-            [class*="shadow"],
-            [class*="animate-"],
-            [class*="hover:"],
-            [class*="backdrop-blur"] {
-                animation: none !important;
-                transition: none !important;
-            }
-
-            .no-print {
-                display: none !important;
-            }
-
-            /* Remove all backgrounds, borders, shadows for clean print */
-            div,
-            section,
-            header,
-            main {
-                background: transparent !important;
+            /* --- Reset de tema: garante saída clara mesmo no modo escuro --- */
+            .cv-root,
+            .cv-root * {
+                background-color: transparent !important;
+                color: #1f2937 !important;
                 box-shadow: none !important;
                 border-color: #e2e8f0 !important;
-            }
-
-            /* Force all text to be dark */
-            h1,
-            h2,
-            h3,
-            p,
-            span,
-            a,
-            li {
-                color: #1e293b !important;
-            }
-
-            h1 {
-                font-size: 16pt !important;
-                margin: 0 !important;
-            }
-
-            h2 {
-                font-size: 10pt !important;
-                margin: 0 0 3px 0 !important;
-            }
-
-            h3 {
-                font-size: 8.5pt !important;
-                margin: 0 !important;
-            }
-
-            /* Header - compact */
-            header {
-                padding: 0 !important;
-                margin: 0 !important;
-                overflow: visible !important;
-            }
-
-            header>div:last-child {
-                padding: 0 !important;
-            }
-
-            /* Hide profile photo in print to save space */
-            header .flex-shrink-0 {
-                display: none !important;
-            }
-
-            /* Make header content full width */
-            header .flex-1 {
                 text-align: left !important;
-                width: 100% !important;
+                transform: none !important;
+                filter: none !important;
+                min-height: 0 !important;
+                opacity: 1 !important;
             }
 
-            /* Compact main content */
-            main {
-                padding: 0 !important;
-                gap: 6px !important;
+            /* Gradientes de fundo (bg-gradient-*) são background-image e escapariam
+               do reset acima — só as barras de nível preservam o seu. */
+            .cv-root *:not(.cv-bar-fill) {
+                background-image: none !important;
             }
 
-            main>section {
+            /* --- Elementos que não vão para o papel --- */
+            .no-print,
+            .cv-deco,
+            .cv-badge,
+            .cv-section-head>div:first-child,
+            .cv-card-head>div:first-child,
+            .cv-degree-icon,
+            .cv-tl-line,
+            .cv-tl-dot {
+                display: none !important;
+            }
+
+            /* --- Estrutura --- */
+            .cv-root,
+            .cv-main,
+            .cv-header-inner {
+                max-width: none !important;
+                width: auto !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                page-break-inside: avoid;
             }
 
-            /* Section headers - compact */
-            main section>div:first-child {
-                margin-bottom: 3px !important;
-                gap: 4px !important;
+            .cv-main>*+* {
+                margin-top: 0 !important;
             }
 
-            /* Hide section icons */
-            main section>div:first-child>div:first-child {
+            /* --- Cabeçalho --- */
+            .cv-header {
+                overflow: visible !important;
+                margin: 0 0 5mm !important;
+                padding: 0 0 3.5mm !important;
+                border-bottom: 1.2pt solid #0f172a !important;
+                break-inside: avoid;
+            }
+
+            .cv-header-row {
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: flex-start !important;
+                gap: 5mm !important;
+            }
+
+            .cv-photo {
+                display: block !important;
+                flex: 0 0 auto !important;
+            }
+
+            .cv-photo>div {
+                position: static !important;
+            }
+
+            .cv-photo-frame {
+                width: 27mm !important;
+                height: 27mm !important;
+                border: 0.75pt solid #cbd5e1 !important;
+                border-radius: 2.5pt !important;
+                overflow: hidden !important;
+            }
+
+            .cv-photo-frame img {
+                width: 100% !important;
+                height: 100% !important;
+                object-fit: cover !important;
+            }
+
+            .cv-identity {
+                flex: 1 1 auto !important;
+                padding-top: 0.5mm !important;
+            }
+
+            .cv-name {
+                font-size: 21pt !important;
+                font-weight: 800 !important;
+                letter-spacing: -0.02em !important;
+                line-height: 1.05 !important;
+                color: #0f172a !important;
+                margin: 0 0 1.2mm !important;
+            }
+
+            .cv-headline {
+                font-size: 9.5pt !important;
+                font-weight: 600 !important;
+                line-height: 1.3 !important;
+                color: #b45309 !important;
+                margin: 0 0 2mm !important;
+            }
+
+            /* Tags viram uma linha corrida com separadores */
+            .cv-tags {
+                display: block !important;
+                margin: 0 0 2mm !important;
+            }
+
+            .cv-tag {
+                display: inline !important;
+                padding: 0 !important;
+                border: 0 !important;
+                border-radius: 0 !important;
+                font-size: 8pt !important;
+                color: #475569 !important;
+            }
+
+            .cv-tag svg {
                 display: none !important;
             }
 
-            /* Cards - remove padding/borders */
-            [class*="rounded-2xl"],
-            [class*="rounded-xl"] {
+            .cv-tag+.cv-tag::before {
+                content: " • ";
+                color: #cbd5e1 !important;
+            }
+
+            /* Contatos em linha, sem caixas.
+               A largura útil de impressão (~695px) fica abaixo do breakpoint md:,
+               então as classes mobile (text-center/justify-center) valem: forçamos
+               o alinhamento à esquerda aqui. */
+            .cv-contacts {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                justify-content: flex-start !important;
+                gap: 1mm 4.5mm !important;
+            }
+
+            .cv-contact {
+                display: inline-flex !important;
+                align-items: center !important;
+                gap: 1.2mm !important;
+                padding: 0 !important;
+                border: 0 !important;
                 border-radius: 0 !important;
-                padding: 2px 0 !important;
-                border: none !important;
+                font-size: 8pt !important;
+                color: #334155 !important;
+                text-decoration: none !important;
             }
 
-            /* Grid layouts - force compact */
-            .grid {
-                gap: 2px 8px !important;
+            .cv-contact svg {
+                width: 8pt !important;
+                height: 8pt !important;
+                flex: 0 0 auto !important;
+                color: #b45309 !important;
             }
 
-            /* Skill bars - compact */
-            .group>div:first-child {
-                margin-bottom: 1px !important;
+            /* --- Seções --- */
+            .cv-section {
+                margin: 0 0 4.5mm !important;
+                padding: 0 !important;
+                break-inside: avoid;
             }
 
-            /* Skill bar track */
-            [class*="h-2"] {
-                height: 4px !important;
+            .cv-section--exp {
+                break-inside: auto;
             }
 
-            /* Tags and badges */
-            [class*="px-3"][class*="py-1"],
-            [class*="px-2.5"][class*="py-1"] {
-                padding: 0 4px !important;
-                font-size: 6pt !important;
-                border-radius: 2px !important;
+            .cv-section-head {
+                display: block !important;
+                margin: 0 0 2mm !important;
+                padding: 0 0 0.8mm !important;
+                border-bottom: 0.75pt solid #cbd5e1 !important;
+                break-after: avoid;
             }
 
-            /* Contact links */
-            header a {
-                padding: 0 3px !important;
-                font-size: 6.5pt !important;
+            .cv-section-title {
+                font-size: 9.5pt !important;
+                font-weight: 700 !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.09em !important;
+                line-height: 1.2 !important;
+                color: #0f172a !important;
+                margin: 0 !important;
             }
 
-            /* Quick info tags */
-            header [class*="flex-wrap"] {
-                gap: 2px !important;
+            .cv-section-title::before {
+                content: "";
+                display: inline-block;
+                width: 2.4mm;
+                height: 2.4mm;
+                margin-right: 2mm;
+                border-radius: 0.5pt;
+                background: #d97706;
+                vertical-align: -0.1mm;
             }
 
-            /* Timeline items - compact */
-            .relative.pl-8 {
-                padding-left: 0 !important;
-                padding-bottom: 3px !important;
+            /* --- Cartões --- */
+            .cv-card {
+                border: 0.75pt solid #e2e8f0 !important;
+                border-radius: 3pt !important;
+                padding: 2.5mm 3mm !important;
+                background-color: #fff !important;
+                break-inside: avoid;
             }
 
-            /* Hide timeline decorations */
-            .relative.pl-8>.absolute {
-                display: none !important;
+            .cv-card-head {
+                display: block !important;
+                margin: 0 0 1.8mm !important;
             }
 
-            /* Timeline card */
-            .relative.pl-8>div:last-child {
-                padding: 2px 0 !important;
-                border: none !important;
-                border-bottom: 0.5px solid #e2e8f0 !important;
+            .cv-card-title {
+                font-size: 8.5pt !important;
+                font-weight: 700 !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.06em !important;
+                color: #0f172a !important;
+                margin: 0 !important;
+            }
+
+            /* Propósito: filete de destaque em vez de caixa */
+            .cv-purpose {
+                border: 0 !important;
+                border-left: 2pt solid #d97706 !important;
                 border-radius: 0 !important;
+                padding: 0 0 0 3mm !important;
             }
 
-            /* Differentials grid */
-            .grid.sm\\:grid-cols-2.lg\\:grid-cols-3 {
-                grid-template-columns: repeat(3, 1fr) !important;
-                gap: 2px 6px !important;
+            .cv-purpose p {
+                font-size: 9pt !important;
+                line-height: 1.45 !important;
+                color: #334155 !important;
+                margin: 0 0 1.5mm !important;
             }
 
-            /* Differential cards */
-            .grid.sm\\:grid-cols-2.lg\\:grid-cols-3>div {
-                padding: 2px !important;
-            }
-
-            .grid.sm\\:grid-cols-2.lg\\:grid-cols-3 .text-3xl {
-                font-size: 12pt !important;
+            .cv-purpose p:last-child {
                 margin-bottom: 0 !important;
             }
 
-            /* Tools tags */
-            [class*="flex-wrap"] {
-                gap: 1px 3px !important;
+            .cv-purpose strong {
+                font-weight: 700 !important;
+                color: #0f172a !important;
             }
 
-            /* Languages section bars */
-            [class*="rounded-full"][class*="overflow-hidden"] {
-                height: 3px !important;
+            /* --- Grades --- */
+            .cv-grid {
+                display: grid !important;
+                gap: 2mm !important;
             }
 
-            /* Force 2 column for skills in print */
-            .grid.md\\:grid-cols-2 {
-                grid-template-columns: repeat(2, 1fr) !important;
-                gap: 2px 8px !important;
+            .cv-grid-2 {
+                grid-template-columns: 1fr 1fr !important;
             }
 
-            /* Courses grid */
-            .grid.sm\\:grid-cols-2.lg\\:grid-cols-3:not(.gap-4) {
+            .cv-grid-3 {
                 grid-template-columns: repeat(3, 1fr) !important;
             }
 
-            /* Page title with line */
-            h2::after {
-                content: '';
-                display: inline-block;
-                width: 100%;
-                height: 0.5px;
-                background: #cbd5e1;
-                margin-left: 8px;
-                vertical-align: middle;
+            /* --- Formação --- */
+            .cv-degree>div {
+                display: block !important;
             }
 
-            /* Description text */
-            p {
-                font-size: 7pt !important;
-                line-height: 1.2 !important;
-                margin: 1px 0 !important;
-            }
-
-            /* Space optimizer */
-            .space-y-4> :not(:last-child),
-            .space-y-3> :not(:last-child) {
-                margin-bottom: 2px !important;
-            }
-
-            .space-y-0>* {
+            .cv-degree-name {
+                font-size: 9.5pt !important;
+                font-weight: 700 !important;
+                color: #0f172a !important;
                 margin: 0 !important;
             }
 
-            /* Emojis in print */
-            .text-2xl {
-                font-size: 10pt !important;
+            .cv-degree-year {
+                font-size: 8pt !important;
+                color: #64748b !important;
+                margin: 0 !important;
             }
 
-            .text-xl {
+            /* --- Cursos --- */
+            .cv-chipcard {
+                display: flex !important;
+                align-items: center !important;
+                gap: 1.5mm !important;
+                border: 0.75pt solid #e2e8f0 !important;
+                border-radius: 2.5pt !important;
+                padding: 1.2mm 2mm !important;
+                break-inside: avoid;
+            }
+
+            .cv-chipcard-icon {
                 font-size: 9pt !important;
+                line-height: 1 !important;
+            }
+
+            .cv-chipcard-name {
+                font-size: 8pt !important;
+                line-height: 1.25 !important;
+                color: #334155 !important;
+            }
+
+            /* --- Idiomas --- */
+            .cv-lang-head {
+                display: flex !important;
+                align-items: center !important;
+                gap: 2mm !important;
+                margin: 0 0 1.5mm !important;
+            }
+
+            .cv-langflag {
+                font-size: 11pt !important;
+                line-height: 1 !important;
+            }
+
+            .cv-lang-name {
+                font-size: 9pt !important;
+                font-weight: 700 !important;
+                color: #0f172a !important;
+                margin: 0 !important;
+            }
+
+            .cv-lang-level {
+                font-size: 7.5pt !important;
+                color: #64748b !important;
+                margin: 0 !important;
+            }
+
+            /* --- Barras (habilidades e idiomas) --- */
+            .cv-bar-track {
+                height: 1.3mm !important;
+                border-radius: 1mm !important;
+                overflow: hidden !important;
+                background-color: #e2e8f0 !important;
+            }
+
+            .cv-bar-fill {
+                height: 100% !important;
+                border-radius: 1mm !important;
+            }
+
+            .cv-skill+.cv-skill {
+                margin-top: 1.6mm !important;
+            }
+
+            .cv-skill>div:first-child {
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: baseline !important;
+                margin: 0 0 0.7mm !important;
+            }
+
+            .cv-skill-name {
+                font-size: 8pt !important;
+                font-weight: 500 !important;
+                color: #334155 !important;
+            }
+
+            .cv-skill-pct {
+                font-size: 7pt !important;
+                color: #94a3b8 !important;
+            }
+
+            /* --- Chips (ferramentas e destaques) --- */
+            .cv-chips {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                justify-content: flex-start !important;
+                gap: 1mm !important;
+            }
+
+            .cv-chip {
+                font-size: 7pt !important;
+                line-height: 1.4 !important;
+                padding: 0.3mm 1.6mm !important;
+                border: 0.5pt solid #cbd5e1 !important;
+                border-radius: 2pt !important;
+                color: #475569 !important;
+                background-color: #f8fafc !important;
+            }
+
+            /* --- Experiência (linha do tempo) --- */
+            .cv-timeline {
+                margin: 0 0 0 1.2mm !important;
+                padding-left: 4.5mm !important;
+                border-left: 0.75pt solid #cbd5e1 !important;
+            }
+
+            .cv-tl-item {
+                position: relative !important;
+                margin: 0 0 3.2mm !important;
+                padding: 0 !important;
+                break-inside: avoid;
+            }
+
+            .cv-tl-item:last-child {
+                margin-bottom: 0 !important;
+            }
+
+            .cv-tl-item::before {
+                content: "";
+                position: absolute;
+                left: -5.4mm;
+                top: 1.1mm;
+                width: 1.7mm;
+                height: 1.7mm;
+                border-radius: 50%;
+                background: #d97706;
+            }
+
+            .cv-tl-card {
+                border: 0 !important;
+                border-radius: 0 !important;
+                padding: 0 !important;
+            }
+
+            .cv-tl-meta {
+                display: block !important;
+                margin: 0 0 0.6mm !important;
+            }
+
+            .cv-period {
+                font-size: 7.5pt !important;
+                font-weight: 700 !important;
+                letter-spacing: 0.04em !important;
+                padding: 0 !important;
+                border: 0 !important;
+                border-radius: 0 !important;
+                color: #b45309 !important;
+            }
+
+            .cv-sep {
+                font-size: 7.5pt !important;
+                margin: 0 1.2mm !important;
+                color: #cbd5e1 !important;
+            }
+
+            .cv-company {
+                font-size: 8pt !important;
+                font-weight: 600 !important;
+                color: #047857 !important;
+            }
+
+            .cv-role {
+                font-size: 9.5pt !important;
+                font-weight: 700 !important;
+                line-height: 1.2 !important;
+                color: #0f172a !important;
+                margin: 0 0 0.8mm !important;
+            }
+
+            .cv-desc {
+                font-size: 8.5pt !important;
+                line-height: 1.4 !important;
+                color: #475569 !important;
+                margin: 0 0 1.2mm !important;
+            }
+
+            /* --- Informações pessoais --- */
+            .cv-info>div>*+* {
+                margin-top: 1.6mm !important;
+            }
+
+            .cv-info-row {
+                display: flex !important;
+                align-items: flex-start !important;
+                gap: 1.8mm !important;
+            }
+
+            .cv-info-row svg {
+                width: 8pt !important;
+                height: 8pt !important;
+                margin-top: 0.6mm !important;
+                flex: 0 0 auto !important;
+                color: #b45309 !important;
+            }
+
+            .cv-label {
+                display: block !important;
+                font-size: 6.5pt !important;
+                letter-spacing: 0.09em !important;
+                line-height: 1.3 !important;
+                color: #94a3b8 !important;
+            }
+
+            .cv-value {
+                font-size: 8.5pt !important;
+                font-weight: 500 !important;
+                line-height: 1.3 !important;
+                color: #1f2937 !important;
+                margin: 0 !important;
+            }
+
+            /* --- Diferenciais --- */
+            .cv-diff {
+                padding: 2mm 2.2mm !important;
+            }
+
+            .cv-diff-icon {
+                font-size: 11pt !important;
+                line-height: 1 !important;
+                margin: 0 0 1mm !important;
+            }
+
+            .cv-diff-title {
+                font-size: 8.5pt !important;
+                font-weight: 700 !important;
+                line-height: 1.2 !important;
+                color: #0f172a !important;
+                margin: 0 0 0.6mm !important;
+            }
+
+            .cv-diff-desc {
+                font-size: 7.5pt !important;
+                line-height: 1.35 !important;
+                color: #64748b !important;
+                margin: 0 !important;
+            }
+
+            /* --- Rodapé --- */
+            .cv-footer {
+                margin: 4mm 0 0 !important;
+                padding: 2mm 0 0 !important;
+                border-top: 0.75pt solid #e2e8f0 !important;
+                break-inside: avoid;
+            }
+
+            .cv-footer>div {
+                max-width: none !important;
+            }
+
+            .cv-footer p,
+            .cv-footer a {
+                font-size: 7pt !important;
+                line-height: 1.4 !important;
+                text-align: center !important;
+                color: #94a3b8 !important;
+                text-decoration: none !important;
+                margin: 0 !important;
+            }
+
+            /* --- Controle de quebra de página --- */
+            h1,
+            h2,
+            h3 {
+                break-after: avoid;
+            }
+
+            p {
+                orphans: 3;
+                widows: 3;
             }
 
             .print-break {
-                page-break-before: always;
+                break-before: page;
             }
         }
     </style>

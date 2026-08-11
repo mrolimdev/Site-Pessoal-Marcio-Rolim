@@ -217,14 +217,14 @@ const calculateYearsSince = (year: number): number => {
 
 // --- Skill Bar Component ---
 const SkillBar: React.FC<{ name: string; level: number; color: string; delay: number; isDark?: boolean }> = ({ name, level, color, delay, isDark = true }) => (
-    <div className="group" style={{ animationDelay: `${delay}ms` }}>
+    <div className="group cv-skill" style={{ animationDelay: `${delay}ms` }}>
         <div className="flex justify-between items-center mb-1.5">
-            <span className={`text-sm font-medium ${isDark ? 'text-slate-300 group-hover:text-white' : 'text-slate-700 group-hover:text-slate-900'} transition-colors`}>{name}</span>
-            <span className={`text-xs font-mono ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{level}%</span>
+            <span className={`cv-skill-name text-sm font-medium ${isDark ? 'text-slate-300 group-hover:text-white' : 'text-slate-700 group-hover:text-slate-900'} transition-colors`}>{name}</span>
+            <span className={`cv-skill-pct text-xs font-mono ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{level}%</span>
         </div>
-        <div className={`w-full h-2 ${isDark ? 'bg-slate-800' : 'bg-slate-200'} rounded-full overflow-hidden`}>
+        <div className={`cv-bar-track w-full h-2 ${isDark ? 'bg-slate-800' : 'bg-slate-200'} rounded-full overflow-hidden`}>
             <div
-                className={`h-full rounded-full transition-all duration-1000 ease-out ${color}`}
+                className={`cv-bar-fill h-full rounded-full transition-all duration-1000 ease-out ${color}`}
                 style={{ width: `${level}%` }}
             />
         </div>
@@ -241,27 +241,27 @@ const TimelineItem: React.FC<{
     isLast?: boolean;
     isDark?: boolean;
 }> = ({ period, company, role, description, highlights, isLast, isDark = true }) => (
-    <div className="relative pl-8 pb-10 group">
+    <div className="relative pl-8 pb-10 group cv-tl-item">
         {!isLast && (
-            <div className="absolute left-[11px] top-8 w-[2px] h-full bg-gradient-to-b from-amber-500/50 to-transparent" />
+            <div className="cv-tl-line absolute left-[11px] top-8 w-[2px] h-full bg-gradient-to-b from-amber-500/50 to-transparent" />
         )}
-        <div className={`absolute left-0 top-1 w-6 h-6 ${isDark ? 'bg-slate-900' : 'bg-white'} border-2 border-amber-500 rounded-full flex items-center justify-center group-hover:bg-amber-500 transition-colors duration-300`}>
+        <div className={`cv-tl-dot absolute left-0 top-1 w-6 h-6 ${isDark ? 'bg-slate-900' : 'bg-white'} border-2 border-amber-500 rounded-full flex items-center justify-center group-hover:bg-amber-500 transition-colors duration-300`}>
             <div className="w-2 h-2 bg-amber-400 rounded-full group-hover:bg-slate-900 transition-colors duration-300" />
         </div>
-        <div className={`${isDark ? 'bg-slate-800/50 border-slate-700/50 hover:bg-slate-800/80' : 'bg-white border-slate-200 hover:bg-stone-50'} border rounded-2xl p-6 hover:border-amber-500/30 transition-all duration-300`}>
-            <div className="flex flex-wrap items-center gap-3 mb-2">
-                <span className={`text-xs font-mono ${isDark ? 'text-amber-400' : 'text-amber-600'} bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20`}>
+        <div className={`cv-tl-card ${isDark ? 'bg-slate-800/50 border-slate-700/50 hover:bg-slate-800/80' : 'bg-white border-slate-200 hover:bg-stone-50'} border rounded-2xl p-6 hover:border-amber-500/30 transition-all duration-300`}>
+            <div className="cv-tl-meta flex flex-wrap items-center gap-3 mb-2">
+                <span className={`cv-period text-xs font-mono ${isDark ? 'text-amber-400' : 'text-amber-600'} bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20`}>
                     {period}
                 </span>
-                <span className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>•</span>
-                <span className={`text-sm font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{company}</span>
+                <span className={`cv-sep text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>•</span>
+                <span className={`cv-company text-sm font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{company}</span>
             </div>
-            <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'} mb-2`}>{role}</h3>
-            <p className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-sm leading-relaxed mb-3`}>{description}</p>
+            <h3 className={`cv-role text-lg font-bold ${isDark ? 'text-white' : 'text-slate-900'} mb-2`}>{role}</h3>
+            <p className={`cv-desc ${isDark ? 'text-slate-400' : 'text-slate-500'} text-sm leading-relaxed mb-3`}>{description}</p>
             {highlights && highlights.length > 0 && (
-                <div className="flex flex-wrap gap-2">
+                <div className="cv-chips flex flex-wrap gap-2">
                     {highlights.map((h, i) => (
-                        <span key={i} className={`text-xs ${isDark ? 'bg-slate-700/50 text-slate-300 border-slate-600/30' : 'bg-slate-100 text-slate-600 border-slate-200'} px-2.5 py-1 rounded-lg border`}>
+                        <span key={i} className={`cv-chip text-xs ${isDark ? 'bg-slate-700/50 text-slate-300 border-slate-600/30' : 'bg-slate-100 text-slate-600 border-slate-200'} px-2.5 py-1 rounded-lg border`}>
                             {h}
                         </span>
                     ))}
@@ -295,7 +295,7 @@ const CurriculumPage: React.FC = () => {
     };
 
     return (
-        <div className={`min-h-screen ${t.bg} ${t.text} transition-colors duration-500`}>
+        <div className={`cv-root min-h-screen ${t.bg} ${t.text} transition-colors duration-500`}>
             {/* Floating Action Bar */}
             <div className="no-print fixed top-4 left-4 right-4 z-50 flex items-center justify-between max-w-5xl mx-auto">
                 <a
@@ -324,64 +324,64 @@ const CurriculumPage: React.FC = () => {
             </div>
 
             {/* Hero / Header Section */}
-            <header className="relative overflow-hidden">
-                <div className={`absolute inset-0 bg-gradient-to-br ${t.headerBg} transition-colors duration-500`} />
-                <div className="absolute inset-0 opacity-20">
+            <header className="cv-header relative overflow-hidden">
+                <div className={`cv-deco absolute inset-0 bg-gradient-to-br ${t.headerBg} transition-colors duration-500`} />
+                <div className="cv-deco absolute inset-0 opacity-20">
                     <div className={`absolute top-20 left-10 w-72 h-72 ${t.headerGlow1} rounded-full blur-3xl`} />
                     <div className={`absolute bottom-10 right-10 w-96 h-96 ${t.headerGlow2} rounded-full blur-3xl`} />
                 </div>
 
-                <div className="relative max-w-5xl mx-auto px-6 pt-24 pb-16 md:pt-28 md:pb-20">
-                    <div className="flex flex-col md:flex-row items-center md:items-start gap-10">
-                        <div className="flex-shrink-0 animate-scale-in">
+                <div className="cv-header-inner relative max-w-5xl mx-auto px-6 pt-24 pb-16 md:pt-28 md:pb-20">
+                    <div className="cv-header-row flex flex-col md:flex-row items-center md:items-start gap-10">
+                        <div className="cv-photo flex-shrink-0 animate-scale-in">
                             <div className="relative">
-                                <div className="w-40 h-40 md:w-48 md:h-48 rounded-2xl overflow-hidden ring-4 ring-amber-500/30 shadow-2xl shadow-amber-500/10 rotate-3 hover:rotate-0 transition-transform duration-500">
+                                <div className="cv-photo-frame w-40 h-40 md:w-48 md:h-48 rounded-2xl overflow-hidden ring-4 ring-amber-500/30 shadow-2xl shadow-amber-500/10 rotate-3 hover:rotate-0 transition-transform duration-500">
                                     <img src={profileImageUrl} alt="Marcio Rolim" className="w-full h-full object-cover" loading="eager" />
                                 </div>
-                                <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
+                                <div className="cv-badge absolute -bottom-2 -right-2 bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
                                     <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
                                     Disponível
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex-1 text-center md:text-left animate-fade-in-up">
-                            <h1 className={`text-4xl sm:text-5xl font-extrabold ${t.name} mb-2 tracking-tight`}>
+                        <div className="cv-identity flex-1 text-center md:text-left animate-fade-in-up">
+                            <h1 className={`cv-name text-4xl sm:text-5xl font-extrabold ${t.name} mb-2 tracking-tight`}>
                                 Marcio Rolim
                             </h1>
-                            <p className={`text-xl ${t.subtitle} font-semibold mb-4`}>
+                            <p className={`cv-headline text-xl ${t.subtitle} font-semibold mb-4`}>
                                 Especialista em IA & Automação de Processos | Tech Lead em Transformação Digital
                             </p>
 
-                            <div className="flex flex-wrap justify-center md:justify-start gap-3 mb-6">
-                                <span className={`flex items-center gap-1.5 text-sm ${t.tagText} ${t.tagBg} px-3 py-1.5 rounded-lg border ${t.tagBorder}`}>
+                            <div className="cv-tags flex flex-wrap justify-center md:justify-start gap-3 mb-6">
+                                <span className={`cv-tag flex items-center gap-1.5 text-sm ${t.tagText} ${t.tagBg} px-3 py-1.5 rounded-lg border ${t.tagBorder}`}>
                                     <MapPinIcon className="w-3.5 h-3.5 text-emerald-400" /> Zona Leste - São Paulo - SP
                                 </span>
-                                <span className={`flex items-center gap-1.5 text-sm ${t.tagText} ${t.tagBg} px-3 py-1.5 rounded-lg border ${t.tagBorder}`}>
+                                <span className={`cv-tag flex items-center gap-1.5 text-sm ${t.tagText} ${t.tagBg} px-3 py-1.5 rounded-lg border ${t.tagBorder}`}>
                                     <CalendarIcon className="w-3.5 h-3.5 text-amber-400" /> {age} anos
                                 </span>
-                                <span className={`flex items-center gap-1.5 text-sm ${t.tagText} ${t.tagBg} px-3 py-1.5 rounded-lg border ${t.tagBorder}`}>
+                                <span className={`cv-tag flex items-center gap-1.5 text-sm ${t.tagText} ${t.tagBg} px-3 py-1.5 rounded-lg border ${t.tagBorder}`}>
                                     <HeartIcon className="w-3.5 h-3.5 text-rose-400" /> Casado · 4 filhas
                                 </span>
-                                <span className={`flex items-center gap-1.5 text-sm ${t.tagText} ${t.tagBg} px-3 py-1.5 rounded-lg border ${t.tagBorder}`}>
+                                <span className={`cv-tag flex items-center gap-1.5 text-sm ${t.tagText} ${t.tagBg} px-3 py-1.5 rounded-lg border ${t.tagBorder}`}>
                                     <BriefcaseIcon className="w-3.5 h-3.5 text-blue-400" /> Mais de 30 anos em TI
                                 </span>
                             </div>
 
-                            <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                                <a href="mailto:contato@marciorolim.com.br" className={`flex items-center gap-2 text-sm ${t.contactText} hover:text-amber-400 ${t.contactBg} px-4 py-2 rounded-lg border ${t.contactBorder} hover:border-amber-500/30 transition-all`}>
+                            <div className="cv-contacts flex flex-wrap justify-center md:justify-start gap-3">
+                                <a href="mailto:contato@marciorolim.com.br" className={`cv-contact flex items-center gap-2 text-sm ${t.contactText} hover:text-amber-400 ${t.contactBg} px-4 py-2 rounded-lg border ${t.contactBorder} hover:border-amber-500/30 transition-all`}>
                                     <MailIcon className="w-4 h-4" /> contato@marciorolim.com.br
                                 </a>
-                                <a href="https://wa.me/5511980888880" target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 text-sm ${t.contactText} hover:text-emerald-400 ${t.contactBg} px-4 py-2 rounded-lg border ${t.contactBorder} hover:border-emerald-500/30 transition-all`}>
+                                <a href="https://wa.me/5511980888880" target="_blank" rel="noopener noreferrer" className={`cv-contact flex items-center gap-2 text-sm ${t.contactText} hover:text-emerald-400 ${t.contactBg} px-4 py-2 rounded-lg border ${t.contactBorder} hover:border-emerald-500/30 transition-all`}>
                                     <WhatsAppIcon className="w-4 h-4" /> (11) 98088-8880
                                 </a>
-                                <a href="https://instagram.com/marciorolim" target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 text-sm ${t.contactText} hover:text-pink-400 ${t.contactBg} px-4 py-2 rounded-lg border ${t.contactBorder} hover:border-pink-500/30 transition-all`}>
+                                <a href="https://instagram.com/marciorolim" target="_blank" rel="noopener noreferrer" className={`cv-contact flex items-center gap-2 text-sm ${t.contactText} hover:text-pink-400 ${t.contactBg} px-4 py-2 rounded-lg border ${t.contactBorder} hover:border-pink-500/30 transition-all`}>
                                     <InstagramIcon className="w-4 h-4" /> @marciorolim
                                 </a>
-                                <a href="https://linkedin.com/in/marciorolim" target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 text-sm ${t.contactText} hover:text-blue-400 ${t.contactBg} px-4 py-2 rounded-lg border ${t.contactBorder} hover:border-blue-500/30 transition-all`}>
+                                <a href="https://linkedin.com/in/marciorolim" target="_blank" rel="noopener noreferrer" className={`cv-contact flex items-center gap-2 text-sm ${t.contactText} hover:text-blue-400 ${t.contactBg} px-4 py-2 rounded-lg border ${t.contactBorder} hover:border-blue-500/30 transition-all`}>
                                     <LinkedInIcon className="w-4 h-4" /> /marciorolim
                                 </a>
-                                <a href="https://marciorolim.com.br" target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 text-sm ${t.contactText} hover:text-violet-400 ${t.contactBg} px-4 py-2 rounded-lg border ${t.contactBorder} hover:border-violet-500/30 transition-all`}>
+                                <a href="https://marciorolim.com.br" target="_blank" rel="noopener noreferrer" className={`cv-contact flex items-center gap-2 text-sm ${t.contactText} hover:text-violet-400 ${t.contactBg} px-4 py-2 rounded-lg border ${t.contactBorder} hover:border-violet-500/30 transition-all`}>
                                     <GlobeIcon className="w-4 h-4" /> marciorolim.com.br
                                 </a>
                             </div>
@@ -391,17 +391,17 @@ const CurriculumPage: React.FC = () => {
             </header>
 
             {/* Main Content */}
-            <main className="max-w-5xl mx-auto px-6 py-12 space-y-16">
+            <main className="cv-main max-w-5xl mx-auto px-6 py-12 space-y-16">
 
                 {/* Propósito / Objetivo Profissional */}
-                <section className="animate-fade-in-up">
-                    <div className="flex items-center gap-3 mb-6">
+                <section className="cv-section animate-fade-in-up">
+                    <div className="cv-section-head flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
                             <TargetIcon className="w-5 h-5 text-white" />
                         </div>
-                        <h2 className={`text-2xl font-bold ${t.sectionTitle}`}>Propósito & Objetivo</h2>
+                        <h2 className={`cv-section-title text-2xl font-bold ${t.sectionTitle}`}>Propósito & Objetivo</h2>
                     </div>
-                    <div className={`bg-gradient-to-r ${t.cardGradient} border ${t.cardBorder} rounded-2xl p-6 md:p-8`}>
+                    <div className={`cv-card cv-purpose bg-gradient-to-r ${t.cardGradient} border ${t.cardBorder} rounded-2xl p-6 md:p-8`}>
                         <p className={`${t.bodyText} leading-relaxed text-base md:text-lg`}>
                             Profissional com <strong className={t.strongAccent}>mais de 30 anos de experiência estratégica em tecnologia</strong>,
                             focado em transformar complexidade técnica em valor de negócio. Especialista em <strong className={t.strongGreen}>Inteligência Artificial Generativa e Automação de Processos</strong>,
@@ -417,35 +417,35 @@ const CurriculumPage: React.FC = () => {
                 </section>
 
                 {/* Formação Acadêmica */}
-                <section>
-                    <div className="flex items-center gap-3 mb-6">
+                <section className="cv-section">
+                    <div className="cv-section-head flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                             <GraduationCapIcon className="w-5 h-5 text-white" />
                         </div>
-                        <h2 className={`text-2xl font-bold ${t.sectionTitle}`}>Formação Acadêmica</h2>
+                        <h2 className={`cv-section-title text-2xl font-bold ${t.sectionTitle}`}>Formação Acadêmica</h2>
                     </div>
-                    <div className={`${t.cardBg} border ${t.cardBorder} rounded-2xl p-6 hover:border-blue-500/30 transition-all duration-300`}>
+                    <div className={`cv-card cv-degree ${t.cardBg} border ${t.cardBorder} rounded-2xl p-6 hover:border-blue-500/30 transition-all duration-300`}>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                            <div className="w-14 h-14 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl flex items-center justify-center border border-blue-500/20">
+                            <div className="cv-degree-icon w-14 h-14 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl flex items-center justify-center border border-blue-500/20">
                                 <GraduationCapIcon className="w-7 h-7 text-blue-400" />
                             </div>
                             <div>
-                                <h3 className={`text-lg font-bold ${t.sectionTitle}`}>Ciências da Computação</h3>
-                                <p className={`${t.bodyTextLight} text-sm`}>(1996)</p>
+                                <h3 className={`cv-degree-name text-lg font-bold ${t.sectionTitle}`}>Ciências da Computação</h3>
+                                <p className={`cv-degree-year ${t.bodyTextLight} text-sm`}>(1996)</p>
                             </div>
                         </div>
                     </div>
                 </section>
 
                 {/* Cursos Complementares */}
-                <section>
-                    <div className="flex items-center gap-3 mb-6">
+                <section className="cv-section">
+                    <div className="cv-section-head flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/20">
                             <GraduationCapIcon className="w-5 h-5 text-white" />
                         </div>
-                        <h2 className={`text-2xl font-bold ${t.sectionTitle}`}>Cursos Complementares</h2>
+                        <h2 className={`cv-section-title text-2xl font-bold ${t.sectionTitle}`}>Cursos Complementares</h2>
                     </div>
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div className="cv-grid cv-grid-3 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {[
                             { name: 'Redes e Infraestrutura', icon: '🌐' },
                             { name: 'Gestão de Negócios', icon: '📊' },
@@ -457,68 +457,68 @@ const CurriculumPage: React.FC = () => {
                         ].map((curso, index) => (
                             <div
                                 key={curso.name}
-                                className={`${t.cardBg} border ${t.cardBorder} rounded-xl px-4 py-3 flex items-center gap-3 hover:border-teal-500/30 transition-all duration-300`}
+                                className={`cv-chipcard ${t.cardBg} border ${t.cardBorder} rounded-xl px-4 py-3 flex items-center gap-3 hover:border-teal-500/30 transition-all duration-300`}
                                 style={{ animationDelay: `${index * 60}ms` }}
                             >
-                                <span className="text-xl">{curso.icon}</span>
-                                <span className={`text-sm font-medium ${t.bodyText}`}>{curso.name}</span>
+                                <span className="cv-chipcard-icon text-xl">{curso.icon}</span>
+                                <span className={`cv-chipcard-name text-sm font-medium ${t.bodyText}`}>{curso.name}</span>
                             </div>
                         ))}
                     </div>
                 </section>
 
                 {/* Idiomas */}
-                <section>
-                    <div className="flex items-center gap-3 mb-6">
+                <section className="cv-section">
+                    <div className="cv-section-head flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 bg-gradient-to-br from-sky-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-sky-500/20">
                             <GlobeIcon className="w-5 h-5 text-white" />
                         </div>
-                        <h2 className={`text-2xl font-bold ${t.sectionTitle}`}>Idiomas</h2>
+                        <h2 className={`cv-section-title text-2xl font-bold ${t.sectionTitle}`}>Idiomas</h2>
                     </div>
-                    <div className="grid sm:grid-cols-2 gap-4">
-                        <div className={`${t.cardBg} border ${t.cardBorder} rounded-xl p-5 hover:border-sky-500/30 transition-all duration-300`}>
-                            <div className="flex items-center gap-3 mb-3">
-                                <span className="text-2xl">🇺🇸</span>
+                    <div className="cv-grid cv-grid-2 grid sm:grid-cols-2 gap-4">
+                        <div className={`cv-card cv-lang ${t.cardBg} border ${t.cardBorder} rounded-xl p-5 hover:border-sky-500/30 transition-all duration-300`}>
+                            <div className="cv-lang-head flex items-center gap-3 mb-3">
+                                <span className="cv-langflag text-2xl">🇺🇸</span>
                                 <div>
-                                    <h3 className={`text-base font-bold ${t.sectionTitle}`}>Inglês</h3>
-                                    <p className={`text-xs ${t.bodyTextLight}`}>Técnico para Documentação e Leitura</p>
+                                    <h3 className={`cv-lang-name text-base font-bold ${t.sectionTitle}`}>Inglês</h3>
+                                    <p className={`cv-lang-level text-xs ${t.bodyTextLight}`}>Técnico para Documentação e Leitura</p>
                                 </div>
                             </div>
-                            <div className={`w-full h-2 ${isDark ? 'bg-slate-800' : 'bg-slate-200'} rounded-full overflow-hidden`}>
-                                <div className="h-full bg-gradient-to-r from-sky-400 to-blue-500 rounded-full" style={{ width: '35%' }} />
+                            <div className={`cv-bar-track w-full h-2 ${isDark ? 'bg-slate-800' : 'bg-slate-200'} rounded-full overflow-hidden`}>
+                                <div className="cv-bar-fill h-full bg-gradient-to-r from-sky-400 to-blue-500 rounded-full" style={{ width: '35%' }} />
                             </div>
                         </div>
-                        <div className={`${t.cardBg} border ${t.cardBorder} rounded-xl p-5 hover:border-sky-500/30 transition-all duration-300`}>
-                            <div className="flex items-center gap-3 mb-3">
-                                <span className="text-2xl">🇪🇸</span>
+                        <div className={`cv-card cv-lang ${t.cardBg} border ${t.cardBorder} rounded-xl p-5 hover:border-sky-500/30 transition-all duration-300`}>
+                            <div className="cv-lang-head flex items-center gap-3 mb-3">
+                                <span className="cv-langflag text-2xl">🇪🇸</span>
                                 <div>
-                                    <h3 className={`text-base font-bold ${t.sectionTitle}`}>Espanhol</h3>
-                                    <p className={`text-xs ${t.bodyTextLight}`}>Básico</p>
+                                    <h3 className={`cv-lang-name text-base font-bold ${t.sectionTitle}`}>Espanhol</h3>
+                                    <p className={`cv-lang-level text-xs ${t.bodyTextLight}`}>Básico</p>
                                 </div>
                             </div>
-                            <div className={`w-full h-2 ${isDark ? 'bg-slate-800' : 'bg-slate-200'} rounded-full overflow-hidden`}>
-                                <div className="h-full bg-gradient-to-r from-orange-400 to-red-500 rounded-full" style={{ width: '30%' }} />
+                            <div className={`cv-bar-track w-full h-2 ${isDark ? 'bg-slate-800' : 'bg-slate-200'} rounded-full overflow-hidden`}>
+                                <div className="cv-bar-fill h-full bg-gradient-to-r from-orange-400 to-red-500 rounded-full" style={{ width: '30%' }} />
                             </div>
                         </div>
                     </div>
                 </section>
 
                 {/* Habilidades Técnicas */}
-                <section>
-                    <div className="flex items-center gap-3 mb-6">
+                <section className="cv-section">
+                    <div className="cv-section-head flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
                             <SparklesIcon className="w-5 h-5 text-white" />
                         </div>
-                        <h2 className={`text-2xl font-bold ${t.sectionTitle}`}>Habilidades Técnicas</h2>
+                        <h2 className={`cv-section-title text-2xl font-bold ${t.sectionTitle}`}>Habilidades Técnicas</h2>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-6">
-                        <div className={`${t.cardBg} border ${t.cardBorder} rounded-2xl p-6 hover:border-emerald-500/30 transition-all duration-300`}>
-                            <div className="flex items-center gap-3 mb-5">
+                    <div className="cv-grid cv-grid-2 grid md:grid-cols-2 gap-6">
+                        <div className={`cv-card cv-skillcard ${t.cardBg} border ${t.cardBorder} rounded-2xl p-6 hover:border-emerald-500/30 transition-all duration-300`}>
+                            <div className="cv-card-head flex items-center gap-3 mb-5">
                                 <div className="w-8 h-8 bg-emerald-500/10 rounded-lg flex items-center justify-center">
                                     <CodeIcon className="w-4 h-4 text-emerald-400" />
                                 </div>
-                                <h3 className={`text-base font-bold ${t.sectionTitle}`}>Programação</h3>
+                                <h3 className={`cv-card-title text-base font-bold ${t.sectionTitle}`}>Programação</h3>
                             </div>
                             <div className="space-y-4">
                                 <SkillBar name="Python" level={85} color="bg-gradient-to-r from-yellow-400 to-yellow-500" delay={0} isDark={isDark} />
@@ -529,12 +529,12 @@ const CurriculumPage: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className={`${t.cardBg} border ${t.cardBorder} rounded-2xl p-6 hover:border-blue-500/30 transition-all duration-300`}>
-                            <div className="flex items-center gap-3 mb-5">
+                        <div className={`cv-card cv-skillcard ${t.cardBg} border ${t.cardBorder} rounded-2xl p-6 hover:border-blue-500/30 transition-all duration-300`}>
+                            <div className="cv-card-head flex items-center gap-3 mb-5">
                                 <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
                                     <DatabaseIcon className="w-4 h-4 text-blue-400" />
                                 </div>
-                                <h3 className={`text-base font-bold ${t.sectionTitle}`}>Banco de Dados</h3>
+                                <h3 className={`cv-card-title text-base font-bold ${t.sectionTitle}`}>Banco de Dados</h3>
                             </div>
                             <div className="space-y-4">
                                 <SkillBar name="MySQL" level={80} color="bg-gradient-to-r from-sky-400 to-blue-500" delay={0} isDark={isDark} />
@@ -543,12 +543,12 @@ const CurriculumPage: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className={`${t.cardBg} border ${t.cardBorder} rounded-2xl p-6 hover:border-violet-500/30 transition-all duration-300`}>
-                            <div className="flex items-center gap-3 mb-5">
+                        <div className={`cv-card cv-skillcard ${t.cardBg} border ${t.cardBorder} rounded-2xl p-6 hover:border-violet-500/30 transition-all duration-300`}>
+                            <div className="cv-card-head flex items-center gap-3 mb-5">
                                 <div className="w-8 h-8 bg-violet-500/10 rounded-lg flex items-center justify-center">
                                     <CpuIcon className="w-4 h-4 text-violet-400" />
                                 </div>
-                                <h3 className={`text-base font-bold ${t.sectionTitle}`}>Automação & IA</h3>
+                                <h3 className={`cv-card-title text-base font-bold ${t.sectionTitle}`}>Automação & IA</h3>
                             </div>
                             <div className="space-y-4">
                                 <SkillBar name="N8N / Make" level={85} color="bg-gradient-to-r from-orange-400 to-red-400" delay={0} isDark={isDark} />
@@ -557,14 +557,14 @@ const CurriculumPage: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className={`${t.cardBg} border ${t.cardBorder} rounded-2xl p-6 hover:border-amber-500/30 transition-all duration-300`}>
-                            <div className="flex items-center gap-3 mb-5">
+                        <div className={`cv-card cv-skillcard ${t.cardBg} border ${t.cardBorder} rounded-2xl p-6 hover:border-amber-500/30 transition-all duration-300`}>
+                            <div className="cv-card-head flex items-center gap-3 mb-5">
                                 <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center">
                                     <WrenchIcon className="w-4 h-4 text-amber-400" />
                                 </div>
-                                <h3 className={`text-base font-bold ${t.sectionTitle}`}>Ferramentas & Plataformas</h3>
+                                <h3 className={`cv-card-title text-base font-bold ${t.sectionTitle}`}>Ferramentas & Plataformas</h3>
                             </div>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="cv-chips flex flex-wrap gap-2">
                                 {[
                                     { name: 'IA Generativa (GPT, Claude, Gemini)', key: 'openai' },
                                     { name: 'Engenharia de Prompt', key: 'antigravity' },
@@ -575,7 +575,7 @@ const CurriculumPage: React.FC = () => {
                                 ].map((tool) => (
                                     <span
                                         key={tool.name}
-                                        className={`text-xs font-medium px-3 py-1.5 rounded-lg border ${(t.toolColors as any)[tool.key]} hover:scale-105 transition-transform cursor-default`}
+                                        className={`cv-chip text-xs font-medium px-3 py-1.5 rounded-lg border ${(t.toolColors as any)[tool.key]} hover:scale-105 transition-transform cursor-default`}
                                     >
                                         {tool.name}
                                     </span>
@@ -586,15 +586,15 @@ const CurriculumPage: React.FC = () => {
                 </section>
 
                 {/* Experiência Profissional */}
-                <section>
-                    <div className="flex items-center gap-3 mb-8">
+                <section className="cv-section cv-section--exp">
+                    <div className="cv-section-head flex items-center gap-3 mb-8">
                         <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
                             <BriefcaseIcon className="w-5 h-5 text-white" />
                         </div>
-                        <h2 className={`text-2xl font-bold ${t.sectionTitle}`}>Experiência Profissional</h2>
+                        <h2 className={`cv-section-title text-2xl font-bold ${t.sectionTitle}`}>Experiência Profissional</h2>
                     </div>
 
-                    <div className="space-y-0">
+                    <div className="cv-timeline space-y-0">
                         <TimelineItem
                             period="2020 – Atual"
                             company="Consultoria Independente"
@@ -654,62 +654,62 @@ const CurriculumPage: React.FC = () => {
                 </section>
 
                 {/* Dados Pessoais & Informações Complementares */}
-                <section>
-                    <div className="flex items-center gap-3 mb-6">
+                <section className="cv-section">
+                    <div className="cv-section-head flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 bg-gradient-to-br from-rose-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg shadow-rose-500/20">
                             <HeartIcon className="w-5 h-5 text-white" />
                         </div>
-                        <h2 className={`text-2xl font-bold ${t.sectionTitle}`}>Informações Pessoais</h2>
+                        <h2 className={`cv-section-title text-2xl font-bold ${t.sectionTitle}`}>Informações Pessoais</h2>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-6">
-                        <div className={`${t.cardBg} border ${t.cardBorder} rounded-2xl p-6`}>
+                    <div className="cv-grid cv-grid-2 grid md:grid-cols-2 gap-6">
+                        <div className={`cv-card cv-info ${t.cardBg} border ${t.cardBorder} rounded-2xl p-6`}>
                             <div className="space-y-4">
-                                <div className="flex items-start gap-3">
+                                <div className="cv-info-row flex items-start gap-3">
                                     <CalendarIcon className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <span className={`text-xs ${t.labelText} uppercase tracking-wider`}>Data de Nascimento</span>
-                                        <p className={`${t.infoValue} font-medium`}>18 de Abril de 1973</p>
+                                        <span className={`cv-label text-xs ${t.labelText} uppercase tracking-wider`}>Data de Nascimento</span>
+                                        <p className={`cv-value ${t.infoValue} font-medium`}>18 de Abril de 1973</p>
                                     </div>
                                 </div>
-                                <div className="flex items-start gap-3">
+                                <div className="cv-info-row flex items-start gap-3">
                                     <HeartIcon className="w-5 h-5 text-rose-400 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <span className={`text-xs ${t.labelText} uppercase tracking-wider`}>Estado Civil</span>
-                                        <p className={`${t.infoValue} font-medium`}>Casado · 4 filhas</p>
+                                        <span className={`cv-label text-xs ${t.labelText} uppercase tracking-wider`}>Estado Civil</span>
+                                        <p className={`cv-value ${t.infoValue} font-medium`}>Casado · 4 filhas</p>
                                     </div>
                                 </div>
-                                <div className="flex items-start gap-3">
+                                <div className="cv-info-row flex items-start gap-3">
                                     <MapPinIcon className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <span className={`text-xs ${t.labelText} uppercase tracking-wider`}>Localização</span>
-                                        <p className={`${t.infoValue} font-medium`}>Zona Leste - São Paulo - SP</p>
+                                        <span className={`cv-label text-xs ${t.labelText} uppercase tracking-wider`}>Localização</span>
+                                        <p className={`cv-value ${t.infoValue} font-medium`}>Zona Leste - São Paulo - SP</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className={`${t.cardBg} border ${t.cardBorder} rounded-2xl p-6`}>
+                        <div className={`cv-card cv-info ${t.cardBg} border ${t.cardBorder} rounded-2xl p-6`}>
                             <div className="space-y-4">
-                                <div className="flex items-start gap-3">
+                                <div className="cv-info-row flex items-start gap-3">
                                     <GraduationCapIcon className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <span className={`text-xs ${t.labelText} uppercase tracking-wider`}>Formação</span>
-                                        <p className={`${t.infoValue} font-medium`}>Ciências da Computação (1996)</p>
+                                        <span className={`cv-label text-xs ${t.labelText} uppercase tracking-wider`}>Formação</span>
+                                        <p className={`cv-value ${t.infoValue} font-medium`}>Ciências da Computação (1996)</p>
                                     </div>
                                 </div>
-                                <div className="flex items-start gap-3">
+                                <div className="cv-info-row flex items-start gap-3">
                                     <BriefcaseIcon className="w-5 h-5 text-violet-400 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <span className={`text-xs ${t.labelText} uppercase tracking-wider`}>Atuação em TI desde</span>
-                                        <p className={`${t.infoValue} font-medium`}>1988 — mais de 30 anos de experiência</p>
+                                        <span className={`cv-label text-xs ${t.labelText} uppercase tracking-wider`}>Atuação em TI desde</span>
+                                        <p className={`cv-value ${t.infoValue} font-medium`}>1988 — mais de 30 anos de experiência</p>
                                     </div>
                                 </div>
-                                <div className="flex items-start gap-3">
+                                <div className="cv-info-row flex items-start gap-3">
                                     <SparklesIcon className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
                                     <div>
-                                        <span className={`text-xs ${t.labelText} uppercase tracking-wider`}>Foco atual</span>
-                                        <p className={`${t.infoValue} font-medium`}>IA, Desenvolvimento Web e Aplicativos, Automação & Gestão de Tráfego</p>
+                                        <span className={`cv-label text-xs ${t.labelText} uppercase tracking-wider`}>Foco atual</span>
+                                        <p className={`cv-value ${t.infoValue} font-medium`}>IA, Desenvolvimento Web e Aplicativos, Automação & Gestão de Tráfego</p>
                                     </div>
                                 </div>
                             </div>
@@ -718,15 +718,15 @@ const CurriculumPage: React.FC = () => {
                 </section>
 
                 {/* Diferenciais / Pontos Fortes */}
-                <section>
-                    <div className="flex items-center gap-3 mb-6">
+                <section className="cv-section">
+                    <div className="cv-section-head flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
                             <SparklesIcon className="w-5 h-5 text-white" />
                         </div>
-                        <h2 className={`text-2xl font-bold ${t.sectionTitle}`}>Diferenciais</h2>
+                        <h2 className={`cv-section-title text-2xl font-bold ${t.sectionTitle}`}>Diferenciais</h2>
                     </div>
 
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="cv-grid cv-grid-3 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {[
                             { icon: '🧠', title: 'Visão Estratégica', desc: 'Capacidade de unir tecnologia e propósito para gerar impacto real em organizações.' },
                             { icon: '🤖', title: 'Early Adopter de IA', desc: 'Domínio de ferramentas modernas de IA generativa e agentes autônomos para automação.' },
@@ -737,12 +737,12 @@ const CurriculumPage: React.FC = () => {
                         ].map((item, index) => (
                             <div
                                 key={item.title}
-                                className={`group ${t.diffCardBg} border ${t.diffCardBorder} rounded-2xl p-5 hover:border-cyan-500/30 ${isDark ? 'hover:bg-slate-800/60' : 'hover:bg-white'} transition-all duration-300 hover:-translate-y-1`}
+                                className={`group cv-card cv-diff ${t.diffCardBg} border ${t.diffCardBorder} rounded-2xl p-5 hover:border-cyan-500/30 ${isDark ? 'hover:bg-slate-800/60' : 'hover:bg-white'} transition-all duration-300 hover:-translate-y-1`}
                                 style={{ animationDelay: `${index * 80}ms` }}
                             >
-                                <div className="text-3xl mb-3">{item.icon}</div>
-                                <h3 className={`text-sm font-bold ${t.sectionTitle} mb-1.5`}>{item.title}</h3>
-                                <p className={`text-xs ${t.diffDesc} leading-relaxed`}>{item.desc}</p>
+                                <div className="cv-diff-icon text-3xl mb-3">{item.icon}</div>
+                                <h3 className={`cv-diff-title text-sm font-bold ${t.sectionTitle} mb-1.5`}>{item.title}</h3>
+                                <p className={`cv-diff-desc text-xs ${t.diffDesc} leading-relaxed`}>{item.desc}</p>
                             </div>
                         ))}
                     </div>
@@ -750,7 +750,7 @@ const CurriculumPage: React.FC = () => {
             </main>
 
             {/* Footer */}
-            <footer className={`border-t ${t.footerBorder} py-10 px-6`}>
+            <footer className={`cv-footer border-t ${t.footerBorder} py-10 px-6`}>
                 <div className="max-w-5xl mx-auto text-center">
                     <p className={`${t.footerText} text-sm mb-2`}>
                         © {new Date().getFullYear()} Marcio Rolim. <a href="/privacy.html" className="hover:text-amber-400 underline-offset-4">Privacidade</a>
