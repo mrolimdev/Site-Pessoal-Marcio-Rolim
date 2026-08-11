@@ -272,12 +272,14 @@ export function CarrosselPosts({
           // A máscara desbota as pontas em vez de cortá-las na régua. Vai em
           // propriedade arbitrária, e não numa cor de fundo por cima, para não
           // ficar amarrada ao fundo da página em cada tema.
-          className="cursor-grab overflow-x-auto overflow-y-hidden py-4 [mask-image:linear-gradient(to_right,transparent,#000_2rem,#000_calc(100%-2rem),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,#000_2rem,#000_calc(100%-2rem),transparent)] scrollbar-hide focus-visible:outline-none active:cursor-grabbing"
+          //
+          // `scroll-px-8` casa com a faixa desbotada: quando o Tab leva o foco
+          // para um cartão, o navegador o traz para dentro da área nítida em
+          // vez de encostá-lo na ponta apagada.
+          className="cursor-grab scroll-px-8 overflow-x-auto overflow-y-hidden py-4 [mask-image:linear-gradient(to_right,transparent,#000_2rem,#000_calc(100%-2rem),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,#000_2rem,#000_calc(100%-2rem),transparent)] scrollbar-hide active:cursor-grabbing"
         >
           <ul className="flex w-max items-stretch gap-6 px-1">
             {cartoes('a', false)}
-            {/* Segunda volta: só pixels. Não existe para leitor de tela nem
-                para o Tab, senão cada post apareceria duas vezes. */}
             {cartoes('b', true)}
           </ul>
         </div>

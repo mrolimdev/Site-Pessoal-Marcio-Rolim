@@ -1,12 +1,33 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
-import { PostCard, PostCardDestaque } from '@/components/blog/post-card'
+import { CarrosselPosts } from '@/components/blog/carrossel-posts'
+import { PostCardDestaque } from '@/components/blog/post-card'
 import { CardArvoreDeCategorias, CardNuvemDeTags } from '@/components/blog/widgets-blog'
 import type { DadosWidgets, PostResumo, TagComContagem } from '@/lib/blog/queries'
 
 type Aba = 'todas' | 'tecnologia' | 'fe'
+
+/**
+ * Texto de apoio das duas seções, por aba. As seções antes eram fixas — uma de
+ * Tecnologia e uma de Vida Cristã, cada uma com o próprio título e subtítulo.
+ * Agora a página é uma só e é a aba que diz do que ela trata.
+ */
+const COPIA: Record<Aba, { destaque: string; esteira: string }> = {
+  todas: {
+    destaque: 'O artigo mais recente de cada área',
+    esteira: 'Tudo o que já foi publicado, das duas áreas, da mais nova para a mais antiga',
+  },
+  tecnologia: {
+    destaque: 'Engenharia de software, inteligência artificial, agentes e automação de processos',
+    esteira: 'Os demais artigos de tecnologia, da mais nova para a mais antiga',
+  },
+  fe: {
+    destaque: 'Fé, propósito, sabedoria e vida com Deus no mundo hiperconectado',
+    esteira: 'As demais reflexões, da mais nova para a mais antiga',
+  },
+}
 
 const CATEGORIAS_OPCOES = [
   { chave: 'todas', rotulo: 'Todas as Categorias' },
@@ -34,43 +55,83 @@ export function ConteudoBlogAbas({
   const totalFe = postsVidaCrista.length
   const totalGeral = totalTech + totalFe
 
-  // Helper de filtragem por busca e categoria
-  const filtrarPost = (p: PostResumo) => {
-    // 1. Filtro por Categoria
-    if (categoriaSelecionada && p.categoria !== categoriaSelecionada) {
-      return false
-    }
+  // Helper de filtragem por busca e categoria.
+  //
+  // Em `useCallback` porque as listas memoizadas abaixo dependem dele: solto,
+  // ele nascia de novo a cada render e as dependências dos `useMemo` ficavam
+  // incompletas.
+  const filtrarPost = useCallback(
+    (p: PostResumo) => {
+      // 1. Filtro por Categoria
+      if (categoriaSelecionada && p.categoria !== categoriaSelecionada) {
+        return false
+      }
 
-    // 2. Filtro por Termo de Busca
-    if (termoBusca.trim().length > 0) {
-      const termo = termoBusca.trim().toLowerCase()
-      const noTitulo = p.titulo.toLowerCase().includes(termo)
-      const noResumo = p.resumo?.toLowerCase().includes(termo) ?? false
-      const nasTags = p.tags?.some((t) => t.toLowerCase().includes(termo)) ?? false
+      // 2. Filtro por Termo de Busca
+      if (termoBusca.trim().length > 0) {
+        const termo = termoBusca.trim().toLowerCase()
+        const noTitulo = p.titulo.toLowerCase().includes(termo)
+        const noResumo = p.resumo?.toLowerCase().includes(termo) ?? false
+        const nasTags = p.tags?.some((t) => t.toLowerCase().includes(termo)) ?? false
 
+        return noTitulo || noResumo || nasTags
+      }
 
-      return noTitulo || noResumo || nasTags
-    }
-
-    return true
-  }
+      return true
+    },
+    [categoriaSelecionada, termoBusca]
+  )
 
   // ─── POSTS FILTRADOS DINAMICAMENTE ───
   const techFiltrados = useMemo(() => {
     return postsTecnologia.filter(filtrarPost)
-  }, [postsTecnologia, categoriaSelecionada, termoBusca])
+  }, [postsTecnologia, filtrarPost])
 
   const feFiltrados = useMemo(() => {
     return postsVidaCrista.filter(filtrarPost)
-  }, [postsVidaCrista, categoriaSelecionada, termoBusca])
+  }, [postsVidaCrista, filtrarPost])
 
   const totalFiltrado = techFiltrados.length + feFiltrados.length
 
-  const destaqueTech = techFiltrados[0]
-  const demaisTech = techFiltrados.slice(1)
+  // ─── DESTAQUES: 1 coluna, largura total ───
+  //
+  // Em "Todas" o destaque é o mais recente de *cada* área — as duas convivem na
+  // página e escolher uma só apagaria a outra. Numa aba de área, é um só.
+  const destaques = useMemo(() => {
+    if (abaAtiva === 'tecnologia') {
+      return techFiltrados[0] ? [{ post: techFiltrados[0], rotulo: 'Mais recente' }] : []
+    }
 
-  const destaqueFe = feFiltrados[0]
-  const demaisFe = feFiltrados.slice(1)
+    if (abaAtiva === 'fe') {
+      return feFiltrados[0] ? [{ post: feFiltrados[0], rotulo: 'Mais recente' }] : []
+    }
+
+    const lista: { post: PostResumo; rotulo: string }[] = []
+    if (techFiltrados[0]) lista.push({ post: techFiltrados[0], rotulo: 'Destaque · Tecnologia' })
+    if (feFiltrados[0]) lista.push({ post: feFiltrados[0], rotulo: 'Destaque · Vida Cristã' })
+    return lista
+  }, [abaAtiva, techFiltrados, feFiltrados])
+
+  // ─── ESTEIRA: todo o resto da aba ───
+  //
+  // Sem corte em "os N mais recentes": a esteira dá a volta em tudo o que
+  // sobrou, então nenhum post fica inalcançável a partir do /blog. Em "Todas"
+  // as duas áreas se misturam, e aí a ordem de publicação precisa ser refeita —
+  // cada lista chega ordenada por conta própria.
+  const rotativos = useMemo(() => {
+    const emDestaque = new Set(destaques.map((d) => d.post.slug))
+
+    const base =
+      abaAtiva === 'tecnologia'
+        ? techFiltrados
+        : abaAtiva === 'fe'
+          ? feFiltrados
+          : [...techFiltrados, ...feFiltrados]
+
+    return base
+      .filter((p) => !emDestaque.has(p.slug))
+      .sort((a, b) => b.publicadoEm.localeCompare(a.publicadoEm) || a.slug.localeCompare(b.slug))
+  }, [abaAtiva, techFiltrados, feFiltrados, destaques])
 
   // ─── TAGS DINÂMICAS POR ABA E POR ORIGEM ───
   const tagsFiltradas = useMemo<TagComContagem[]>(() => {
@@ -233,82 +294,38 @@ export function ConteudoBlogAbas({
             </span>
             {termoBusca && (
               <span>
-                Termo: <code className="font-bold text-amber-600 dark:text-amber-400">"{termoBusca}"</code>
+                Termo:{' '}
+                <code className="font-bold text-amber-600 dark:text-amber-400">
+                  &ldquo;{termoBusca}&rdquo;
+                </code>
               </span>
             )}
           </div>
         )}
       </div>
 
-      {/* ─── ÁREA PRINCIPAL + SIDEBAR DE WIDGETS ─── */}
+      {/* ─── DESTAQUES: UMA COLUNA, LARGURA TOTAL ─── */}
+      {destaques.length > 0 && (
+        <section className="animate-fade-in flex flex-col gap-6">
+          <div className="border-b border-slate-200 pb-4 dark:border-slate-800">
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+              Em destaque
+            </h2>
+            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+              {COPIA[abaAtiva].destaque}
+            </p>
+          </div>
+
+          {destaques.map((d) => (
+            <PostCardDestaque key={d.post.slug} post={d.post} rotulo={d.rotulo} />
+          ))}
+        </section>
+      )}
+
+      {/* ─── ABAIXO: ESTEIRA À ESQUERDA, WIDGETS À DIREITA ─── */}
       <div className="grid grid-cols-1 gap-12 lg:grid-cols-12">
-        {/* COLUNA ESQUERDA: POSTS DO BLOG (8 colunas no desktop) */}
-        <div className="flex flex-col gap-16 lg:col-span-8">
-          {/* SEÇÃO TECNOLOGIA */}
-          {(abaAtiva === 'todas' || abaAtiva === 'tecnologia') && techFiltrados.length > 0 && (
-            <section id="tecnologia" className="animate-fade-in flex flex-col gap-8">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-800">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10 text-xl text-sky-600 dark:bg-sky-500/20 dark:text-sky-400">
-                    💻
-                  </span>
-                  <div>
-                    <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                      Tecnologia, IA & Automação
-                    </h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Engenharia de software, inteligência artificial, agentes e automação de processos
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-6">
-                {destaqueTech && <PostCardDestaque post={destaqueTech} />}
-                {demaisTech.length > 0 && (
-                  <div className="grid gap-6 sm:grid-cols-2">
-                    {demaisTech.map((post) => (
-                      <PostCard key={post.slug} post={post} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* SEÇÃO VIDA CRISTÃ */}
-          {(abaAtiva === 'todas' || abaAtiva === 'fe') && feFiltrados.length > 0 && (
-            <section id="vida-crista" className="animate-fade-in flex flex-col gap-8">
-              <div className="flex items-center justify-between border-b border-amber-500/20 pb-4">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-xl text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
-                    ✝️
-                  </span>
-                  <div>
-                    <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                      Vida Cristã & Reflexões
-                    </h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Fé, propósito, sabedoria e vida com Deus no mundo hiperconectado
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-6">
-                {destaqueFe && <PostCardDestaque post={destaqueFe} />}
-                {demaisFe.length > 0 && (
-                  <div className="grid gap-6 sm:grid-cols-2">
-                    {demaisFe.map((post) => (
-                      <PostCard key={post.slug} post={post} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-
-          {techFiltrados.length === 0 && feFiltrados.length === 0 && (
+        <div className="animate-fade-in lg:col-span-8">
+          {totalFiltrado === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
               <span className="text-4xl">🔍</span>
               <p className="text-base font-semibold text-slate-700 dark:text-slate-300">
@@ -325,6 +342,12 @@ export function ConteudoBlogAbas({
                 Limpar pesquisa e filtros
               </button>
             </div>
+          ) : (
+            <CarrosselPosts
+              posts={rotativos}
+              titulo="Últimos posts"
+              descricao={COPIA[abaAtiva].esteira}
+            />
           )}
         </div>
 
