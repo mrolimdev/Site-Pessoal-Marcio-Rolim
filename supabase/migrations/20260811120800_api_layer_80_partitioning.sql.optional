@@ -1,0 +1,204 @@
+-- ============================================================================
+-- 20260811120800_api_layer_80_partitioning.sql.optional
+--
+-- APÊNDICE — NÃO APLIQUE AGORA.
+--
+-- Extensão `.optional` de propósito: o Supabase CLI só executa arquivos `.sql`,
+-- então este fica inerte no diretório. Quando (e se) o momento chegar, renomeie
+-- para `.sql` com um timestamp novo.
+--
+-- ----------------------------------------------------------------------------
+-- QUANDO PARTICIONAR
+--
+-- A documentação do próprio Supabase recomenda não particionar antes de medir
+-- degradação. Gatilhos concretos para reavaliar:
+--   * inbound_events passando de ~5–10 milhões de linhas, OU
+--   * a rodada noturna de retenção deixando de terminar dentro da janela, OU
+--   * pg_total_relation_size('api.inbound_events') incomodando na cota.
+--
+-- Consulta de acompanhamento:
+--   select pg_size_pretty(pg_total_relation_size('api.inbound_events')) as total,
+--          (select reltuples::bigint from pg_class
+--            where oid = 'api.inbound_events'::regclass)              as linhas;
+--
+-- O QUE SE GANHA: retenção vira `drop table` — operação de metadado, tempo
+-- constante, sem WAL de milhões de deletes e sem tupla morta para o autovacuum
+-- limpar depois. Some toda a máquina de lotes do arquivo 70.
+--
+-- ----------------------------------------------------------------------------
+-- O QUE SE PERDE: A IDEMPOTÊNCIA COMO ESTÁ HOJE
+--
+-- Em tabela particionada, todo índice UNIQUE tem que conter a coluna de
+-- partição. Ou seja, `unique (endpoint_id, idempotency_key)` deixa de ser
+-- possível: viraria `unique (received_at, endpoint_id, idempotency_key)`, que
+-- não garante nada — o mesmo idempotency_key em dois instantes diferentes
+-- passaria, que é exatamente o caso que a constraint existe para barrar.
+--
+-- SOLUÇÃO: mover a idempotência para uma tabela pequena e NÃO particionada,
+-- que é o gate real do ingest. Ela só precisa cobrir a janela em que um retry
+-- é plausível (n8n/Make reenviam em minutos, não em meses), então 72h bastam e
+-- a tabela se mantém minúscula.
+--
+-- É por isso que o schema principal nasceu plano: idempotência é requisito,
+-- volume é hipótese. Trocar uma constraint garantida pelo banco por uma tabela
+-- auxiliar com TTL é uma concessão real, e só se paga quando o volume existir.
+-- ============================================================================
+
+
+-- ----------------------------------------------------------------------------
+-- PASSO 1 — gate de idempotência independente da partição
+-- ----------------------------------------------------------------------------
+create table api.inbound_idempotency (
+  endpoint_id     uuid        not null references api.webhook_endpoints (id) on delete cascade,
+  idempotency_key text        not null,
+  event_id        bigint      not null,   -- sem FK: aponta para tabela particionada
+  received_at     timestamptz not null default now(),
+  expires_at      timestamptz not null default now() + interval '72 hours',
+  primary key (endpoint_id, idempotency_key)
+);
+
+comment on table api.inbound_idempotency is
+  'Gate de idempotência com TTL, fora da tabela particionada. Substitui o '
+  'índice único (endpoint_id, idempotency_key) de inbound_events, impossível '
+  'de manter após o particionamento.';
+
+create index inbound_idempotency_expires_idx
+  on api.inbound_idempotency using brin (expires_at);
+
+alter table api.inbound_idempotency enable row level security;
+revoke all on api.inbound_idempotency from anon, authenticated;
+
+-- Purga do TTL — agendar junto com os demais jobs do arquivo 70.
+create or replace function api.purge_inbound_idempotency()
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare v_rows integer;
+begin
+  delete from api.inbound_idempotency where expires_at < now();
+  get diagnostics v_rows = row_count;
+  return v_rows;
+end;
+$$;
+
+revoke all on function api.purge_inbound_idempotency() from public;
+grant execute on function api.purge_inbound_idempotency() to service_role;
+
+-- O ingest passa a ser: INSERT no gate primeiro (é ele que decide duplicata),
+-- INSERT no log depois.
+--   insert into api.inbound_idempotency (endpoint_id, idempotency_key, event_id)
+--   values ($1, $2, $3)
+--   on conflict (endpoint_id, idempotency_key) do nothing
+--   returning event_id;
+-- Zero linhas = duplicata; buscar o event_id existente e responder 200.
+
+
+-- ----------------------------------------------------------------------------
+-- PASSO 2 — tabela particionada por mês
+--
+-- A PK precisa incluir a coluna de partição: (received_at, id). O `id` sozinho
+-- deixa de ser chave, então a paginação keyset do arquivo 60 — que já ordena
+-- por (received_at desc, id desc) — continua valendo sem mudança.
+-- ----------------------------------------------------------------------------
+create table api.inbound_events_new (
+  id                bigint      generated always as identity,
+  public_id         uuid        not null default gen_random_uuid(),
+  endpoint_id       uuid,
+  endpoint_slug     text        not null,
+  action            text,
+  api_key_id        uuid,
+  api_key_prefix    text,
+  http_method       text        not null default 'POST',
+  source_ip         inet,
+  user_agent        text,
+  content_type      text,
+  headers           jsonb       not null default '{}'::jsonb,
+  request_id        text,
+  auth_method       text        not null default 'none',
+  signature_valid   boolean,
+  payload           jsonb,
+  payload_bytes     integer,
+  payload_sha256    bytea,
+  payload_purged_at timestamptz,
+  idempotency_key   text,
+  status            text        not null default 'received',
+  attempts          integer     not null default 0,
+  result            jsonb,
+  error_code        text,
+  error_message     text,
+  error_detail      jsonb,
+  processing_ms     integer,
+  duplicate_of_id   bigint,
+  received_at       timestamptz not null default now(),
+  processed_at      timestamptz,
+
+  primary key (received_at, id)
+  -- Repetir aqui os CHECKs do arquivo 30 (são herdados pelas partições).
+)
+partition by range (received_at);
+
+-- Índices declarados no pai propagam para toda partição, presente e futura.
+-- O único índice do arquivo 30 que NÃO sobrevive é o único de idempotência —
+-- substituído pelo passo 1.
+create index on api.inbound_events_new (received_at desc, id desc);
+create index on api.inbound_events_new (endpoint_id, received_at desc, id desc);
+create index on api.inbound_events_new (status, received_at desc)
+  where status in ('failed', 'received', 'processing');
+create index on api.inbound_events_new (api_key_id, received_at desc)
+  where api_key_id is not null;
+create unique index on api.inbound_events_new (received_at, public_id);
+-- ^ public_id também precisa carregar a coluna de partição; o lookup do painel
+--   passa a exigir a data, ou vira busca em todas as partições. Alternativa:
+--   deixar de expor public_id e usar (received_at, id) como cursor público.
+
+
+-- ----------------------------------------------------------------------------
+-- PASSO 3 — automação das partições com pg_partman
+--
+-- Sem automação, alguém precisa lembrar de criar a partição de cada mês; o mês
+-- em que ninguém lembrar é o mês em que todo webhook falha no INSERT.
+-- ----------------------------------------------------------------------------
+-- create schema if not exists partman;
+-- create extension if not exists pg_partman with schema partman;
+--
+-- select partman.create_parent(
+--   p_parent_table    => 'api.inbound_events_new',
+--   p_control         => 'received_at',
+--   p_interval        => '1 month',
+--   p_premake         => 3            -- 3 meses adiantados
+-- );
+--
+-- -- Retenção declarativa: 6 meses, e DROP em vez de detach.
+-- update partman.part_config
+--    set retention = '6 months',
+--        retention_keep_table = false
+--  where parent_table = 'api.inbound_events_new';
+--
+-- -- Manutenção horária (cria as futuras, dropa as vencidas).
+-- select cron.schedule('partman-maintenance', '0 * * * *',
+--                      $$call partman.run_maintenance_proc()$$);
+
+
+-- ----------------------------------------------------------------------------
+-- PASSO 4 — corte
+--
+-- 1. Copie os últimos 6 meses:
+--      insert into api.inbound_events_new
+--      select * from api.inbound_events
+--       where received_at >= now() - interval '6 months';
+--    (em lotes por mês, se o volume justificar)
+-- 2. Popule api.inbound_idempotency com as chaves das últimas 72h.
+-- 3. Em uma transação:
+--      alter table api.inbound_events     rename to inbound_events_legacy;
+--      alter table api.inbound_events_new rename to inbound_events;
+-- 4. Recrie policies, grants de coluna e comentários (o RENAME preserva as
+--    policies da tabela renomeada, mas confira: as views de `public` e as RPCs
+--    do arquivo 60 continuam apontando por nome e seguem funcionando).
+-- 5. Rode a suíte de smoke tests e só então:
+--      drop table api.inbound_events_legacy;
+-- 6. No arquivo 70, remova as fases 1 e 2 da retenção de inbound_events —
+--    pg_partman passa a cuidar disso — e mantenha só o purge de payload, que
+--    continua sendo UPDATE dentro da partição corrente.
+-- ----------------------------------------------------------------------------

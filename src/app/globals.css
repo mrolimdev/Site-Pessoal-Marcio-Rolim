@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+/* Dark mode por classe no <html>, gravada pelo script anti-FOUC do layout.
+   Não usamos prefers-color-scheme: a preferência do usuário fica em localStorage. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+
+  /* Cores de marca — vinham do tailwind.config inline em index.html:134-141 */
+  --color-brand-dark: #020617;  /* slate-950 */
+  --color-brand-light: #f5f5f4; /* stone-50  */
+  --color-brand-grey: #1e293b;  /* slate-800 */
+  --color-brand-gold: #f59e0b;  /* amber-500 */
+
+  /* Paleta dos gráficos do dashboard. Os wrappers do Recharts leem estas vars,
+     então trocar o tema troca a cor do gráfico sem re-render. */
+  --color-chart-1: #f59e0b;
+  --color-chart-2: #10b981;
+  --color-chart-3: #3b82f6;
+  --color-chart-4: #8b5cf6;
+  --color-chart-5: #f43f5e;
+
+  /* Animações. Keyframes consolidados de index.html e curriculum.html,
+     que hoje têm definições divergentes de scaleIn (0.6s vs 0.5s). */
+  --animate-fade-in-up: fadeInUp 0.7s ease-out forwards;
+  --animate-fade-in: fadeIn 0.5s ease-out forwards;
+  --animate-scale-in: scaleIn 0.6s ease-out forwards;
+  --animate-slide-in-left: slideInLeft 0.6s ease-out forwards;
+  --animate-slide-in-up: slideInUp 0.6s ease-out forwards;
+  --animate-float: float 6s ease-in-out infinite;
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-30px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes slideInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+  }
+}
+
+/* Utilities que o código legado referencia mas que nunca foram definidas.
+   Definidas aqui de propósito, para não falharem em silêncio. */
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+@utility animation-delay-* {
+  animation-delay: calc(--value(integer) * 1ms);
+}
+
+@utility safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background: rgb(245 158 11 / 0.2);
+    color: inherit;
+  }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(148 163 184 / 0.4);
+    border-radius: 100px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(148 163 184 / 0.6); }
+
+  /* Respeita quem pediu menos movimento no sistema. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
