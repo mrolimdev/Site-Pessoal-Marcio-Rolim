@@ -7,24 +7,10 @@ import nextTs from 'eslint-config-next/typescript'
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  globalIgnores([
-    '.next/**',
-    'out/**',
-    'build/**',
-    'dist/**',
-    'next-env.d.ts',
-    // Código legado do Vite, removido no cutover (Fase 10).
-    'App.tsx',
-    'index.tsx',
-    'main-*.tsx',
-    'constants.tsx',
-    'types.ts',
-    'components/**',
-    'services/**',
-    'api/**',
-    'server.js',
-    'vite.config.ts',
-  ]),
+    // `dist/` é resíduo do build antigo do Vite: some do repositório, mas pode
+  // reaparecer numa cópia local antiga. Analisá-lo gera centenas de avisos
+  // em código minificado.
+  globalIgnores(['.next/**', 'out/**', 'build/**', 'dist/**', 'next-env.d.ts']),
 ])
 
 export default eslintConfig

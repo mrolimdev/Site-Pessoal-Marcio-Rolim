@@ -36,17 +36,6 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules",
-    "App.tsx",
-    "index.tsx",
-    "main-curriculum.tsx",
-    "main-privacy.tsx",
-    "constants.tsx",
-    "types.ts",
-    "components/**",
-    "services/**",
-    "api/**",
-    "server.js",
-    "vite.config.ts"
+    "node_modules"
   ]
 }
