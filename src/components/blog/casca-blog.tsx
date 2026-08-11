@@ -19,20 +19,26 @@ export function CascaBlog({
   voltar,
   children,
 }: {
-  voltar: { href: string; rotulo: string }
+  voltar?: { href: string; rotulo: string }
   children: React.ReactNode
 }) {
   return (
     <div className="min-h-screen bg-stone-50 text-slate-800 transition-colors duration-500 dark:bg-slate-950 dark:text-slate-100">
-      <div className="fixed inset-x-4 top-4 z-50 mx-auto flex max-w-5xl items-center justify-between">
-        <Link
-          href={voltar.href}
-          className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-4 py-2.5 text-slate-600 shadow-xl backdrop-blur-xl transition-all hover:border-slate-400 hover:text-slate-900 dark:border-slate-700/50 dark:bg-slate-800/90 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white"
-        >
-          <ArrowLeftIcon className="h-4 w-4" />
-          <span className="text-sm font-medium">{voltar.rotulo}</span>
-        </Link>
-        <ThemeToggle />
+      <div className="pointer-events-none fixed inset-x-4 top-4 z-50 mx-auto flex max-w-5xl items-center justify-between">
+        <div>
+          {voltar && (
+            <Link
+              href={voltar.href}
+              className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-4 py-2.5 text-slate-600 shadow-xl backdrop-blur-xl transition-all hover:border-slate-400 hover:text-slate-900 dark:border-slate-700/50 dark:bg-slate-800/90 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white"
+            >
+              <ArrowLeftIcon className="h-4 w-4" />
+              <span className="text-sm font-medium">{voltar.rotulo}</span>
+            </Link>
+          )}
+        </div>
+        <div className="pointer-events-auto">
+          <ThemeToggle />
+        </div>
       </div>
 
       {children}

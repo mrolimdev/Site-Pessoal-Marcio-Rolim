@@ -110,7 +110,7 @@ export default async function PostPage({ params }: Props) {
   const postsRelacionados = await obterPostsRelacionados(post.slug, post.categoria, 3)
 
   return (
-    <CascaBlog voltar={{ href: '/blog', rotulo: 'Blog' }}>
+    <CascaBlog>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdDoPost(post) }}
