@@ -23,6 +23,15 @@ export type ResultadoPostIa = {
   minutosDeLeitura: number
 }
 
+export type ModeloGemini = {
+  id: string
+  nome: string
+  descricao: string
+  limiteTokensInput: number
+  limiteTokensOutput: number
+  eRecomendado: boolean
+}
+
 // Slugs de referência real para interlinking categorizado sem 404
 const LINKS_TECH_REAIS = [
   { rotulo: 'Otimização de Banco de Dados Postgres no Supabase', href: '/blog/otimizacao-de-banco-de-dados-postgres-supabase' },
@@ -44,10 +53,103 @@ function obterApiKey(apiKeyInformada?: string): string {
   const key = apiKeyInformada?.trim() || process.env.GEMINI_API_KEY?.trim()
   if (!key) {
     throw new Error(
-      'Nenhuma chave de API do Gemini foi configurada. Informe a sua API Key no campo acima ou defina GEMINI_API_KEY no arquivo .env.local'
+      'Nenhuma chave de API do Gemini foi configurada. Configure a sua chave na aba "Configurações IA" do Painel Admin.'
     )
   }
   return key
+}
+
+/**
+ * Valida a chave da API do Gemini e lista todos os modelos disponíveis.
+ */
+export async function validarEListarModelosGeminiAction(apiKeyInformada: string): Promise<{
+  ok: boolean
+  modelos?: ModeloGemini[]
+  erro?: string
+}> {
+  try {
+    await requireAdmin()
+    const key = apiKeyInformada.trim()
+    if (!key) {
+      throw new Error('Por favor, digite a chave de API do Gemini para validar.')
+    }
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`)
+
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}))
+      const msg = errJson.error?.message || `Chave inválida ou acesso não autorizado (HTTP ${res.status}).`
+      throw new Error(msg)
+    }
+
+    const data = await res.json()
+    const rawModels: any[] = data.models || []
+
+    const modelosFiltrados: ModeloGemini[] = rawModels
+      .filter((m) => m.supportedGenerationMethods?.includes('generateContent'))
+      .map((m) => {
+        const idLimpo = m.name.replace(/^models\//, '')
+        const eRecomendado = idLimpo === 'gemini-2.0-flash' || idLimpo === 'gemini-1.5-flash' || idLimpo === 'gemini-1.5-pro'
+
+        return {
+          id: idLimpo,
+          nome: m.displayName || idLimpo,
+          descricao: m.description || 'Modelo de Inteligência Artificial da família Gemini.',
+          limiteTokensInput: m.inputTokenLimit || 1048576,
+          limiteTokensOutput: m.outputTokenLimit || 8192,
+          eRecomendado,
+        }
+      })
+      .sort((a, b) => (b.eRecomendado ? 1 : 0) - (a.eRecomendado ? 1 : 0) || a.nome.localeCompare(b.nome))
+
+    return { ok: true, modelos: modelosFiltrados }
+  } catch (error: any) {
+    return { ok: false, erro: error.message || 'Falha ao conectar à API do Gemini.' }
+  }
+}
+
+/**
+ * Executa um teste real com a chave e modelo selecionados.
+ */
+export async function testarConfiguracaoModeloAction({
+  apiKeyInformada,
+  modeloId,
+}: {
+  apiKeyInformada: string
+  modeloId: string
+}): Promise<{ ok: boolean; mensagem?: string; erro?: string }> {
+  try {
+    await requireAdmin()
+    const key = apiKeyInformada.trim()
+    if (!key) throw new Error('Chave de API não fornecida.')
+    if (!modeloId) throw new Error('Modelo de IA não selecionado.')
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modeloId}:generateContent?key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: 'Responda apenas a palavra: CONFIGURADO_COM_SUCESSO' }] }],
+        }),
+      }
+    )
+
+    if (!res.ok) {
+      const errText = await res.text()
+      throw new Error(`Falha no teste do modelo ${modeloId} (${res.status}): ${errText}`)
+    }
+
+    const data = await res.json()
+    const resposta = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+
+    return {
+      ok: true,
+      mensagem: `Teste concluído com sucesso! O modelo "${modeloId}" respondeu: "${resposta.trim()}".`,
+    }
+  } catch (error: any) {
+    return { ok: false, erro: error.message || 'Falha ao testar configuração.' }
+  }
 }
 
 /**
@@ -57,10 +159,12 @@ export async function obterSugestoesDeTitulosAction({
   tema,
   categoria,
   apiKeyInformada,
+  modeloId = 'gemini-2.0-flash',
 }: {
   tema: string
   categoria: Categoria
   apiKeyInformada?: string
+  modeloId?: string
 }): Promise<{ ok: boolean; sugestoes?: SugestaoTitulo[]; erro?: string }> {
   try {
     await requireAdmin()
@@ -83,7 +187,7 @@ Responda ESTRITAMENTE em formato JSON com o seguinte schema de array:
 ]`
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${modeloId}:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -126,11 +230,13 @@ export async function gerarPostCompletoComIaAction({
   tema,
   categoria,
   apiKeyInformada,
+  modeloId = 'gemini-2.0-flash',
 }: {
   titulo: string
   tema: string
   categoria: Categoria
   apiKeyInformada?: string
+  modeloId?: string
 }): Promise<{ ok: boolean; post?: ResultadoPostIa; erro?: string }> {
   try {
     await requireAdmin()
@@ -181,7 +287,7 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema rigoroso:
 }`
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${modeloId}:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -209,10 +315,8 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema rigoroso:
 
     const gerado = JSON.parse(rawContent)
 
-    // Converte a estrutura recebida em formato Tiptap JSON (doc)
     const contentNodes: any[] = []
 
-    // 1. Introdução
     if (gerado.artigoFormatado?.introducao) {
       gerado.artigoFormatado.introducao.forEach((pText: string) => {
         contentNodes.push({
@@ -222,7 +326,6 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema rigoroso:
       })
     }
 
-    // Blockquote inicial
     if (gerado.artigoFormatado?.blockquote) {
       contentNodes.push({
         type: 'blockquote',
@@ -235,7 +338,6 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema rigoroso:
       })
     }
 
-    // 2. Seções H2 e H3
     if (Array.isArray(gerado.artigoFormatado?.secoes)) {
       gerado.artigoFormatado.secoes.forEach((sec: any) => {
         if (sec.tituloH2) {
@@ -248,7 +350,6 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema rigoroso:
 
         if (Array.isArray(sec.paragrafos)) {
           sec.paragrafos.forEach((pText: string, idx: number) => {
-            // Tenta inserir 1 link interno real no meio do texto se for apropriado
             if (idx === 0 && linksReais.length > 0) {
               const linkRef = linksReais[Math.floor(Math.random() * linksReais.length)]
               contentNodes.push({
@@ -293,7 +394,6 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema rigoroso:
       })
     }
 
-    // Bloco de Código ou Escritura Bíblica
     if (gerado.artigoFormatado?.codigoOuVerso) {
       contentNodes.push({
         type: 'codeBlock',
@@ -302,7 +402,6 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema rigoroso:
       })
     }
 
-    // 3. Conclusão
     if (gerado.artigoFormatado?.conclusao) {
       contentNodes.push({
         type: 'heading',
@@ -323,7 +422,6 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema rigoroso:
       content: contentNodes,
     }
 
-    // Gera um slug amigável
     const slug = titulo
       .toLowerCase()
       .normalize('NFD')
@@ -331,8 +429,6 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema rigoroso:
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
 
-    // Seleciona URL de imagem temática de alta resolução via Unsplash / Curada
-    const imagemKeyword = eFe ? 'bible,faith,inspiration' : 'technology,ai,workspace'
     const capaUrl = `https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1200&auto=format&fit=crop`
 
     const postFinal: ResultadoPostIa = {

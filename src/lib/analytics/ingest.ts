@@ -122,17 +122,17 @@ export function extrairIp(request: NextRequest): string {
  */
 export function ehInterno(request: NextRequest, path: string): boolean {
   // Preview e desenvolvimento nunca são audiência real. Localmente VERCEL_ENV
-  // não existe, o que cai neste mesmo ramo — que é o comportamento desejado.
+  // não existe ou é diferente de 'production', o que cai neste mesmo ramo.
   if (process.env.VERCEL_ENV !== 'production') return true
 
   if (path.startsWith('/admin')) return true
 
-  // Qualquer sessão do Supabase presente. O site não tem cadastro público: as
-  // únicas contas que existem são as minhas. Confirmar que a sessão é de admin
-  // exigiria uma ida ao banco a cada evento de analytics — caro demais para uma
-  // flag cujo único trabalho é me excluir da contagem.
-  // O @supabase/ssr divide o token em chunks (`sb-<ref>-auth-token.0`, `.1`),
-  // então a checagem é por prefixo, não por nome exato.
+  // Bloqueio explícito para acessos via localhost ou 127.0.0.1
+  const host = hostDaRequisicao(request)
+  if (host && (host.includes('localhost') || host.includes('127.0.0.1') || host.includes('::1'))) {
+    return true
+  }
+
   return request.cookies
     .getAll()
     .some((cookie) => cookie.name.startsWith('sb-') && cookie.name.includes('-auth-token'))

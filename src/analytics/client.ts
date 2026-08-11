@@ -45,10 +45,23 @@ export const COOKIE_OPTOUT = 'mr_optout'
  */
 export function optOut(): boolean {
   try {
+    if (
+      typeof window !== 'undefined' &&
+      (location.hostname === 'localhost' ||
+        location.hostname === '127.0.0.1' ||
+        location.hostname === '[::1]' ||
+        location.hostname.endsWith('.local'))
+    ) {
+      return true
+    }
+  } catch {
+    // Ignora erros de ambiente
+  }
+
+  try {
     if (localStorage.getItem(CHAVE_IGNORAR) === 'true') return true
   } catch {
-    // localStorage lança em modo privado de alguns browsers e quando o site
-    // está em iframe com cookies bloqueados. Não poder ler não é oposição.
+    // localStorage lança em modo privado de alguns browsers
   }
 
   try {
