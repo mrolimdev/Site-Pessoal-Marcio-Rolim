@@ -247,9 +247,6 @@ export function CarrosselPosts({
       {temEsteira ? (
         <div
           ref={pista}
-          role="region"
-          aria-label={`${titulo} — role para o lado para ver mais`}
-          tabIndex={0}
           onPointerEnter={() => {
             pausado.current = true
           }}
