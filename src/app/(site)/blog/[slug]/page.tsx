@@ -146,7 +146,7 @@ export default async function PostPage({ params }: Props) {
             <div className="flex items-center gap-3">
               <div className="relative h-11 w-11 overflow-hidden rounded-full border-2 border-amber-500/30 bg-stone-200 shadow-sm dark:bg-slate-800">
                 <Image
-                  src="/images/marcio-rolim-avatar.jpg"
+                  src="/FotoRostoRolim.jpeg"
                   alt={SITE.name}
                   width={44}
                   height={44}
