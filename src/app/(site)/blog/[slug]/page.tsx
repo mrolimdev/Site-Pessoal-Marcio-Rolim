@@ -1,26 +1,25 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
-import { CabecalhoBlog, CascaBlog } from '@/components/blog/casca-blog'
+import { CascaBlog } from '@/components/blog/casca-blog'
 import { CategoriaBadge } from '@/components/blog/categoria-badge'
 import { DataPost, TempoDeLeitura } from '@/components/blog/data-post'
 import { ImagemDeCapa } from '@/components/blog/imagem-capa'
+import { PostCard } from '@/components/blog/post-card'
 import { TagsDoPost } from '@/components/blog/tags-post'
 import { ArrowLeftIcon, WhatsAppIcon } from '@/components/icons'
 import { PostBody } from '@/components/post-body'
 import { BASE_URL, CONTACT, MEDIA, SITE, urlAbsoluta } from '@/content/site'
 import { ROTULO_CATEGORIA } from '@/lib/blog/constantes'
-import { listarSlugsPublicados, obterPostPorSlug, type PostCompleto } from '@/lib/blog/queries'
+import {
+  listarSlugsPublicados,
+  obterPostPorSlug,
+  obterPostsRelacionados,
+  type PostCompleto,
+} from '@/lib/blog/queries'
 
-/**
- * Post individual — pré-renderizado no build e revalidado de hora em hora.
- *
- * `dynamicParams` fica no padrão (`true`) de propósito: post publicado DEPOIS
- * do build não está em `generateStaticParams`, e com `false` ele responderia
- * 404 até o próximo deploy. Do jeito que está, a primeira visita gera a página
- * e ela entra em cache como as demais.
- */
 export const revalidate = 3600
 
 export async function generateStaticParams() {
@@ -34,8 +33,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const post = await obterPostPorSlug(slug)
 
-  // Sem post não há metadata útil. O 404 quem devolve é o componente da página;
-  // aqui só evitamos que um rascunho apagado deixe rastro indexável.
   if (!post) {
     return { title: 'Post não encontrado', robots: { index: false, follow: false } }
   }
@@ -51,9 +48,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: titulo,
     description: descricao,
     alternates: { canonical: caminho },
-    // `follow: true` mesmo com noindex: a coluna diz "não indexe ESTA URL", não
-    // "desconfie do que ela aponta". Bloquear o rastreio dos links puniria as
-    // páginas ligadas a partir daqui sem nenhum motivo.
     robots: post.noindex
       ? { index: false, follow: true }
       : { index: true, follow: true, 'max-image-preview': 'large' },
@@ -82,13 +76,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-/**
- * JSON-LD do post.
- *
- * `JSON.stringify` escapa aspas, mas não `<`. Título com "</script>" fecharia a
- * tag e o resto do JSON viraria HTML executável — daí a troca por `<`,
- * que o parser de JSON lê como o mesmo caractere e o parser de HTML ignora.
- */
 function jsonLdDoPost(post: PostCompleto): string {
   const url = urlAbsoluta(`/blog/${post.slug}`)
 
@@ -119,6 +106,9 @@ export default async function PostPage({ params }: Props) {
 
   if (!post) notFound()
 
+  // Carrega 3 posts relacionados da mesma categoria
+  const postsRelacionados = await obterPostsRelacionados(post.slug, post.categoria, 3)
+
   return (
     <CascaBlog voltar={{ href: '/blog', rotulo: 'Blog' }}>
       <script
@@ -126,63 +116,99 @@ export default async function PostPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: jsonLdDoPost(post) }}
       />
 
-      <CabecalhoBlog>
-        <CategoriaBadge categoria={post.categoria} />
+      {/* ─── CABEÇALHO MODERNO DO POST ─── */}
+      <header className="relative overflow-hidden border-b border-slate-200/80 bg-gradient-to-b from-stone-100/90 via-stone-50/50 to-white py-12 dark:border-slate-800/80 dark:from-slate-900/90 dark:via-slate-900/50 dark:to-slate-950">
+        <div className="mx-auto flex max-w-4xl flex-col gap-6 px-6">
+          <div className="flex items-center justify-between">
+            <Link
+              href="/blog"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-4 py-1.5 font-mono text-xs font-bold text-slate-600 shadow-2xs backdrop-blur-md transition-all hover:border-amber-500/40 hover:text-amber-600 dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:text-amber-400"
+            >
+              <ArrowLeftIcon className="h-3.5 w-3.5" />
+              Voltar ao Blog
+            </Link>
 
-        <h1 className="max-w-3xl text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl dark:text-white">
-          {post.titulo}
-        </h1>
+            <CategoriaBadge categoria={post.categoria} />
+          </div>
 
-        {post.resumo && (
-          <p className="max-w-2xl text-lg leading-relaxed text-slate-600 dark:text-slate-300">
-            {post.resumo}
-          </p>
-        )}
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl dark:text-white leading-[1.15]">
+            {post.titulo}
+          </h1>
 
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
-          <span className="font-medium text-slate-700 dark:text-slate-200">{SITE.name}</span>
-          <span aria-hidden="true">·</span>
-          <DataPost iso={post.publicadoEm} />
-          <span aria-hidden="true">·</span>
-          <TempoDeLeitura minutos={post.minutosDeLeitura} />
+          {post.resumo && (
+            <p className="border-l-4 border-amber-500/60 pl-4 text-lg font-medium leading-relaxed text-slate-600 dark:border-amber-400/60 dark:text-slate-300">
+              {post.resumo}
+            </p>
+          )}
+
+          {/* PERFIL DO AUTOR E METADADOS */}
+          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200/60 pt-6 dark:border-slate-800/60">
+            <div className="flex items-center gap-3">
+              <div className="relative h-11 w-11 overflow-hidden rounded-full border-2 border-amber-500/30 bg-stone-200 shadow-sm dark:bg-slate-800">
+                <Image
+                  src="/images/marcio-rolim-avatar.jpg"
+                  alt={SITE.name}
+                  width={44}
+                  height={44}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-slate-900 dark:text-white">
+                  {SITE.name}
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  Engenheiro de IA & Software
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 rounded-2xl border border-slate-200/60 bg-white/60 px-4 py-2 text-xs font-semibold text-slate-500 backdrop-blur-sm dark:border-slate-800/60 dark:bg-slate-900/60 dark:text-slate-400">
+              <DataPost iso={post.publicadoEm} />
+              <span aria-hidden="true">·</span>
+              <TempoDeLeitura minutos={post.minutosDeLeitura} />
+            </div>
+          </div>
         </div>
-      </CabecalhoBlog>
+      </header>
 
-      <main className="mx-auto flex max-w-3xl flex-col gap-10 px-6 py-12">
+      {/* ─── CORPO DO ARTIGO E POSTS RELACIONADOS ─── */}
+      <main className="mx-auto flex max-w-4xl flex-col gap-12 px-6 py-12">
         {post.capaUrl && (
-          <figure className="relative aspect-[21/9] overflow-hidden rounded-3xl border border-slate-200 bg-stone-100 dark:border-slate-800 dark:bg-slate-800">
+          <figure className="relative aspect-[21/9] overflow-hidden rounded-3xl border border-slate-200/80 bg-stone-100 shadow-xl dark:border-slate-800/80 dark:bg-slate-800">
             <ImagemDeCapa
               src={post.capaUrl}
               alt={post.capaAlt ?? ''}
-              sizes="(min-width: 768px) 48rem, 92vw"
+              sizes="(min-width: 768px) 56rem, 92vw"
               prioridade
             />
           </figure>
         )}
 
-        <article>
+        <article className="rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-xl backdrop-blur-xl sm:p-10 dark:border-slate-800/80 dark:bg-slate-900/90">
           <PostBody conteudo={post.conteudo} />
         </article>
 
         {post.tags.length > 0 && (
           <section
             aria-label="Tags do post"
-            className="flex flex-col gap-3 border-t border-slate-200 pt-8 dark:border-slate-800"
+            className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-stone-50/60 p-6 dark:border-slate-800/80 dark:bg-slate-900/40"
           >
             <h2 className="text-xs font-bold tracking-wider text-slate-400 uppercase dark:text-slate-500">
-              Tags
+              🏷️ Tags do Artigo
             </h2>
             <TagsDoPost tags={post.tags} />
           </section>
         )}
 
-        <nav className="flex flex-col gap-3 border-t border-slate-200 pt-8 sm:flex-row dark:border-slate-800">
+        {/* NAVEGAÇÃO E BOTOES DE AÇÃO */}
+        <nav className="flex flex-col gap-4 border-t border-slate-200/80 pt-8 sm:flex-row dark:border-slate-800/80">
           <Link
             href="/blog"
-            className="flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/80 px-6 py-3 text-sm font-semibold text-slate-600 transition-all hover:border-amber-500/40 hover:text-amber-700 dark:border-slate-700/50 dark:bg-slate-800/60 dark:text-slate-300 dark:hover:border-amber-500/40 dark:hover:text-amber-400"
+            className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200/80 bg-white/80 px-6 py-3.5 text-sm font-semibold text-slate-700 shadow-xs transition-all hover:border-amber-500/40 hover:text-amber-700 dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:border-amber-400 dark:hover:text-amber-400"
           >
             <ArrowLeftIcon className="h-4 w-4" />
-            Ver todos os posts
+            Voltar para todos os posts
           </Link>
 
           <a
@@ -190,12 +216,37 @@ export default async function PostPage({ params }: Props) {
             target="_blank"
             rel="noopener noreferrer"
             data-track="contato_click"
-            className="flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all hover:-translate-y-0.5 hover:bg-emerald-400"
+            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:-translate-y-0.5 hover:bg-emerald-500"
           >
             <WhatsAppIcon className="h-4 w-4" />
             Conversar sobre este assunto
           </a>
         </nav>
+
+        {/* ─── SEÇÃO DE 3 POSTS RELACIONADOS ─── */}
+        {postsRelacionados.length > 0 && (
+          <section className="mt-8 border-t border-slate-200/80 pt-12 dark:border-slate-800/80">
+            <div className="mb-8 flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-xl text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+                📚
+              </span>
+              <div>
+                <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                  Posts Relacionados
+                </h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Continue explorando conteúdos relevantes na categoria
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-6 sm:grid-cols-3">
+              {postsRelacionados.map((rel) => (
+                <PostCard key={rel.slug} post={rel} />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </CascaBlog>
   )

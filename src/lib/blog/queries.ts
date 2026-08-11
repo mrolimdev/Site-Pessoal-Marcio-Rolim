@@ -513,4 +513,49 @@ export async function obterEstatisticasWidgets(): Promise<DadosWidgets> {
   }
 }
 
+/**
+ * Busca 3 posts relacionados (preferencialmente dentro da mesma categoria, excluindo o post atual).
+ */
+export async function obterPostsRelacionados(
+  slugAtual: string,
+  categoria: Categoria,
+  limite = 3
+): Promise<PostResumo[]> {
+  const { data: daMesmaCategoria } = await supabase
+    .from('posts')
+    .select(COLUNAS_RESUMO)
+    .eq('status', 'published')
+    .not('published_at', 'is', null)
+    .eq('category', categoria)
+    .neq('slug', slugAtual)
+    .order('published_at', { ascending: false })
+    .limit(limite)
+    .returns<LinhaResumo[]>()
+
+  const resultados = (daMesmaCategoria ?? []).map(paraResumo)
+
+  if (resultados.length < limite) {
+    const slugsExistentes = new Set([slugAtual, ...resultados.map((p) => p.slug)])
+    const { data: complementares } = await supabase
+      .from('posts')
+      .select(COLUNAS_RESUMO)
+      .eq('status', 'published')
+      .not('published_at', 'is', null)
+      .order('published_at', { ascending: false })
+      .limit(limite * 2)
+      .returns<LinhaResumo[]>()
+
+    for (const linha of complementares ?? []) {
+      if (resultados.length >= limite) break
+      if (!slugsExistentes.has(linha.slug)) {
+        slugsExistentes.add(linha.slug)
+        resultados.push(paraResumo(linha))
+      }
+    }
+  }
+
+  return resultados
+}
+
+
 
