@@ -371,3 +371,44 @@ export async function listarPostsParaFeed(limite = 20): Promise<PostResumo[]> {
 
   return (data ?? []).map(paraResumo)
 }
+
+export type PostsPorSecao = {
+  postsTecnologia: PostResumo[]
+  postsVidaCrista: PostResumo[]
+  totalTecnologia: number
+  totalVidaCrista: number
+}
+
+/**
+ * Busca posts agrupados nas duas seções principais:
+ * - Tecnologia (categorias: tecnologia, ia, automacao, negocios)
+ * - Vida Cristã (categoria: fe)
+ */
+export async function listarPostsAgrupadosPorSecoes(): Promise<PostsPorSecao> {
+  const { data, error } = await supabase
+    .from('posts')
+    .select(COLUNAS_RESUMO)
+    .eq('status', 'published')
+    .not('published_at', 'is', null)
+    .order('published_at', { ascending: false })
+    .order('slug', { ascending: true })
+    .limit(LIMITE_VARREDURA)
+    .returns<LinhaResumo[]>()
+
+  if (error) {
+    throw new Error(`Falha ao listar posts por seção: ${error.message}`)
+  }
+
+  const todos = (data ?? []).map(paraResumo)
+
+  const postsVidaCrista = todos.filter((p) => p.categoria === 'fe')
+  const postsTecnologia = todos.filter((p) => p.categoria !== 'fe')
+
+  return {
+    postsTecnologia,
+    postsVidaCrista,
+    totalTecnologia: postsTecnologia.length,
+    totalVidaCrista: postsVidaCrista.length,
+  }
+}
+
