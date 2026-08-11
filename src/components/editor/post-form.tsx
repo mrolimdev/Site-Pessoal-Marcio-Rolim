@@ -6,7 +6,9 @@ import { useActionState, useCallback, useEffect, useId, useRef, useState } from 
 import { flushSync } from 'react-dom'
 
 import { criarPost, salvarPost, type EstadoPost } from '@/actions/posts'
+import type { ResultadoPostIa } from '@/actions/gerar-post-ia'
 import { ArrowLeftIcon } from '@/components/icons'
+import { ModalGeradorIa } from './modal-gerador-ia'
 import {
   LIMITES,
   REGEX_SLUG,
@@ -136,6 +138,28 @@ export function PostForm({ post }: Props) {
   const [sujo, setSujo] = useState(false)
   const [salveObservado, setSalveObservado] = useState(estado.salvoEm)
 
+  // Assistente de IA
+  const [modalIaAberto, setModalIaAberto] = useState(false)
+  const [keyEditor, setKeyEditor] = useState(0)
+  const [conteudoInicial, setConteudoInicial] = useState<JSONContent | null>(post?.conteudo ?? null)
+
+  const aoAplicarPostIa = (resultado: ResultadoPostIa) => {
+    setTitulo(resultado.titulo)
+    setSlug(resultado.slug)
+    setSlugManual(true)
+    setResumo(resultado.resumo)
+    setSeoDescricao(resultado.seoDescricao)
+    setCapaUrl(resultado.capaUrl)
+    setConteudoInicial(resultado.contentJson)
+
+    if (refConteudo.current) {
+      refConteudo.current.value = JSON.stringify(resultado.contentJson)
+    }
+
+    setKeyEditor((k) => k + 1)
+    setSujo(true)
+  }
+
   /**
    * Save concluído → o formulário volta a ser "limpo".
    *
@@ -212,6 +236,11 @@ export function PostForm({ post }: Props) {
 
   return (
     <form ref={refFormulario} action={executar} className="flex flex-col gap-6">
+      <ModalGeradorIa
+        aberto={modalIaAberto}
+        onFechar={() => setModalIaAberto(false)}
+        onAplicarAoFormulario={aoAplicarPostIa}
+      />
       {!modoNovo && <input type="hidden" name="id" value={post.id} />}
 
       {/* content_json inteiro. content_html e content_text NÃO são enviados:
@@ -239,6 +268,15 @@ export function PostForm({ post }: Props) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Botão de Destaque da IA */}
+          <button
+            type="button"
+            onClick={() => setModalIaAberto(true)}
+            className="cursor-pointer inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 text-xs font-extrabold text-white shadow-md transition-all hover:scale-105 hover:from-amber-600 hover:to-orange-600"
+          >
+            ✨ Gerar com IA (Gemini)
+          </button>
+          
           {sujo && (
             <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
               Alterações não salvas
@@ -373,7 +411,8 @@ export function PostForm({ post }: Props) {
           <div className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Conteúdo</span>
             <EditorConteudo
-              conteudoInicial={post?.conteudo ?? null}
+              key={keyEditor}
+              conteudoInicial={conteudoInicial}
               aoAtualizar={aoAtualizarConteudo}
             />
             <ErroCampo mensagem={erros.conteudo} id={erroId('conteudo')} />
