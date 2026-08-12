@@ -3,7 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
-import { CascaBlog } from '@/components/blog/casca-blog'
+import { CabecalhoBlog, CascaBlog } from '@/components/blog/casca-blog'
 import { CategoriaBadge } from '@/components/blog/categoria-badge'
 import { DataPost, TempoDeLeitura } from '@/components/blog/data-post'
 import { ImagemDeCapa } from '@/components/blog/imagem-capa'
@@ -116,53 +116,60 @@ export default async function PostPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: jsonLdDoPost(post) }}
       />
 
-      {/* ─── CABEÇALHO MODERNO DO POST ─── */}
-      <header className="relative overflow-hidden border-b border-slate-200/80 bg-gradient-to-b from-stone-100/90 via-stone-50/50 to-white pt-24 pb-12 dark:border-slate-800/80 dark:from-slate-900/90 dark:via-slate-900/50 dark:to-slate-950">
-        <div className="mx-auto flex max-w-4xl flex-col gap-6 px-6">
-          <div>
+      {/* ─── CABEÇALHO MODERNO E COMPLETO DO POST ─── */}
+      <CabecalhoBlog>
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center gap-3 flex-wrap">
             <CategoriaBadge categoria={post.categoria} />
+            <span className="rounded-full border border-slate-200/80 bg-white/80 px-3.5 py-1 font-mono text-xs font-semibold text-slate-600 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/80 dark:text-slate-300">
+              <TempoDeLeitura minutos={post.minutosDeLeitura} />
+            </span>
           </div>
 
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl dark:text-white leading-[1.15]">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl dark:text-white leading-[1.12]">
             {post.titulo}
           </h1>
 
           {post.resumo && (
-            <p className="border-l-4 border-amber-500/60 pl-4 text-lg font-medium leading-relaxed text-slate-600 dark:border-amber-400/60 dark:text-slate-300">
+            <p className="border-l-4 border-amber-500 pl-4 text-base font-medium leading-relaxed text-slate-600 sm:text-lg dark:border-amber-400 dark:text-slate-300">
               {post.resumo}
             </p>
           )}
 
-          {/* PERFIL DO AUTOR E METADADOS */}
+          {/* PERFIL DO AUTOR E METADADOS DO CABEÇALHO */}
           <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200/60 pt-6 dark:border-slate-800/60">
             <div className="flex items-center gap-3">
-              <div className="relative h-11 w-11 overflow-hidden rounded-full border-2 border-amber-500/30 bg-stone-200 shadow-sm dark:bg-slate-800">
-                <Image
-                  src="/FotoRostoRolim.jpeg"
-                  alt={SITE.name}
-                  width={44}
-                  height={44}
-                  className="h-full w-full object-cover"
-                />
+              <div className="relative group">
+                <div className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-amber-500 to-sky-500 opacity-75 blur transition duration-300 group-hover:opacity-100" />
+                <div className="relative h-12 w-12 overflow-hidden rounded-full border-2 border-white bg-stone-200 dark:border-slate-900 dark:bg-slate-800">
+                  <Image
+                    src="/FotoRostoRolim.jpeg"
+                    alt={SITE.name}
+                    width={48}
+                    height={48}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-bold text-slate-900 dark:text-white">
+                <span className="text-sm font-extrabold text-slate-900 dark:text-white">
                   {SITE.name}
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400">
-                  Engenheiro de IA & Software
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  Engenheiro de IA & Software · Pastor Evangélico
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 rounded-2xl border border-slate-200/60 bg-white/60 px-4 py-2 text-xs font-semibold text-slate-500 backdrop-blur-sm dark:border-slate-800/60 dark:bg-slate-900/60 dark:text-slate-400">
-              <DataPost iso={post.publicadoEm} />
-              <span aria-hidden="true">·</span>
-              <TempoDeLeitura minutos={post.minutosDeLeitura} />
+            <div className="flex items-center gap-2 font-mono text-xs text-slate-500 dark:text-slate-400">
+              <span>Publicado em</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200">
+                <DataPost iso={post.publicadoEm} />
+              </span>
             </div>
           </div>
         </div>
-      </header>
+      </CabecalhoBlog>
 
       {/* ─── CORPO DO ARTIGO E POSTS RELACIONADOS ─── */}
       <main className="mx-auto flex max-w-4xl flex-col gap-12 px-6 py-12">
@@ -192,6 +199,29 @@ export default async function PostPage({ params }: Props) {
             <TagsDoPost tags={post.tags} />
           </section>
         )}
+
+        {/* BIO DO AUTOR AO FINAL DO POST */}
+        <section className="flex flex-col gap-5 rounded-3xl border border-slate-200/80 bg-gradient-to-br from-amber-500/10 via-white to-sky-500/10 p-6 shadow-md backdrop-blur-xl sm:flex-row sm:items-center dark:border-slate-800/80 dark:from-amber-500/10 dark:via-slate-900/90 dark:to-sky-500/10 sm:p-8">
+          <div className="relative shrink-0">
+            <div className="h-20 w-20 overflow-hidden rounded-full border-2 border-amber-500/40 shadow-lg">
+              <Image
+                src="/FotoRostoRolim.jpeg"
+                alt={SITE.name}
+                width={80}
+                height={80}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">
+              Sobre {SITE.name}
+            </h3>
+            <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+              Engenheiro de IA & Software e Pastor Evangélico. Especialista em automação de processos empresariais, arquitetura de sistemas e inteligência artificial, conectando alta tecnologia com princípios e ética cristã.
+            </p>
+          </div>
+        </section>
 
         {/* NAVEGAÇÃO E BOTOES DE AÇÃO */}
         <nav className="flex flex-col gap-4 border-t border-slate-200/80 pt-8 sm:flex-row dark:border-slate-800/80">
@@ -227,7 +257,7 @@ export default async function PostPage({ params }: Props) {
                   Posts Relacionados
                 </h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Continue explorando conteúdos relevantes na categoria
+                  Continue explorando conteúdos relevantes na mesma categoria
                 </p>
               </div>
             </div>
