@@ -286,6 +286,22 @@ export async function gerarPostCompletoComIaAction({
 
     const eFe = categoria === 'fe'
     const linksReais = eFe ? LINKS_FE_REAIS : LINKS_TECH_REAIS
+    const supabase = await createClient()
+
+    // 1. Busca todas as tags que já existem no banco de dados para priorizar o reuso
+    const { data: postsTags } = await supabase.from('posts').select('tags')
+    const setTagsExistentes = new Set<string>()
+    if (postsTags) {
+      postsTags.forEach((p: any) => {
+        if (Array.isArray(p.tags)) {
+          p.tags.forEach((t: string) => {
+            const limpa = t.toLowerCase().trim()
+            if (limpa) setTagsExistentes.add(limpa)
+          })
+        }
+      })
+    }
+    const listaTagsExistentes = Array.from(setTagsExistentes)
 
     const promptRedacao = `Você é um autor especialista escrevendo para o blog pessoal de Márcio Rolim (Engenheiro de IA & Software e Pastor Evangélico).
 Você DEVE escrever um artigo completo, articulado, rico em detalhes e com extensão fixa entre 1300 e 1500 PALAVRAS (~8 a 10 minutos de leitura).
@@ -303,7 +319,16 @@ ESTRUTURA FIXA OBRIGATÓRIA DO ARTIGO:
    - Para Vida Cristã & Fé: Tom pastoral, encorajador, fundamentado biblicamente e focado na aplicação da fé no cotidiano.
 4. DESTAQUE (BLOCKQUOTE): Inclua exatamente 1 frase de citação ou reflexão em destaque ("blockquote").
 5. LISTAS PRÁTICAS: Em 2 ou mais seções, inclua listas com bullet points contendo conselhos práticos e orientações claras.
-6. LINKS INTERNOS ISOLADOS: Insira 1 a 2 links internos usando ESTRITAMENTE as seguintes URLs reais fornecidas (nunca invente URLs externas ou inexistentes!):
+6. TAGS INTELIGENTES (OBRIGATÓRIO: ENTRE 5 E 10 TAGS):
+   - Analise cuidadosamente o conteúdo e gere OBRIGATORIAMENTE entre 5 e 10 tags relevantes.
+   - DÊ PREFERÊNCIA ABSOLUTA em reutilizar as seguintes tags que JÁ EXISTEM no banco de dados:
+   [${listaTagsExistentes.join(', ')}]
+   - Se o conceito do artigo exigir novos termos que não estão na lista acima, crie novas tags curtas e precisas em minúsculas.
+7. OTIMIZAÇÃO SEO COMPLETA:
+   - Título SEO ("seoTitulo"): Título otimizado para o Google com até 60 caracteres.
+   - Descrição SEO ("seoDescricao"): Meta description envolvente entre 120 e 155 caracteres.
+8. PROMPT VISUAL DA CAPA ("promptVisualCapa"): Descreva em inglês um conceito visual fotográfico de alta qualidade, 16:9, sem textos ou logos, para a geração da imagem de capa.
+9. LINKS INTERNOS ISOLADOS: Insira 1 a 2 links internos usando ESTRITAMENTE as seguintes URLs reais fornecidas (nunca invente URLs externas ou inexistentes!):
 ${linksReais.map((l) => `- Texto: "${l.rotulo}" -> href: "${l.href}"`).join('\n')}
 
 FORMATO DA RESPOSTA (JSON RIGOROSO):
@@ -312,9 +337,10 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
   "titulo": "${titulo}",
   "resumo": "Resumo envolvente de 2 a 3 frases explicando os pontos principais do artigo",
   "seoTitulo": "Título otimizado para SEO com até 60 caracteres",
-  "seoDescricao": "Meta description concisa para o Google com até 155 caracteres",
-  "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
+  "seoDescricao": "Meta description concisa para o Google entre 120 e 155 caracteres",
+  "tags": ["tag1", "tag2", "tag3", "tag4", "tag5", "tag6", "tag7"],
   "capaAlt": "Descrição acessível e detalhada da imagem de capa",
+  "promptVisualCapa": "Professional editorial photograph of modern tech artificial intelligence, 16:9 aspect ratio, warm cinematic lighting",
   "minutosDeLeitura": 8,
   "artigoFormatado": {
     "introducao": ["paragrafo 1 com 4-5 linhas", "paragrafo 2 com 4-5 linhas", "paragrafo 3 com 4-5 linhas"],
@@ -425,12 +451,12 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
         if (Array.isArray(sec.itensLista) && sec.itensLista.length > 0) {
           contentNodes.push({
             type: 'bulletList',
-            content: sec.itensLista.map((item: string) => ({
+            content: sec.itensLista.map((itemText: string) => ({
               type: 'listItem',
               content: [
                 {
                   type: 'paragraph',
-                  content: [{ type: 'text', text: item }],
+                  content: [{ type: 'text', text: itemText }],
                 },
               ],
             })),
@@ -439,31 +465,11 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
       })
     }
 
-    if (gerado.artigoFormatado?.codigoOuVerso) {
-      if (eFe) {
-        contentNodes.push({
-          type: 'blockquote',
-          content: [
-            {
-              type: 'paragraph',
-              content: [{ type: 'text', text: gerado.artigoFormatado.codigoOuVerso }],
-            },
-          ],
-        })
-      } else {
-        contentNodes.push({
-          type: 'codeBlock',
-          attrs: { language: 'typescript' },
-          content: [{ type: 'text', text: gerado.artigoFormatado.codigoOuVerso }],
-        })
-      }
-    }
-
     if (gerado.artigoFormatado?.conclusao) {
       contentNodes.push({
         type: 'heading',
         attrs: { level: 2 },
-        content: [{ type: 'text', text: 'Conclusão e Próximos Passos' }],
+        content: [{ type: 'text', text: 'Conclusão' }],
       })
 
       gerado.artigoFormatado.conclusao.forEach((pText: string) => {
@@ -486,7 +492,63 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
 
-    const capaUrl = `https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1200&auto=format&fit=crop`
+    // Geração de imagem via Gemini Imagen 3 API
+    let capaUrl = `https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1200&auto=format&fit=crop`
+    const promptVisual = gerado.promptVisualCapa || `Professional editorial photograph of ${titulo}, 16:9 aspect ratio, warm cinematic lighting`
+
+    try {
+      const resImagen = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            instances: [{ prompt: `${promptVisual}. High resolution, 8k, warm lighting, no text, no letters, no logos` }],
+            parameters: {
+              sampleCount: 1,
+              aspectRatio: '16:9',
+              outputOptions: { mimeType: 'image/jpeg' },
+            },
+          }),
+        }
+      )
+
+      if (resImagen.ok) {
+        const dataImagen = await resImagen.json()
+        const base64Img = dataImagen.predictions?.[0]?.bytesBase64Encoded
+        if (base64Img) {
+          const buffer = Buffer.from(base64Img, 'base64')
+          const filename = `capa-ia-${slug}-${Date.now()}.jpg`
+          const { error: uploadErr } = await supabase.storage
+            .from('capas')
+            .upload(filename, buffer, { contentType: 'image/jpeg', upsert: true })
+
+          if (!uploadErr) {
+            const { data: publicData } = supabase.storage.from('capas').getPublicUrl(filename)
+            if (publicData?.publicUrl) {
+              capaUrl = publicData.publicUrl
+            }
+          } else {
+            capaUrl = `data:image/jpeg;base64,${base64Img}`
+          }
+        }
+      }
+    } catch (errImagen) {
+      console.warn('Aviso: Geração do Imagen 3 usou fallback:', errImagen)
+    }
+
+    // Garante entre 5 e 10 tags
+    let tagsFinais: string[] = Array.isArray(gerado.tags)
+      ? gerado.tags.map((tg: string) => tg.toLowerCase().trim()).filter(Boolean)
+      : []
+
+    if (tagsFinais.length < 5) {
+      const complemento = ['tecnologia', 'ia', 'inovação', 'produtividade', 'dicas', 'artigo']
+      complemento.forEach((c) => {
+        if (tagsFinais.length < 5 && !tagsFinais.includes(c)) tagsFinais.push(c)
+      })
+    }
+    tagsFinais = tagsFinais.slice(0, 10)
 
     const postFinal: ResultadoPostIa = {
       titulo,
@@ -495,9 +557,9 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
       resumo: gerado.resumo || `Artigo completo sobre ${titulo}.`,
       seoTitulo: gerado.seoTitulo || titulo,
       seoDescricao: gerado.seoDescricao || gerado.resumo,
-      tags: Array.isArray(gerado.tags) ? gerado.tags : ['tecnologia', 'artigo'],
+      tags: tagsFinais,
       capaUrl,
-      capaAlt: gerado.capaAlt || `Imagem de capa ilustrativa para o post ${titulo}`,
+      capaAlt: gerado.capaAlt || `Imagem de capa fotográfica para o post ${titulo}`,
       contentJson,
       minutosDeLeitura: gerado.minutosDeLeitura || 8,
     }

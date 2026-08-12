@@ -132,9 +132,12 @@ export function PostForm({ post }: Props) {
   // Post existente já tem slug publicado; trocá-lo sozinho quebraria a URL.
   const [slugManual, setSlugManual] = useState(!modoNovo)
   const [resumo, setResumo] = useState(post?.resumo ?? '')
+  const [seoTitulo, setSeoTitulo] = useState(post?.seoTitulo ?? '')
   const [seoDescricao, setSeoDescricao] = useState(post?.seoDescricao ?? '')
   const [status, setStatus] = useState<StatusPost>(post?.status ?? 'draft')
   const [capaUrl, setCapaUrl] = useState(post?.capaUrl ?? '')
+  const [capaAlt, setCapaAlt] = useState(post?.capaAlt ?? '')
+  const [tags, setTags] = useState(post?.tags ? post.tags.join(', ') : '')
   const [sujo, setSujo] = useState(false)
   const [salveObservado, setSalveObservado] = useState(estado.salvoEm)
 
@@ -148,8 +151,13 @@ export function PostForm({ post }: Props) {
     setSlug(resultado.slug)
     setSlugManual(true)
     setResumo(resultado.resumo)
+    setSeoTitulo(resultado.seoTitulo)
     setSeoDescricao(resultado.seoDescricao)
     setCapaUrl(resultado.capaUrl)
+    setCapaAlt(resultado.capaAlt)
+    setTags(resultado.tags.join(', '))
+    setStatus('published')
+    setDataPublicacao(isoParaCampoData(new Date().toISOString()))
     setConteudoInicial(resultado.contentJson)
 
     if (refConteudo.current) {
@@ -491,12 +499,15 @@ export function PostForm({ post }: Props) {
               <input
                 id={campoId('tags')}
                 name="tags"
-                defaultValue={post?.tags.join(', ') ?? ''}
-                onChange={() => setSujo(true)}
+                value={tags}
+                onChange={(e) => {
+                  setTags(e.target.value)
+                  setSujo(true)
+                }}
                 placeholder="ia, automação, n8n"
                 className={CLASSE_CAMPO}
               />
-              <Dica>Separadas por vírgula. Até 12, sempre em minúsculas.</Dica>
+              <Dica>Separadas por vírgula. De 5 a 10 tags, sempre em minúsculas.</Dica>
             </div>
           </Cartao>
 
@@ -548,8 +559,11 @@ export function PostForm({ post }: Props) {
               <input
                 id={campoId('capa_alt')}
                 name="capa_alt"
-                defaultValue={post?.capaAlt ?? ''}
-                onChange={() => setSujo(true)}
+                value={capaAlt}
+                onChange={(e) => {
+                  setCapaAlt(e.target.value)
+                  setSujo(true)
+                }}
                 required={Boolean(capaUrl)}
                 aria-invalid={Boolean(erros.capa_alt)}
                 aria-describedby={erros.capa_alt ? erroId('capa_alt') : undefined}
@@ -566,8 +580,11 @@ export function PostForm({ post }: Props) {
               <input
                 id={campoId('seo_titulo')}
                 name="seo_titulo"
-                defaultValue={post?.seoTitulo ?? ''}
-                onChange={() => setSujo(true)}
+                value={seoTitulo}
+                onChange={(e) => {
+                  setSeoTitulo(e.target.value)
+                  setSujo(true)
+                }}
                 maxLength={200}
                 aria-invalid={Boolean(erros.seo_titulo)}
                 aria-describedby={erros.seo_titulo ? erroId('seo_titulo') : undefined}
