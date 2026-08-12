@@ -245,44 +245,47 @@ export async function gerarPostCompletoComIaAction({
     const eFe = categoria === 'fe'
     const linksReais = eFe ? LINKS_FE_REAIS : LINKS_TECH_REAIS
 
-    const promptRedacao = `Você é um autor especialista escrevendo para o blog pessoal de Márcio Rolim (Engenheiro de IA & Software e Cristão).
-Você deve escrever um artigo completo, profundamente rico e articulado, com aproximadamente 1300 a 1500 palavras.
+    const promptRedacao = `Você é um autor especialista escrevendo para o blog pessoal de Márcio Rolim (Engenheiro de IA & Software e Pastor Evangélico).
+Você DEVE escrever um artigo completo, articulado, rico em detalhes e com extensão fixa entre 1300 e 1500 PALAVRAS (~8 a 10 minutos de leitura).
 
 DETALHES DO ARTIGO:
 - Título Escolhido: "${titulo}"
 - Tema Geral: "${tema}"
 - Categoria do Blog: "${categoria}" (Área: ${eFe ? 'Vida Cristã & Fé' : 'Tecnologia & Inovação'})
 
-DIRETRIZES RÍGIDAS DE CONTEÚDO E ESTRUTURA:
-1. O texto deve ter 6 a 7 seções completas com títulos H2 (nível 2) e H3 (nível 3).
-2. Para posts de Tecnologia: inclua 1 bloco de código TypeScript ou SQL prático, 1 citação blockquote marcante, diagnóstico do problema e estudo de caso com métricas de performance.
-3. Para posts de Fé: inclua 1 verso bíblico formatado, 1 citação blockquote reflexiva, exegese bíblica e sabedoria prática no dia a dia e trabalho.
-4. LINKS INTERNOS: Insira 1 a 2 links internos usando ESTRITAMENTE as seguintes URLs reais fornecidas abaixo (nunca invente URLs inexistentes!):
+ESTRUTURA FIXA OBRIGATÓRIA DO ARTIGO:
+1. EXTENSÃO MÍNIMA: O artigo deve conter obrigatoriamente entre 1300 e 1500 palavras divididas em parágrafos bem desenvolvidos.
+2. SEÇÕES E TÍTULOS: O artigo deve possuir exatamente 5 a 6 seções principais H2 e subseções H3 bem definidas.
+3. LINGUAGEM E TOM:
+   - Para Tecnologia & IA: Linguagem amigável, clara, didática e inspiradora, focando em novidades, tendências, impacto no trabalho e dicas práticas de uso (SEM blocos de código densos ou jargões obscuros).
+   - Para Vida Cristã & Fé: Tom pastoral, encorajador, fundamentado biblicamente e focado na aplicação da fé no cotidiano.
+4. DESTAQUE (BLOCKQUOTE): Inclua exatamente 1 frase de citação ou reflexão em destaque ("blockquote").
+5. LISTAS PRÁTICAS: Em 2 ou mais seções, inclua listas com bullet points contendo conselhos práticos e orientações claras.
+6. LINKS INTERNOS ISOLADOS: Insira 1 a 2 links internos usando ESTRITAMENTE as seguintes URLs reais fornecidas (nunca invente URLs externas ou inexistentes!):
 ${linksReais.map((l) => `- Texto: "${l.rotulo}" -> href: "${l.href}"`).join('\n')}
 
-FORMATO DA RESPOSTA:
-Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema rigoroso:
+FORMATO DA RESPOSTA (JSON RIGOROSO):
+Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
 {
   "titulo": "${titulo}",
-  "resumo": "Resumo envolvente de 2 frases em tom jornalístico",
+  "resumo": "Resumo envolvente de 2 a 3 frases explicando os pontos principais do artigo",
   "seoTitulo": "Título otimizado para SEO com até 60 caracteres",
-  "seoDescricao": "Meta description para o Google de até 155 caracteres",
-  "tags": ["tag1", "tag2", "tag3", "tag4"],
+  "seoDescricao": "Meta description concisa para o Google com até 155 caracteres",
+  "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
   "capaAlt": "Descrição acessível e detalhada da imagem de capa",
   "minutosDeLeitura": 8,
   "artigoFormatado": {
-    "introducao": ["paragrafo 1 completo", "paragrafo 2 completo"],
+    "introducao": ["paragrafo 1 com 4-5 linhas", "paragrafo 2 com 4-5 linhas", "paragrafo 3 com 4-5 linhas"],
     "secoes": [
       {
-        "tituloH2": "1. Nome da Seção H2",
-        "paragrafos": ["paragrafo A", "paragrafo B"],
-        "subsecaoH3": "Nome da Subseção H3",
-        "itensLista": ["item 1", "item 2", "item 3"]
+        "tituloH2": "1. Nome da Primeira Seção H2",
+        "paragrafos": ["Parágrafo detalhado A de 5 linhas", "Parágrafo detalhado B de 5 linhas", "Parágrafo detalhado C de 5 linhas"],
+        "subsecaoH3": "Subseção Prática H3",
+        "itensLista": ["Dica prática 1 explicada", "Dica prática 2 explicada", "Dica prática 3 explicada"]
       }
     ],
-    "codigoOuVerso": "Código ou Citação Bíblica em destaque",
-    "blockquote": "Frase de destaque para blockquote",
-    "conclusao": ["paragrafo final 1", "paragrafo final 2"]
+    "blockquote": "Frase marcante ou citação bíblica reflexiva para destaque visual",
+    "conclusao": ["Paragrafo de sintese 1", "Paragrafo de sintese 2"]
   }
 }`
 
