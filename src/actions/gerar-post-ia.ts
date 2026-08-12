@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/auth/require-admin'
 import { Categoria } from '@/lib/blog/constantes'
 import { derivarConteudo } from '@/lib/blog/derivar'
 import { createClient } from '@/lib/supabase/server'
+import { uploadParaR2Buffer } from '@/lib/storage-r2'
 
 export type SugestaoTitulo = {
   titulo: string
@@ -1070,6 +1071,17 @@ async function gerarImagemDeCapaRobusta({
             const ext = mimeType.includes('png') ? 'png' : 'jpg'
             const buffer = Buffer.from(inlineData.data, 'base64')
             const filename = `capa-ia-${slug}-${Date.now()}.${ext}`
+
+            // 1. Tenta upload primário no Cloudflare R2
+            const urlR2 = await uploadParaR2Buffer({
+              buffer,
+              filename,
+              contentType: mimeType,
+              pasta: 'capas',
+            })
+            if (urlR2) return urlR2
+
+            // 2. Fallback no Supabase Storage
             const { error: uploadErr } = await supabase.storage
               .from('capas')
               .upload(filename, buffer, { contentType: mimeType, upsert: true })
@@ -1101,6 +1113,17 @@ async function gerarImagemDeCapaRobusta({
           const arrayBuffer = await resIaImg.arrayBuffer()
           const buffer = Buffer.from(arrayBuffer)
           const filename = `capa-ia-${slug}-${Date.now()}.jpg`
+
+          // 1. Tenta upload primário no Cloudflare R2
+          const urlR2 = await uploadParaR2Buffer({
+            buffer,
+            filename,
+            contentType: 'image/jpeg',
+            pasta: 'capas',
+          })
+          if (urlR2) return urlR2
+
+          // 2. Fallback no Supabase Storage
           const { error: uploadErr } = await supabase.storage
             .from('capas')
             .upload(filename, buffer, { contentType: 'image/jpeg', upsert: true })
