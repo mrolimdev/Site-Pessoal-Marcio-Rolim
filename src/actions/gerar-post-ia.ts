@@ -190,30 +190,6 @@ export async function validarEListarModelosGeminiAction(apiKeyInformada: string)
   }
 }
 
-export type ModeloImagemOption = {
-  id: string
-  nome: string
-  descricao: string
-}
-
-export const MODELOS_IMAGEM_DISPONIVEIS: ModeloImagemOption[] = [
-  {
-    id: 'imagen-3.0-generate-002',
-    nome: 'Imagen 3 - Alta Qualidade (Recomendado)',
-    descricao: 'Modelo principal do Google para geração de fotografias realistas em 16:9.',
-  },
-  {
-    id: 'imagen-3.0-fast-generate-001',
-    nome: 'Imagen 3 - Fast (Geração Rápida)',
-    descricao: 'Versão otimizada para geração ultrarrápida de capas de blog.',
-  },
-  {
-    id: 'imagen-3.0-generate-001',
-    nome: 'Imagen 3 - Padrão v1',
-    descricao: 'Versão padrão legada da família Imagen 3.',
-  },
-]
-
 /**
  * Executa um teste real com a chave, modelo de texto e modelo de imagem selecionados.
  */

@@ -6,9 +6,9 @@ import {
   testarChaveApifyAction,
   testarConfiguracaoModeloAction,
   validarEListarModelosGeminiAction,
-  MODELOS_IMAGEM_DISPONIVEIS,
   type ModeloGemini,
 } from '@/actions/gerar-post-ia'
+import { MODELOS_IMAGEM_DISPONIVEIS } from '@/lib/blog/constantes'
 
 export function ConfiguracoesIaClient() {
   const [apiKey, setApiKey] = useState('')

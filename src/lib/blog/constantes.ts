@@ -169,3 +169,28 @@ export function formatarDataPainel(iso: string | null | undefined): string {
     minute: '2-digit',
   }).format(data)
 }
+
+// ─── Modelos Imagen 3 ────────────────────────────────────────────────────────
+export type ModeloImagemOption = {
+  id: string
+  nome: string
+  descricao: string
+}
+
+export const MODELOS_IMAGEM_DISPONIVEIS: ModeloImagemOption[] = [
+  {
+    id: 'imagen-3.0-generate-002',
+    nome: 'Imagen 3 - Alta Qualidade (Recomendado)',
+    descricao: 'Modelo principal do Google para geração de fotografias realistas em 16:9.',
+  },
+  {
+    id: 'imagen-3.0-fast-generate-001',
+    nome: 'Imagen 3 - Fast (Geração Rápida)',
+    descricao: 'Versão otimizada para geração ultrarrápida de capas de blog.',
+  },
+  {
+    id: 'imagen-3.0-generate-001',
+    nome: 'Imagen 3 - Padrão v1',
+    descricao: 'Versão padrão legada da família Imagen 3.',
+  },
+]
