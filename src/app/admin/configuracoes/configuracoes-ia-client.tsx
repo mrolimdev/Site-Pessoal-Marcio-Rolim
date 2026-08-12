@@ -254,6 +254,7 @@ export function ConfiguracoesIaClient() {
               type={mostrarApiKey ? 'text' : 'password'}
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
+              autoComplete="new-password"
               placeholder="Digite sua Gemini API Key (ex: AIzaSy...)"
               className="w-full flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
               required
@@ -300,6 +301,7 @@ export function ConfiguracoesIaClient() {
               type={mostrarApifyToken ? 'text' : 'password'}
               value={apifyToken}
               onChange={(e) => setApifyToken(e.target.value)}
+              autoComplete="new-password"
               placeholder="Digite seu Token do Apify (ex: apify_api_...)"
               className="w-full flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
             />
