@@ -60,11 +60,11 @@ function obterApiKey(apiKeyInformada?: string): string {
   return key
 }
 
-const MODELOS_FALLBACK = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
+const MODELOS_FALLBACK = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash']
 
 /**
  * Chamada resiliente à API do Gemini com retries exponenciais e comutação para modelos de reserva.
- * Trata erros 503 (serviço indisponível / alta demanda), 429 (rate limit) e 5xx.
+ * Trata erros 503 (serviço indisponível / alta demanda), 429 (rate limit), 404 (modelo indisponível) e 5xx.
  */
 async function chamarGeminiComRetryEFallback({
   apiKey,
@@ -82,7 +82,7 @@ async function chamarGeminiComRetryEFallback({
   let ultimoErro: Error | null = null
 
   for (const mod of modelosParaTestar) {
-    for (let tentativa = 1; tentativa <= 3; tentativa++) {
+    for (let tentativa = 1; tentativa <= 2; tentativa++) {
       try {
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${apiKey}`,
@@ -104,14 +104,21 @@ async function chamarGeminiComRetryEFallback({
         const status = res.status
         const errText = await res.text()
 
+        // 404: O modelo não existe nesta versão da API -> Pula para o próximo modelo de fallback
+        if (status === 404) {
+          console.warn(`[Gemini API] Modelo ${mod} retornou 404. Testando próximo modelo de fallback...`)
+          ultimoErro = new Error(`O modelo ${mod} não foi encontrado na API do Gemini.`)
+          break
+        }
+
         if (status === 503 || status === 429 || status >= 500) {
           console.warn(
-            `[Gemini API] Modelo ${mod} (tentativa ${tentativa}/3) retornou HTTP ${status}. Tentando novamente com retry/fallback...`
+            `[Gemini API] Modelo ${mod} (tentativa ${tentativa}/2) retornou HTTP ${status}. Tentando novamente com retry/fallback...`
           )
           ultimoErro = new Error(
             'Os servidores do Gemini estão enfrentando alta demanda temporária no momento (Erro 503). Por favor, aguarde alguns segundos e tente novamente.'
           )
-          await new Promise((r) => setTimeout(r, tentativa * 1200))
+          await new Promise((r) => setTimeout(r, tentativa * 1000))
           continue
         }
 
@@ -121,7 +128,7 @@ async function chamarGeminiComRetryEFallback({
         if (err.message?.includes('400') || err.message?.includes('API key')) {
           throw err
         }
-        await new Promise((r) => setTimeout(r, tentativa * 1200))
+        await new Promise((r) => setTimeout(r, 1000))
       }
     }
   }
