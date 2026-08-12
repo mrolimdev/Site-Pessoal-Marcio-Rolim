@@ -34,11 +34,11 @@ export type ModeloGemini = {
 
 // Slugs de referência real para interlinking categorizado sem 404
 const LINKS_TECH_REAIS = [
-  { rotulo: 'Otimização de Banco de Dados Postgres no Supabase', href: '/blog/otimizacao-de-banco-de-dados-postgres-supabase' },
-  { rotulo: 'Segurança em Aplicações Web Modernas', href: '/blog/seguranca-em-aplicacoes-web-modernas' },
-  { rotulo: 'Migrando de React SPA para Next.js 16 App Router', href: '/blog/migrando-spa-para-nextjs-16' },
-  { rotulo: 'RAG Empresarial com Supabase Vector', href: '/blog/rag-empresarial-com-supabase-vector' },
-  { rotulo: 'Agentes de IA na automação de processos', href: '/blog/agentes-de-ia-na-automacao-de-processos' },
+  { rotulo: 'O Futuro do Trabalho com Agentes de IA', href: '/blog/o-futuro-do-trabalho-com-agentes-de-ia' },
+  { rotulo: '10 Ferramentas de IA Essenciais para Dobrar sua Produtividade', href: '/blog/10-ferramentas-de-ia-essenciais-para-produtividade' },
+  { rotulo: 'DeepSeek vs ChatGPT e Claude: Qual Escolher', href: '/blog/deepseek-vs-chatgpt-e-claude-qual-usar' },
+  { rotulo: 'O Que São MCPs (Model Context Protocol)? Explicado', href: '/blog/o-que-sao-mcps-model-context-protocol-explicado' },
+  { rotulo: 'Como Proteger seus Dados Pessoais na Era da IA', href: '/blog/como-proteger-seus-dados-pessoais-na-era-da-ia' },
 ]
 
 const LINKS_FE_REAIS = [
