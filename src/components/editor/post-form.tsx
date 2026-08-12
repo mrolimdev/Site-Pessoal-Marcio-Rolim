@@ -6,7 +6,7 @@ import { useActionState, useCallback, useEffect, useId, useRef, useState } from 
 import { flushSync } from 'react-dom'
 
 import { criarPost, salvarPost, type EstadoPost } from '@/actions/posts'
-import type { ResultadoPostIa } from '@/actions/gerar-post-ia'
+import { gerarNovaImagemCapaIaAction, type ResultadoPostIa } from '@/actions/gerar-post-ia'
 import { ArrowLeftIcon } from '@/components/icons'
 import { ModalGeradorIa } from './modal-gerador-ia'
 import {
@@ -128,11 +128,39 @@ export function PostForm({ post }: Props) {
   const [sujo, setSujo] = useState(false)
   const [salveObservado, setSalveObservado] = useState(estado.salvoEm)
 
-  // Assistente de IA
+  // Assistente de IA & Regeração de Capa
   const [modalIaAberto, setModalIaAberto] = useState(false)
+  const [gerandoCapaIa, setGerandoCapaIa] = useState(false)
+  const [erroCapaIa, setErroCapaIa] = useState<string | null>(null)
   const [keyEditor, setKeyEditor] = useState(0)
   const [conteudoInicial, setConteudoInicial] = useState<JSONContent | null>(post?.conteudo ?? null)
   const [conteudoJson, setConteudoJson] = useState<string>(() => JSON.stringify(post?.conteudo ?? DOC_VAZIO))
+
+  const handleGerarNovaCapaIa = async () => {
+    setGerandoCapaIa(true)
+    setErroCapaIa(null)
+
+    const salvaKey = typeof window !== 'undefined' ? localStorage.getItem('gemini_admin_api_key') || undefined : undefined
+    const salvaImgMod = typeof window !== 'undefined' ? localStorage.getItem('gemini_admin_image_model_id') || undefined : undefined
+
+    const resp = await gerarNovaImagemCapaIaAction({
+      titulo: titulo || 'Artigo do Blog',
+      slug,
+      categoria,
+      apiKeyInformada: salvaKey,
+      modeloImagemId: salvaImgMod,
+    })
+
+    setGerandoCapaIa(false)
+
+    if (resp.ok && resp.capaUrl) {
+      setCapaUrl(resp.capaUrl)
+      if (resp.capaAlt) setCapaAlt(resp.capaAlt)
+      setSujo(true)
+    } else {
+      setErroCapaIa(resp.erro || 'Não foi possível gerar a capa por IA.')
+    }
+  }
 
   const aoAplicarPostIa = (resultado: ResultadoPostIa) => {
     const jsonStr = JSON.stringify(resultado.contentJson)
@@ -514,7 +542,24 @@ export function PostForm({ post }: Props) {
             {/* CARD: CAPA */}
             <Cartao titulo="Imagem de Capa" icone="🖼️">
               <div className="flex flex-col gap-1.5">
-                <Rotulo htmlFor={campoId('capa_url')}>URL da Imagem</Rotulo>
+                <div className="flex items-center justify-between">
+                  <Rotulo htmlFor={campoId('capa_url')}>URL da Imagem</Rotulo>
+                  <button
+                    type="button"
+                    onClick={handleGerarNovaCapaIa}
+                    disabled={gerandoCapaIa}
+                    className="cursor-pointer inline-flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[0.7rem] font-bold text-amber-700 hover:bg-amber-500/20 disabled:opacity-50 dark:text-amber-300"
+                  >
+                    {gerandoCapaIa ? (
+                      <>
+                        <span className="h-3 w-3 animate-spin rounded-full border-2 border-amber-600 border-t-transparent dark:border-amber-400" />
+                        <span>Gerando por IA...</span>
+                      </>
+                    ) : (
+                      <>✨ Gerar Capa por IA</>
+                    )}
+                  </button>
+                </div>
                 <input
                   id={campoId('capa_url')}
                   name="capa_url"
@@ -530,6 +575,11 @@ export function PostForm({ post }: Props) {
                   className={`${CLASSE_CAMPO} text-xs ${erros.capa_url ? CLASSE_CAMPO_ERRO : ''}`}
                 />
                 <ErroCampo mensagem={erros.capa_url} id={erroId('capa_url')} />
+                {erroCapaIa && (
+                  <p className="text-xs font-semibold text-rose-600 dark:text-rose-400">
+                    ⚠️ {erroCapaIa}
+                  </p>
+                )}
               </div>
 
               {capaUrl && (
