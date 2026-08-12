@@ -18,6 +18,8 @@ import { DatabaseIcon, BriefcaseIcon, TargetIcon } from '@/components/icons'
 const ITENS = [
   { href: '/admin', rotulo: 'Visão geral', Icone: TargetIcon, exato: true },
   { href: '/admin/posts', rotulo: 'Posts', Icone: BriefcaseIcon, exato: false },
+  { href: '/admin/categorias', rotulo: 'Categorias', Icone: DatabaseIcon, exato: false },
+  { href: '/admin/tags', rotulo: 'Tags', Icone: DatabaseIcon, exato: false },
   { href: '/admin/analytics', rotulo: 'Analytics', Icone: DatabaseIcon, exato: false },
   { href: '/admin/configuracoes', rotulo: 'Configurações IA', Icone: DatabaseIcon, exato: false },
 ] as const
