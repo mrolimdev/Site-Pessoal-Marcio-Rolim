@@ -135,6 +135,7 @@ export function PostForm({ post }: Props) {
   const [seoTitulo, setSeoTitulo] = useState(post?.seoTitulo ?? '')
   const [seoDescricao, setSeoDescricao] = useState(post?.seoDescricao ?? '')
   const [status, setStatus] = useState<StatusPost>(post?.status ?? 'draft')
+  const [categoria, setCategoria] = useState<Categoria>(post?.categoria ?? 'tecnologia')
   const [capaUrl, setCapaUrl] = useState(post?.capaUrl ?? '')
   const [capaAlt, setCapaAlt] = useState(post?.capaAlt ?? '')
   const [tags, setTags] = useState(post?.tags ? post.tags.join(', ') : '')
@@ -145,6 +146,7 @@ export function PostForm({ post }: Props) {
   const [modalIaAberto, setModalIaAberto] = useState(false)
   const [keyEditor, setKeyEditor] = useState(0)
   const [conteudoInicial, setConteudoInicial] = useState<JSONContent | null>(post?.conteudo ?? null)
+  const [conteudoJson, setConteudoJson] = useState<string>(() => JSON.stringify(post?.conteudo ?? DOC_VAZIO))
 
   const aoAplicarPostIa = (resultado: ResultadoPostIa) => {
     const jsonStr = JSON.stringify(resultado.contentJson)
@@ -158,9 +160,11 @@ export function PostForm({ post }: Props) {
     setCapaUrl(resultado.capaUrl)
     setCapaAlt(resultado.capaAlt)
     setTags(resultado.tags.join(', '))
+    setCategoria(resultado.categoria)
     setStatus('published')
     setDataPublicacao(isoParaCampoData(new Date().toISOString()))
     setConteudoInicial(resultado.contentJson)
+    setConteudoJson(jsonStr)
 
     if (refConteudo.current) {
       refConteudo.current.value = jsonStr
@@ -200,17 +204,16 @@ export function PostForm({ post }: Props) {
    * re-renderiza nada e o FormData continua levando o valor mais recente.
    */
   const aoAtualizarConteudo = useCallback((documento: JSONContent) => {
-    // Evita que o evento de montagem do Tiptap limpe refConteudo quando já existe conteúdo válido preenchido pela IA
     const temTexto = Boolean(
       documento?.content?.some(
         (n: any) => n.content?.length > 0 || n.type === 'heading' || n.type === 'bulletList' || n.type === 'blockquote'
       )
     )
 
-    if (refConteudo.current) {
-      if (temTexto || !refConteudo.current.value || refConteudo.current.value === JSON.stringify(DOC_VAZIO)) {
-        refConteudo.current.value = JSON.stringify(documento)
-      }
+    const strDoc = JSON.stringify(documento)
+    if (temTexto) {
+      setConteudoJson(strDoc)
+      if (refConteudo.current) refConteudo.current.value = strDoc
     }
     setSujo(true)
   }, [])
@@ -270,7 +273,8 @@ export function PostForm({ post }: Props) {
         ref={refConteudo}
         type="hidden"
         name="conteudo"
-        defaultValue={JSON.stringify(post?.conteudo ?? DOC_VAZIO)}
+        value={conteudoJson}
+        onChange={(e) => setConteudoJson(e.target.value)}
       />
 
       {/* ── Cabeçalho ────────────────────────────────────────────────────── */}
@@ -494,8 +498,11 @@ export function PostForm({ post }: Props) {
               <select
                 id={campoId('categoria')}
                 name="categoria"
-                defaultValue={post?.categoria ?? 'tecnologia'}
-                onChange={() => setSujo(true)}
+                value={categoria}
+                onChange={(e) => {
+                  setCategoria(e.target.value as Categoria)
+                  setSujo(true)
+                }}
                 className={CLASSE_CAMPO}
               >
                 {VALORES_CATEGORIA.map((valor) => (
