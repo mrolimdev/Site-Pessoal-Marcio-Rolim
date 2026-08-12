@@ -28,6 +28,7 @@ export function ModalGeradorIa({
 }: Props) {
   const [apiKey, setApiKey] = useState('')
   const [modeloId, setModeloId] = useState('gemini-2.0-flash')
+  const [modeloImagemId, setModeloImagemId] = useState('imagen-3.0-generate-002')
 
   const [tema, setTema] = useState('')
   const [categoria, setCategoria] = useState<Categoria>(categoriaAtual)
@@ -44,14 +45,16 @@ export function ModalGeradorIa({
   const [sugestoesTitulos, setSugestoesTitulos] = useState<SugestaoTitulo[]>([])
   const [tituloSelecionado, setTituloSelecionado] = useState<string | null>(null)
 
-  // Carrega a chave e o modelo selecionado no localStorage
+  // Carrega a chave e os modelos selecionados no localStorage
   useEffect(() => {
     if (typeof window !== 'undefined' && aberto) {
       const salvaKey = localStorage.getItem('gemini_admin_api_key')
       const salvaMod = localStorage.getItem('gemini_admin_model_id')
+      const salvaImgMod = localStorage.getItem('gemini_admin_image_model_id')
 
       if (salvaKey) setApiKey(salvaKey)
       if (salvaMod) setModeloId(salvaMod)
+      if (salvaImgMod) setModeloImagemId(salvaImgMod)
     }
   }, [aberto])
 
@@ -127,6 +130,7 @@ export function ModalGeradorIa({
         categoria: item.categoria || categoria,
         apiKeyInformada: apiKey,
         modeloId,
+        modeloImagemId,
       })
 
       if (resp.ok && resp.post) {
@@ -193,6 +197,7 @@ export function ModalGeradorIa({
       categoria,
       apiKeyInformada: apiKey,
       modeloId,
+      modeloImagemId,
     })
 
     setCarregando(false)

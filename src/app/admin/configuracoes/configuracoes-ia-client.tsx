@@ -6,6 +6,7 @@ import {
   testarChaveApifyAction,
   testarConfiguracaoModeloAction,
   validarEListarModelosGeminiAction,
+  MODELOS_IMAGEM_DISPONIVEIS,
   type ModeloGemini,
 } from '@/actions/gerar-post-ia'
 
@@ -24,6 +25,7 @@ export function ConfiguracoesIaClient() {
 
   const [modelos, setModelos] = useState<ModeloGemini[]>([])
   const [modeloSelecionado, setModeloSelecionado] = useState<string>('gemini-2.0-flash')
+  const [modeloImagemSelecionado, setModeloImagemSelecionado] = useState<string>('imagen-3.0-generate-002')
 
   const [validando, setValidando] = useState(false)
   const [testando, setTestando] = useState(false)
@@ -31,11 +33,12 @@ export function ConfiguracoesIaClient() {
   const [erro, setErro] = useState<string | null>(null)
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null)
 
-  // Carrega chaves e modelo salvos do localStorage
+  // Carrega chaves e modelos salvos do localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const keySalva = localStorage.getItem('gemini_admin_api_key')
       const modSalvo = localStorage.getItem('gemini_admin_model_id')
+      const modImgSalvo = localStorage.getItem('gemini_admin_image_model_id')
       const apifySalvo = localStorage.getItem('apify_admin_token')
 
       if (keySalva) {
@@ -45,6 +48,10 @@ export function ConfiguracoesIaClient() {
 
       if (modSalvo) {
         setModeloSelecionado(modSalvo)
+      }
+
+      if (modImgSalvo) {
+        setModeloImagemSelecionado(modImgSalvo)
       }
 
       if (apifySalvo) {
@@ -139,6 +146,7 @@ export function ConfiguracoesIaClient() {
     const resp = await testarConfiguracaoModeloAction({
       apiKeyInformada: apiKey,
       modeloId: modeloSelecionado,
+      modeloImagemId: modeloImagemSelecionado,
     })
 
     setTestando(false)
@@ -151,6 +159,7 @@ export function ConfiguracoesIaClient() {
     if (typeof window !== 'undefined') {
       localStorage.setItem('gemini_admin_api_key', apiKey.trim())
       localStorage.setItem('gemini_admin_model_id', modeloSelecionado)
+      localStorage.setItem('gemini_admin_image_model_id', modeloImagemSelecionado)
 
       if (apifyToken.trim()) {
         localStorage.setItem('apify_admin_token', apifyToken.trim())
@@ -175,7 +184,7 @@ export function ConfiguracoesIaClient() {
               Configurações de IA & Web Scraping (Gemini + Apify)
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Gerencie suas chaves de API, valide o modelo Gemini e conecte o Apify para busca de tendências e notícias em tempo real.
+              Gerencie suas chaves de API, escolha os modelos de texto e imagem e conecte o Apify para busca de tendências em tempo real.
             </p>
           </div>
         </div>
@@ -277,19 +286,19 @@ export function ConfiguracoesIaClient() {
           </div>
         </div>
 
-        {/* CARD 3: LISTA RESUMIDA DE MODELOS COM RECOMENDADOS */}
+        {/* CARD 3: MODELOS DE REDAÇÃO DE TEXTO */}
         {modelos.length > 0 && (
           <div className="animate-fade-in flex flex-col gap-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
               <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-                3. Modelos Gemini Disponíveis (Selecione o desejado):
+                📝 3. Modelo Padrão para Redação de Texto (Gemini):
               </h2>
               <span className="text-xs text-slate-400 font-mono">
                 {modelos.length} modelos ativos
               </span>
             </div>
 
-            <div className="flex flex-col gap-2.5 max-h-[380px] overflow-y-auto pr-1">
+            <div className="flex flex-col gap-2.5 max-h-[300px] overflow-y-auto pr-1">
               {modelos.map((mod) => {
                 const selecionado = modeloSelecionado === mod.id
 
@@ -321,7 +330,7 @@ export function ConfiguracoesIaClient() {
                           </span>
                           {mod.eRecomendado && (
                             <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 font-mono text-[0.65rem] font-extrabold text-amber-700 dark:text-amber-300">
-                              ⭐ RECOMENDADO PARA POSTS
+                              ⭐ RECOMENDADO
                             </span>
                           )}
                         </div>
@@ -342,6 +351,51 @@ export function ConfiguracoesIaClient() {
           </div>
         )}
 
+        {/* CARD 4: MODELO DE GERAÇÃO DE IMAGEM (IMAGEN 3) */}
+        <div className="flex flex-col gap-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+              🖼️ 4. Modelo Padrão para Geração de Imagem (Imagen 3):
+            </h2>
+            <span className="text-xs text-slate-400 font-mono">
+              Google Imagen 3
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {MODELOS_IMAGEM_DISPONIVEIS.map((imgMod) => {
+              const selecionado = modeloImagemSelecionado === imgMod.id
+              return (
+                <div
+                  key={imgMod.id}
+                  onClick={() => setModeloImagemSelecionado(imgMod.id)}
+                  className={`flex cursor-pointer flex-col justify-between gap-2 rounded-2xl border p-4 transition-all ${
+                    selecionado
+                      ? 'border-amber-500 bg-amber-500/10 shadow-sm dark:bg-amber-500/15 ring-2 ring-amber-500/30'
+                      : 'border-slate-200 bg-slate-50/50 hover:border-slate-300 dark:border-slate-800/80 dark:bg-slate-950/40'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="modelo_imagem_ia"
+                      checked={selecionado}
+                      onChange={() => setModeloImagemSelecionado(imgMod.id)}
+                      className="h-4 w-4 accent-amber-500"
+                    />
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">
+                      {imgMod.nome}
+                    </span>
+                  </div>
+                  <p className="text-[0.72rem] text-slate-500 dark:text-slate-400">
+                    {imgMod.descricao}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
         {/* BOTÃO SALVAR E TESTAR */}
         <div className="flex justify-end">
           <button
@@ -352,7 +406,7 @@ export function ConfiguracoesIaClient() {
             {testando ? (
               <>
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                Testando Conexão com a API...
+                Testando Conexão com os Modelos...
               </>
             ) : (
               <>💾 Salvar & Testar Configurações</>

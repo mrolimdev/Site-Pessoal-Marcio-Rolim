@@ -190,44 +190,91 @@ export async function validarEListarModelosGeminiAction(apiKeyInformada: string)
   }
 }
 
+export type ModeloImagemOption = {
+  id: string
+  nome: string
+  descricao: string
+}
+
+export const MODELOS_IMAGEM_DISPONIVEIS: ModeloImagemOption[] = [
+  {
+    id: 'imagen-3.0-generate-002',
+    nome: 'Imagen 3 - Alta Qualidade (Recomendado)',
+    descricao: 'Modelo principal do Google para geração de fotografias realistas em 16:9.',
+  },
+  {
+    id: 'imagen-3.0-fast-generate-001',
+    nome: 'Imagen 3 - Fast (Geração Rápida)',
+    descricao: 'Versão otimizada para geração ultrarrápida de capas de blog.',
+  },
+  {
+    id: 'imagen-3.0-generate-001',
+    nome: 'Imagen 3 - Padrão v1',
+    descricao: 'Versão padrão legada da família Imagen 3.',
+  },
+]
+
 /**
- * Executa um teste real com a chave e modelo selecionados.
+ * Executa um teste real com a chave, modelo de texto e modelo de imagem selecionados.
  */
 export async function testarConfiguracaoModeloAction({
   apiKeyInformada,
   modeloId,
+  modeloImagemId = 'imagen-3.0-generate-002',
 }: {
   apiKeyInformada: string
   modeloId: string
+  modeloImagemId?: string
 }): Promise<{ ok: boolean; mensagem?: string; erro?: string }> {
   try {
     await requireAdmin()
     const key = apiKeyInformada.trim()
     if (!key) throw new Error('Chave de API não fornecida.')
-    if (!modeloId) throw new Error('Modelo de IA não selecionado.')
+    if (!modeloId) throw new Error('Modelo de texto não selecionado.')
 
-    const res = await fetch(
+    // 1. Teste do Modelo de Texto
+    const resTexto = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${modeloId}:generateContent?key=${key}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: 'Responda apenas a palavra: CONFIGURADO_COM_SUCESSO' }] }],
+          contents: [{ parts: [{ text: 'Responda apenas a palavra: OK_TEXTO' }] }],
         }),
       }
     )
 
-    if (!res.ok) {
-      const errText = await res.text()
-      throw new Error(`Falha no teste do modelo ${modeloId} (${res.status}): ${errText}`)
+    if (!resTexto.ok) {
+      const errText = await resTexto.text()
+      throw new Error(`Falha no modelo de texto "${modeloId}" (${resTexto.status}): ${errText}`)
     }
 
-    const data = await res.json()
-    const resposta = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    // 2. Teste do Modelo de Imagem (Imagen 3)
+    const resImagem = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modeloImagemId}:predict?key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          instances: [{ prompt: 'A minimalist abstract shape, warm lighting, high quality' }],
+          parameters: { sampleCount: 1, aspectRatio: '16:9' },
+        }),
+      }
+    )
+
+    if (!resImagem.ok) {
+      const errImg = await resImagem.text()
+      // Se não tiver quota de Imagen 3, avisa amigavelmente sem bloquear texto
+      console.warn(`[Aviso Imagen 3] Teste de imagem retornou ${resImagem.status}: ${errImg}`)
+      return {
+        ok: true,
+        mensagem: `Modelo de texto "${modeloId}" testado com sucesso! (Nota: O teste do Imagen 3 retornou status ${resImagem.status}, mas a geração de texto funcionará normalmente).`,
+      }
+    }
 
     return {
       ok: true,
-      mensagem: `Teste concluído com sucesso! O modelo "${modeloId}" respondeu: "${resposta.trim()}".`,
+      mensagem: `Teste de conexão concluído com sucesso! Modelo de Texto ("${modeloId}") e Modelo de Imagem ("${modeloImagemId}") testados e operacionais.`,
     }
   } catch (error: any) {
     return { ok: false, erro: error.message || 'Falha ao testar configuração.' }
@@ -343,12 +390,14 @@ export async function gerarPostCompletoComIaAction({
   categoria,
   apiKeyInformada,
   modeloId = 'gemini-2.0-flash',
+  modeloImagemId = 'imagen-3.0-generate-002',
 }: {
   titulo: string
   tema: string
   categoria: Categoria
   apiKeyInformada?: string
   modeloId?: string
+  modeloImagemId?: string
 }): Promise<{ ok: boolean; post?: ResultadoPostIa; erro?: string }> {
   try {
     await requireAdmin()
@@ -557,7 +606,7 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
 
     try {
       const resImagen = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${modeloImagemId}:predict?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
