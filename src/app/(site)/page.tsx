@@ -14,11 +14,13 @@ import {
   WhatsAppIcon,
   YoutubeIcon,
 } from '@/components/icons'
+import { LatestPostsCarousel } from '@/components/site/latest-posts-carousel'
 import { LegacyPrivacyHashRedirect } from '@/components/site/legacy-privacy-hash'
 import { ServicesTabs } from '@/components/site/services-tabs'
 import { SiteNav } from '@/components/site/site-nav'
 import { VideoTestimony } from '@/components/site/video-testimony'
 import { CountUp } from '@/components/ui/count-up'
+import { obterPostsRecentesHomepage } from '@/lib/blog/queries'
 import {
   ABOUT,
   CONTACT_SECTION,
@@ -151,7 +153,8 @@ const SCHEMA_SERVICO = {
   ...PROFESSIONAL_SERVICE,
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const ultimosPosts = await obterPostsRecentesHomepage(6)
   const estatisticas = getHomeStats()
   const anoAtual = new Date().getFullYear()
 
@@ -355,6 +358,9 @@ export default function HomePage() {
             </ServicesTabs>
           </div>
         </section>
+
+        {/* ─── Vitrine Discreta de Últimos Posts do Blog ─── */}
+        <LatestPostsCarousel posts={ultimosPosts} />
 
         {/* ─── Chamada final ─── */}
         <section

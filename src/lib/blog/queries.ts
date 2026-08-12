@@ -568,5 +568,24 @@ export async function obterPostsRelacionados(
   return resultados
 }
 
+/**
+ * Retorna os N posts publicados mais recentes para o carrossel da Homepage.
+ */
+export async function obterPostsRecentesHomepage(limite: number = 6): Promise<PostResumo[]> {
+  const agora = new Date().toISOString()
+  const { data } = await supabase
+    .from('posts')
+    .select(COLUNAS_RESUMO)
+    .eq('status', 'published')
+    .not('published_at', 'is', null)
+    .lte('published_at', agora)
+    .order('published_at', { ascending: false })
+    .limit(limite)
+    .returns<LinhaResumo[]>()
+
+  if (!data) return []
+  return data.map(paraResumo)
+}
+
 
 
