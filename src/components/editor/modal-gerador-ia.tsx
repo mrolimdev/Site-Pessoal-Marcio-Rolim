@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
 import {
+  gerarPostAutomaticoUmCliqueAction,
   gerarPostCompletoComIaAction,
   obterSugestoesDeTitulosAction,
   type ResultadoPostIa,
@@ -50,6 +51,34 @@ export function ModalGeradorIa({
   }, [aberto])
 
   if (!aberto) return null
+
+  // Handler de Geração Automática em 1 Clique (Notícia Quente Inédita)
+  const handleGerarPostUmClique = async () => {
+    const apifyToken = typeof window !== 'undefined' ? localStorage.getItem('apify_admin_token') || undefined : undefined
+    setErro(null)
+    setCarregando(true)
+    setPasso('gerando_post')
+    setStatusMensagem(
+      `⚡ Buscando notícia recente no Apify/Google, checando duplicações e redigindo artigo de 1500 palavras...`
+    )
+
+    const resp = await gerarPostAutomaticoUmCliqueAction({
+      apiKeyInformada: apiKey,
+      apifyTokenInformado: apifyToken,
+      modeloId,
+    })
+
+    setCarregando(false)
+
+    if (!resp.ok || !resp.post) {
+      setErro(resp.erro || 'Falha ao criar o post em 1 clique.')
+      setPasso('formulario')
+      return
+    }
+
+    onAplicarAoFormulario(resp.post)
+    onFechar()
+  }
 
   // Handler do Passo 1: Gerar Sugestões de Título
   const handleGerarTitulos = async (e: React.FormEvent) => {
@@ -159,12 +188,37 @@ export function ModalGeradorIa({
           </div>
         )}
 
+        {/* BOTÃO ATALHO RÁPIDO DE 1 CLIQUE */}
+        {passo === 'formulario' && (
+          <div className="mt-4 rounded-2xl border border-sky-500/30 bg-gradient-to-r from-sky-500/10 via-amber-500/10 to-orange-500/10 p-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h4 className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <span>⚡ Criação Automática com 1 Clique</span>
+                </h4>
+                <p className="text-[0.75rem] text-slate-600 dark:text-slate-400">
+                  Busca a notícia de tech mais recente no Apify/Google, verifica duplicações no banco e gera o post completo.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleGerarPostUmClique}
+                disabled={carregando}
+                className="cursor-pointer whitespace-nowrap rounded-xl bg-gradient-to-r from-sky-600 via-amber-600 to-orange-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-md transition-all hover:scale-[1.02] disabled:opacity-50"
+              >
+                ⚡ Criar Post em 1 Clique
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* CONTEÚDO DINÂMICO DOS PASSOS */}
         {passo === 'formulario' && (
           <div className="mt-5 flex flex-col gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                🎯 Tema ou Assunto do Post
+                🎯 Tema ou Assunto do Post (Ou use o botão acima)
               </label>
               <input
                 type="text"
@@ -178,7 +232,6 @@ export function ModalGeradorIa({
                 }}
                 placeholder="Ex: RAG com Supabase Vector, ou Devocional na Rotina Intensa..."
                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-all focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                required
               />
             </div>
 
@@ -225,7 +278,7 @@ export function ModalGeradorIa({
               <button
                 type="button"
                 onClick={handleGerarTitulos}
-                disabled={carregando}
+                disabled={carregando || !tema.trim()}
                 className="cursor-pointer inline-flex items-center gap-2 rounded-2xl bg-amber-600 px-6 py-3 text-xs font-bold text-white shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-500 disabled:opacity-50"
               >
                 {carregando ? (

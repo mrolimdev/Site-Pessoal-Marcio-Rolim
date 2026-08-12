@@ -2,6 +2,7 @@
 
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { Categoria } from '@/lib/blog/constantes'
+import { createClient } from '@/lib/supabase/server'
 
 export type SugestaoTitulo = {
   titulo: string
@@ -505,5 +506,134 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
   } catch (error: any) {
     console.error('[Action Gerar Post IA] Erro:', error)
     return { ok: false, erro: error.message || 'Falha ao gerar post completo com IA.' }
+  }
+}
+
+/**
+ * ⚡ Criar Post de Tecnologia com 1 Clique (Notícias Quentes & Zero Duplicações):
+ * 1. Consulta títulos e slugs existentes no banco de dados para evitar  * 3. Escolhe a notícia mais recente e quente que NÃO possua assunto/slug no banco de dados.
+ * 4. Redige o post completo de ~1500 palavras em formato TipTap JSON com SEO, tags e imagem de capa.
+ */
+export async function gerarPostAutomaticoUmCliqueAction({
+  apiKeyInformada,
+  apifyTokenInformado,
+  modeloId = 'gemini-2.0-flash',
+}: {
+  apiKeyInformada?: string
+  apifyTokenInformado?: string
+  modeloId?: string
+}): Promise<{ ok: boolean; post?: ResultadoPostIa; noticiaUsada?: string; erro?: string }> {
+  try {
+    await requireAdmin()
+    const apiKey = obterApiKey(apiKeyInformada)
+    const supabase = await createClient()
+
+    // 1. Busca os posts existentes no banco para checar duplicações
+    const { data: postsExistentes } = await supabase
+      .from('posts')
+      .select('title, slug')
+      .order('published_at', { ascending: false })
+
+    const titulosExistentes = (postsExistentes || []).map((p: any) => p.title)
+
+    // 2. Busca notícias reais se houver token do Apify
+    let contextoNoticias = ''
+    const apifyToken = (apifyTokenInformado || process.env.APIFY_API_TOKEN || '').trim()
+
+    if (apifyToken) {
+      try {
+        const resApify = await fetch(
+          `https://api.apify.com/v2/acts/apify~google-search-scraper/run-sync-get-dataset-items?token=${apifyToken}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              queries: 'Inteligencia Artificial novidades tendencias tecnologia',
+              maxPagesPerQuery: 1,
+              resultsPerPage: 10,
+              type: 'NEWS',
+            }),
+          }
+        )
+
+        if (resApify.ok) {
+          const itens = await resApify.json()
+          if (Array.isArray(itens) && itens.length > 0) {
+            const manchetes = (itens[0]?.organicResults || itens || [])
+              .slice(0, 8)
+              .map((it: any) => `- ${it.title || it.headline}: ${it.description || it.snippet || ''}`)
+              .join('\n')
+            if (manchetes) {
+              contextoNoticias = `NOTÍCIAS EXTRAÍDAS DA WEB VIA APIFY:\n${manchetes}`
+            }
+          }
+        }
+      } catch (errApify) {
+        console.warn('Aviso: Falha ao consultar Apify, usando fallback do Gemini:', errApify)
+      }
+    }
+
+    // 3. Prompt do Gemini para escolher uma notícia quente e inédita
+    const promptNoticiaInedita = `Você é um curador de conteúdo e jornalista de tecnologia para o blog de Márcio Rolim.
+Sua missão: Identifique a notícia recente mais quente, inovadora e relevante sobre Tecnologia / Inteligência Artificial.
+
+REGRA CRÍTICA DE ANTI-DUPLICAÇÃO:
+Você NUNCA deve escolher um assunto ou título que seja igual ou semelhante a qualquer um dos seguintes posts que JÁ EXISTEM no banco de dados:
+${titulosExistentes.map((t: string) => `- "${t}"`).join('\n')}
+
+${contextoNoticias ? contextoNoticias : 'Escolha uma tendência real e atual sobre novidades de IA (DeepSeek, ChatGPT, agentes, automação No-Code ou novos lançamentos).'}
+
+Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
+{
+  "tituloInedito": "Título chamativo e inédito para o novo post de tecnologia",
+  "temaResumido": "Resumo em 1 frase da notícia quente selecionada",
+  "porQueEQuente": "Breve justificativa do motivo desta notícia ser uma tendência atual"
+}`
+
+    const resGeminiNoticia = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modeloId}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: promptNoticiaInedita }] }],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0.7 },
+        }),
+      }
+    )
+
+    if (!resGeminiNoticia.ok) {
+      throw new Error(`Erro na API ao selecionar notícia inédita (${resGeminiNoticia.status}).`)
+    }
+
+    const dataNoticia = await resGeminiNoticia.json()
+    const rawNoticia = dataNoticia.candidates?.[0]?.content?.parts?.[0]?.text
+    if (!rawNoticia) throw new Error('Não foi possível extrair a notícia inédita do Gemini.')
+
+    const infoNoticia = JSON.parse(rawNoticia)
+    const tituloFinal = infoNoticia.tituloInedito
+    const temaFinal = infoNoticia.temaResumido
+
+    // 4. Gera o post completo usando nossa função padrão de ~1500 palavras!
+    const resultadoPost = await gerarPostCompletoComIaAction({
+      titulo: tituloFinal,
+      tema: temaFinal,
+      categoria: 'tecnologia',
+      apiKeyInformada,
+      modeloId,
+    })
+
+    if (!resultadoPost.ok || !resultadoPost.post) {
+      return { ok: false, erro: resultadoPost.erro || 'Falha ao redigir o artigo completo de 1 clique.' }
+    }
+
+    return {
+      ok: true,
+      post: resultadoPost.post,
+      noticiaUsada: `${tituloFinal} (${infoNoticia.porQueEQuente})`,
+    }
+  } catch (error: any) {
+    console.error('[Action Gerar Post 1 Clique] Erro:', error)
+    return { ok: false, erro: error.message || 'Falha ao gerar o post automático com 1 clique.' }
   }
 }
