@@ -60,6 +60,80 @@ function obterApiKey(apiKeyInformada?: string): string {
   return key
 }
 
+const MODELOS_FALLBACK = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
+
+/**
+ * Chamada resiliente à API do Gemini com retries exponenciais e comutação para modelos de reserva.
+ * Trata erros 503 (serviço indisponível / alta demanda), 429 (rate limit) e 5xx.
+ */
+async function chamarGeminiComRetryEFallback({
+  apiKey,
+  modeloId = 'gemini-2.0-flash',
+  contents,
+  generationConfig,
+}: {
+  apiKey: string
+  modeloId?: string
+  contents: any[]
+  generationConfig?: any
+}): Promise<any> {
+  const modelosParaTestar = Array.from(new Set([modeloId, ...MODELOS_FALLBACK]))
+
+  let ultimoErro: Error | null = null
+
+  for (const mod of modelosParaTestar) {
+    for (let tentativa = 1; tentativa <= 3; tentativa++) {
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents,
+              generationConfig,
+            }),
+          }
+        )
+
+        if (res.ok) {
+          const data = await res.json()
+          return data
+        }
+
+        const status = res.status
+        const errText = await res.text()
+
+        if (status === 503 || status === 429 || status >= 500) {
+          console.warn(
+            `[Gemini API] Modelo ${mod} (tentativa ${tentativa}/3) retornou HTTP ${status}. Tentando novamente com retry/fallback...`
+          )
+          ultimoErro = new Error(
+            'Os servidores do Gemini estão enfrentando alta demanda temporária no momento (Erro 503). Por favor, aguarde alguns segundos e tente novamente.'
+          )
+          await new Promise((r) => setTimeout(r, tentativa * 1200))
+          continue
+        }
+
+        throw new Error(`Erro na API do Gemini (${status}): ${errText}`)
+      } catch (err: any) {
+        ultimoErro = err
+        if (err.message?.includes('400') || err.message?.includes('API key')) {
+          throw err
+        }
+        await new Promise((r) => setTimeout(r, tentativa * 1200))
+      }
+    }
+  }
+
+  throw (
+    ultimoErro ||
+    new Error(
+      'Os servidores do Gemini estão enfrentando alta demanda no momento (Erro 503). Por favor, tente novamente em alguns segundos.'
+    )
+  )
+}
+
 /**
  * Valida a chave da API do Gemini e lista todos os modelos disponíveis.
  */
@@ -228,27 +302,16 @@ Responda ESTRITAMENTE em formato JSON com o seguinte schema de array:
   }
 ]`
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modeloId}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: promptSystem }] }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.7,
-          },
-        }),
-      }
-    )
+    const data = await chamarGeminiComRetryEFallback({
+      apiKey,
+      modeloId,
+      contents: [{ parts: [{ text: promptSystem }] }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.7,
+      },
+    })
 
-    if (!res.ok) {
-      const errText = await res.text()
-      throw new Error(`Erro na API do Gemini (${res.status}): ${errText}`)
-    }
-
-    const data = await res.json()
     const rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text
 
     if (!rawContent) {
@@ -357,27 +420,16 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
   }
 }`
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modeloId}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: promptRedacao }] }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.7,
-          },
-        }),
-      }
-    )
+    const data = await chamarGeminiComRetryEFallback({
+      apiKey,
+      modeloId,
+      contents: [{ parts: [{ text: promptRedacao }] }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.7,
+      },
+    })
 
-    if (!res.ok) {
-      const errText = await res.text()
-      throw new Error(`Erro na API do Gemini (${res.status}): ${errText}`)
-    }
-
-    const data = await res.json()
     const rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text
 
     if (!rawContent) {
@@ -836,23 +888,13 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
   ]
 }`
 
-    const resGemini = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modeloId}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt5Opcoes }] }],
-          generationConfig: { responseMimeType: 'application/json', temperature: 0.7 },
-        }),
-      }
-    )
+    const data = await chamarGeminiComRetryEFallback({
+      apiKey,
+      modeloId,
+      contents: [{ parts: [{ text: prompt5Opcoes }] }],
+      generationConfig: { responseMimeType: 'application/json', temperature: 0.7 },
+    })
 
-    if (!resGemini.ok) {
-      throw new Error(`Erro na API Gemini (${resGemini.status}) ao obter 5 opções.`)
-    }
-
-    const data = await resGemini.json()
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text
     if (!rawText) throw new Error('Retorno vazio da API Gemini.')
 
