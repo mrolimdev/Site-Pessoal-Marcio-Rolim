@@ -60,7 +60,11 @@ function CartaoWidget({
   const cores = ACENTOS[acento]
 
   return (
-    <aside className="group relative overflow-hidden rounded-3xl border border-slate-200/70 bg-white/80 p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_16px_36px_-24px_rgba(15,23,42,0.25)] backdrop-blur-xl transition-all duration-300 hover:border-slate-300/80 hover:shadow-[0_1px_3px_rgba(15,23,42,0.05),0_24px_48px_-24px_rgba(15,23,42,0.3)] dark:border-slate-800/70 dark:bg-slate-900/70 dark:hover:border-slate-700">
+    // `shrink-0` não é enfeite: a coluna lateral é um flex com altura máxima, e
+    // item de flex com `overflow` diferente de `visible` perde o tamanho mínimo
+    // automático. Sem ele o cartão encolhe abaixo do próprio conteúdo e o
+    // `overflow-hidden` corta o fim em silêncio, em vez de a coluna rolar.
+    <aside className="group relative shrink-0 overflow-hidden rounded-3xl border border-slate-200/70 bg-white/80 p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_16px_36px_-24px_rgba(15,23,42,0.25)] backdrop-blur-xl transition-all duration-300 hover:border-slate-300/80 hover:shadow-[0_1px_3px_rgba(15,23,42,0.05),0_24px_48px_-24px_rgba(15,23,42,0.3)] dark:border-slate-800/70 dark:bg-slate-900/70 dark:hover:border-slate-700">
       {/* Mancha de luz do acento, no canto superior direito. */}
       <div
         aria-hidden="true"
@@ -174,7 +178,7 @@ export function CardNuvemDeTags({ tags }: { tags: TagComContagem[] }) {
       acento="ambar"
       Icone={TagIcon}
       titulo="Nuvem de Tags"
-      subtitulo={`${tags.length} ${tags.length === 1 ? 'assunto' : 'assuntos'} · tamanho = frequência`}
+      subtitulo={`${tags.length} ${tags.length === 1 ? 'assunto' : 'assuntos'} · por frequência`}
     >
       <div className="flex flex-wrap items-center gap-1.5 pt-4">
         {tagsExibidas.map((t) => {

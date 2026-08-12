@@ -53,28 +53,48 @@ function CapaOuPlaceholder({
 export function PostCard({
   post,
   prioridade = false,
+  compacto = false,
   className = '',
 }: {
   post: PostResumo
   /** `true` só no primeiro cartão visível: pré-carrega a capa acima da dobra. */
   prioridade?: boolean
+  /**
+   * Versão baixa, para a esteira. A esteira vive ao lado dos widgets numa
+   * coluna estreita e não deve empurrar o resto da página para baixo: a capa
+   * fica mais rasa, título e resumo ganham corte de linha e as tags saem — a
+   * categoria e o tempo de leitura já situam o cartão nesse tamanho.
+   */
+  compacto?: boolean
   /** Usado pela esteira, que precisa de `h-full` para igualar as alturas. */
   className?: string
 }) {
   return (
     <article className={`${CARTAO} ${className}`}>
-      <div className="relative aspect-[16/9] overflow-hidden bg-stone-100 dark:bg-slate-800">
+      <div
+        className={`relative overflow-hidden bg-stone-100 dark:bg-slate-800 ${
+          compacto ? 'aspect-[2/1]' : 'aspect-[16/9]'
+        }`}
+      >
         <CapaOuPlaceholder
           post={post}
-          sizes="(min-width: 1024px) 22rem, (min-width: 640px) 45vw, 92vw"
+          sizes={
+            compacto
+              ? '(min-width: 640px) 17rem, 16rem'
+              : '(min-width: 1024px) 22rem, (min-width: 640px) 45vw, 92vw'
+          }
           prioridade={prioridade}
         />
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 p-6">
+      <div className={`flex flex-1 flex-col ${compacto ? 'gap-2 p-4' : 'gap-3 p-6'}`}>
         <CategoriaBadge categoria={post.categoria} />
 
-        <h2 className="text-xl leading-snug font-bold tracking-tight text-slate-900 dark:text-white">
+        <h2
+          className={`leading-snug font-bold tracking-tight text-slate-900 dark:text-white ${
+            compacto ? 'line-clamp-2 text-base' : 'text-xl'
+          }`}
+        >
           <Link
             href={`/blog/${post.slug}`}
             className="transition-colors after:absolute after:inset-0 hover:text-amber-700 dark:hover:text-amber-400"
@@ -84,18 +104,26 @@ export function PostCard({
         </h2>
 
         {post.resumo && (
-          <p className="line-clamp-3 leading-relaxed text-slate-600 dark:text-slate-400">
+          <p
+            className={`leading-relaxed text-slate-600 dark:text-slate-400 ${
+              compacto ? 'line-clamp-2 text-sm' : 'line-clamp-3'
+            }`}
+          >
             {post.resumo}
           </p>
         )}
 
-        <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-2 text-sm text-slate-500 dark:text-slate-500">
+        <div
+          className={`mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-slate-500 dark:text-slate-500 ${
+            compacto ? 'pt-1 text-xs' : 'pt-2 text-sm'
+          }`}
+        >
           <DataPost iso={post.publicadoEm} curta />
           <span aria-hidden="true">·</span>
           <TempoDeLeitura minutos={post.minutosDeLeitura} />
         </div>
 
-        <TagsDoPost tags={post.tags.slice(0, 3)} className="relative z-10" />
+        {!compacto && <TagsDoPost tags={post.tags.slice(0, 3)} className="relative z-10" />}
       </div>
     </article>
   )
@@ -105,6 +133,7 @@ export function PostCard({
 export function PostCardDestaque({
   post,
   rotulo = 'Mais recente',
+  className = '',
 }: {
   post: PostResumo
   /**
@@ -112,9 +141,11 @@ export function PostCardDestaque({
    * dizendo "Mais recente" lado a lado não diriam qual é o quê.
    */
   rotulo?: string
+  /** Usado pelo banner, que precisa de `h-full` para igualar os slides. */
+  className?: string
 }) {
   return (
-    <article className={`${CARTAO} md:flex-row`}>
+    <article className={`${CARTAO} md:flex-row ${className}`}>
       <div className="relative aspect-[16/9] overflow-hidden bg-stone-100 md:aspect-auto md:w-1/2 dark:bg-slate-800">
         <CapaOuPlaceholder
           post={post}

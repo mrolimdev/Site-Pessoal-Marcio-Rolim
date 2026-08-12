@@ -20,16 +20,21 @@ import type { PostResumo } from '@/lib/blog/queries'
  *
  * ─── Como o laço se fecha ───────────────────────────────────────────────────
  *
- * A lista é renderizada duas vezes. Quando o scroll passa da metade, ele volta
- * meia largura — como as duas metades são idênticas, o salto é invisível. A
- * cópia sai da árvore de acessibilidade e da ordem de tabulação com
- * `aria-hidden` + `inert`, senão leitor de tela e teclado veriam cada post
+ * A lista é renderizada duas vezes. Quando o scroll anda um período inteiro,
+ * ele volta um período — como as duas voltas são idênticas, o salto é
+ * invisível. A cópia sai da árvore de acessibilidade e da ordem de tabulação
+ * com `aria-hidden` + `inert`, senão leitor de tela e teclado veriam cada post
  * duas vezes.
+ *
+ * O período *não* é `scrollWidth / 2`: a trilha tem padding nas pontas e um
+ * gap a menos que o número de cartões, então a metade da largura sobra alguns
+ * pixels e a esteira saltaria um pouquinho a cada volta. Ele é medido no DOM,
+ * pela distância entre o primeiro cartão de cada volta.
  *
  * Andar para trás (arrasto, roda, seta) esbarraria no zero, onde o navegador
  * trava o scroll e o laço quebraria. Por isso o salto para trás é resolvido
  * dentro de cada gesto, e não no quadro: só quem sabe que o movimento é
- * negativo consegue somar meia largura *antes* de o navegador travar.
+ * negativo consegue somar um período *antes* de o navegador travar.
  */
 
 /** Pixels por segundo. Devagar o bastante para dar tempo de ler o título. */
@@ -39,7 +44,7 @@ const VELOCIDADE = 40
 const PAUSA_APOS_SETA = 900
 
 /**
- * Abaixo disso as duas cópias não enchem a largura da tela e apareceria um
+ * Abaixo disso as duas voltas não enchem a largura da tela e apareceria um
  * buraco no meio da esteira. Com tão poucos posts, uma grade resolve melhor.
  */
 const MINIMO_PARA_ESTEIRA = 4
@@ -58,6 +63,9 @@ export function CarrosselPosts({
   descricao: string
 }) {
   const pista = useRef<HTMLDivElement>(null)
+  const trilha = useRef<HTMLUListElement>(null)
+  /** Largura de uma volta, em pixels. Medida no DOM, zero antes disso. */
+  const periodo = useRef(0)
   /** Mouse em cima ou foco dentro: alguém está lendo, a esteira espera. */
   const pausado = useRef(false)
   /** Pausa por tempo, usada depois das setas. Guarda um `performance.now()`. */
@@ -68,15 +76,29 @@ export function CarrosselPosts({
 
   useEffect(() => {
     const el = pista.current
-    if (!el || !temEsteira) return
+    const ul = trilha.current
+    if (!el || !ul || !temEsteira) return
 
+    // Distância entre o primeiro cartão da volta A e o primeiro da volta B.
+    // Imune a padding, gap e a qualquer mudança de largura do cartão.
+    const medir = () => {
+      const primeiro = ul.children[0] as HTMLElement | undefined
+      const inicioDaCopia = ul.children[posts.length] as HTMLElement | undefined
+      periodo.current =
+        primeiro && inicioDaCopia ? inicioDaCopia.offsetLeft - primeiro.offsetLeft : 0
+    }
+
+    medir()
     el.scrollLeft = 0
+
+    const observador = new ResizeObserver(medir)
+    observador.observe(ul)
 
     const reduzirMovimento = window.matchMedia('(prefers-reduced-motion: reduce)')
 
     let quadro = 0
     let instanteAnterior = 0
-    // `scrollLeft` inteiro em boa parte dos navegadores: o resto fracionário
+    // `scrollLeft` é inteiro em boa parte dos navegadores: o resto fracionário
     // fica aqui entre um quadro e outro, senão a 40px/s nada andaria.
     let resto = 0
 
@@ -88,9 +110,8 @@ export function CarrosselPosts({
       const intervalo = instanteAnterior === 0 ? 0 : Math.min(agora - instanteAnterior, 100)
       instanteAnterior = agora
 
-      const metade = el.scrollWidth / 2
-      if (metade > 0 && el.scrollLeft >= metade) {
-        el.scrollLeft -= metade
+      if (periodo.current > 0 && el.scrollLeft >= periodo.current) {
+        el.scrollLeft -= periodo.current
       }
 
       if (reduzirMovimento.matches || pausado.current || agora < pausaAte.current) {
@@ -107,7 +128,11 @@ export function CarrosselPosts({
     }
 
     quadro = requestAnimationFrame(passo)
-    return () => cancelAnimationFrame(quadro)
+
+    return () => {
+      cancelAnimationFrame(quadro)
+      observador.disconnect()
+    }
   }, [temEsteira, posts])
 
   const deslizar = (direcao: 1 | -1) => {
@@ -117,11 +142,10 @@ export function CarrosselPosts({
     const salto = el.clientWidth * 0.8
     pausaAte.current = performance.now() + PAUSA_APOS_SETA
 
-    // Indo para trás perto do zero, adianta meia largura antes: sem isso o
+    // Indo para trás perto do zero, adianta uma volta antes: sem isso o
     // navegador trava em zero e a seta esquerda não faz nada.
-    const metade = el.scrollWidth / 2
-    if (direcao < 0 && metade > 0 && el.scrollLeft < salto) {
-      el.scrollLeft += metade
+    if (direcao < 0 && periodo.current > 0 && el.scrollLeft < salto) {
+      el.scrollLeft += periodo.current
     }
 
     el.scrollBy({ left: direcao * salto, behavior: 'smooth' })
@@ -133,9 +157,8 @@ export function CarrosselPosts({
     if (!el) return
 
     const deslocamento = e.deltaX !== 0 ? e.deltaX : e.shiftKey ? e.deltaY : 0
-    const metade = el.scrollWidth / 2
-    if (deslocamento < 0 && metade > 0 && el.scrollLeft < Math.abs(deslocamento) + 1) {
-      el.scrollLeft += metade
+    if (deslocamento < 0 && periodo.current > 0 && el.scrollLeft < Math.abs(deslocamento) + 1) {
+      el.scrollLeft += periodo.current
     }
   }
 
@@ -165,11 +188,10 @@ export function CarrosselPosts({
     if (Math.abs(percorrido) > 4) arrasto.current.moveu = true
 
     let alvo = arrasto.current.scrollInicial - percorrido
-    const metade = el.scrollWidth / 2
-    while (alvo < 0 && metade > 0) {
+    while (alvo < 0 && periodo.current > 0) {
       // Move a referência junto, senão o resto do arrasto puxaria de volta.
-      alvo += metade
-      arrasto.current.scrollInicial += metade
+      alvo += periodo.current
+      arrasto.current.scrollInicial += periodo.current
     }
 
     el.scrollLeft = alvo
@@ -199,13 +221,13 @@ export function CarrosselPosts({
     posts.map((post) => (
       <li
         key={`${chave}-${post.slug}`}
-        className="w-[17rem] shrink-0 sm:w-[18.5rem]"
+        className="w-[15.5rem] shrink-0 sm:w-[16.5rem]"
         // A segunda volta é só pixel: fora da árvore de acessibilidade e fora
         // da ordem de tabulação, senão cada post apareceria duas vezes.
         aria-hidden={duplicata || undefined}
         inert={duplicata}
       >
-        <PostCard post={post} className="h-full" />
+        <PostCard post={post} compacto className="h-full" />
       </li>
     ))
 
@@ -273,12 +295,14 @@ export function CarrosselPosts({
           // propriedade arbitrária, e não numa cor de fundo por cima, para não
           // ficar amarrada ao fundo da página em cada tema.
           //
-          // `scroll-px-8` casa com a faixa desbotada: quando o Tab leva o foco
-          // para um cartão, o navegador o traz para dentro da área nítida em
-          // vez de encostá-lo na ponta apagada.
-          className="cursor-grab scroll-px-8 overflow-x-auto overflow-y-hidden py-4 [mask-image:linear-gradient(to_right,transparent,#000_2rem,#000_calc(100%-2rem),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,#000_2rem,#000_calc(100%-2rem),transparent)] scrollbar-hide active:cursor-grabbing"
+          // `-mx-6` sangra a pista para fora da coluna e o `px-6` da trilha
+          // traz os cartões de volta ao alinhamento. Assim a faixa desbotada
+          // cai toda na sangria: parado no começo, o primeiro cartão aparece
+          // nítido, e o desbotado só age em quem está de saída. `scroll-px-6`
+          // faz o mesmo pelo teclado, com o cartão que recebe o foco.
+          className="-mx-6 cursor-grab scroll-px-6 overflow-x-auto overflow-y-hidden py-4 [mask-image:linear-gradient(to_right,transparent,#000_1.5rem,#000_calc(100%-1.5rem),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,#000_1.5rem,#000_calc(100%-1.5rem),transparent)] scrollbar-hide active:cursor-grabbing"
         >
-          <ul className="flex w-max items-stretch gap-6 px-1">
+          <ul ref={trilha} className="flex w-max items-stretch gap-6 px-6">
             {cartoes('a', false)}
             {cartoes('b', true)}
           </ul>

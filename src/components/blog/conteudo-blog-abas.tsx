@@ -2,12 +2,26 @@
 
 import { useCallback, useMemo, useState } from 'react'
 
+import { BannerDestaques } from '@/components/blog/banner-destaques'
+import type { Destaque } from '@/components/blog/banner-destaques'
 import { CarrosselPosts } from '@/components/blog/carrossel-posts'
-import { PostCardDestaque } from '@/components/blog/post-card'
 import { CardArvoreDeCategorias, CardNuvemDeTags } from '@/components/blog/widgets-blog'
 import type { DadosWidgets, PostResumo, TagComContagem } from '@/lib/blog/queries'
 
 type Aba = 'todas' | 'tecnologia' | 'fe'
+
+/** Quantos slides o banner de destaques chega a ter. */
+const MAX_DESTAQUES = 4
+
+/**
+ * Cada lista já chega ordenada do banco, mas ao juntar as duas áreas a ordem se
+ * perde. O slug desempata para a sequência não variar entre um render e outro.
+ */
+function ordenarPorData(posts: PostResumo[]): PostResumo[] {
+  return posts
+    .slice()
+    .sort((a, b) => b.publicadoEm.localeCompare(a.publicadoEm) || a.slug.localeCompare(b.slug))
+}
 
 /**
  * Texto de apoio das duas seções, por aba. As seções antes eram fixas — uma de
@@ -93,33 +107,30 @@ export function ConteudoBlogAbas({
 
   const totalFiltrado = techFiltrados.length + feFiltrados.length
 
-  // ─── DESTAQUES: 1 coluna, largura total ───
+  // ─── DESTAQUES: banner em slide, 1 coluna de largura total ───
   //
-  // Em "Todas" o destaque é o mais recente de *cada* área — as duas convivem na
-  // página e escolher uma só apagaria a outra. Numa aba de área, é um só.
-  const destaques = useMemo(() => {
-    if (abaAtiva === 'tecnologia') {
-      return techFiltrados[0] ? [{ post: techFiltrados[0], rotulo: 'Mais recente' }] : []
+  // Em "Todas", cada área tem uma vaga reservada antes de o banner completar
+  // por data: sem isso uma sequência de posts de tecnologia empurraria a fé
+  // para fora do banner inteiro. O resto entra do mais novo para o mais antigo.
+  const destaques = useMemo<Destaque[]>(() => {
+    const escolhidos: Destaque[] = []
+    const jaEscolhidos = new Set<string>()
+
+    const rotuloDe = (p: PostResumo) => {
+      if (abaAtiva !== 'todas') return escolhidos.length === 0 ? 'Mais recente' : 'Em destaque'
+      return p.categoria === 'fe' ? 'Destaque · Vida Cristã' : 'Destaque · Tecnologia'
     }
 
-    if (abaAtiva === 'fe') {
-      return feFiltrados[0] ? [{ post: feFiltrados[0], rotulo: 'Mais recente' }] : []
+    const adicionar = (post: PostResumo | undefined) => {
+      if (!post || jaEscolhidos.has(post.slug) || escolhidos.length >= MAX_DESTAQUES) return
+      jaEscolhidos.add(post.slug)
+      escolhidos.push({ post, rotulo: rotuloDe(post) })
     }
 
-    const lista: { post: PostResumo; rotulo: string }[] = []
-    if (techFiltrados[0]) lista.push({ post: techFiltrados[0], rotulo: 'Destaque · Tecnologia' })
-    if (feFiltrados[0]) lista.push({ post: feFiltrados[0], rotulo: 'Destaque · Vida Cristã' })
-    return lista
-  }, [abaAtiva, techFiltrados, feFiltrados])
-
-  // ─── ESTEIRA: todo o resto da aba ───
-  //
-  // Sem corte em "os N mais recentes": a esteira dá a volta em tudo o que
-  // sobrou, então nenhum post fica inalcançável a partir do /blog. Em "Todas"
-  // as duas áreas se misturam, e aí a ordem de publicação precisa ser refeita —
-  // cada lista chega ordenada por conta própria.
-  const rotativos = useMemo(() => {
-    const emDestaque = new Set(destaques.map((d) => d.post.slug))
+    if (abaAtiva === 'todas') {
+      adicionar(techFiltrados[0])
+      adicionar(feFiltrados[0])
+    }
 
     const base =
       abaAtiva === 'tecnologia'
@@ -128,9 +139,26 @@ export function ConteudoBlogAbas({
           ? feFiltrados
           : [...techFiltrados, ...feFiltrados]
 
-    return base
-      .filter((p) => !emDestaque.has(p.slug))
-      .sort((a, b) => b.publicadoEm.localeCompare(a.publicadoEm) || a.slug.localeCompare(b.slug))
+    for (const post of ordenarPorData(base)) adicionar(post)
+
+    return escolhidos
+  }, [abaAtiva, techFiltrados, feFiltrados])
+
+  // ─── ESTEIRA: todo o resto da aba ───
+  //
+  // Sem corte em "os N mais recentes": a esteira dá a volta em tudo o que
+  // sobrou, então nenhum post fica inalcançável a partir do /blog.
+  const rotativos = useMemo(() => {
+    const noBanner = new Set(destaques.map((d) => d.post.slug))
+
+    const base =
+      abaAtiva === 'tecnologia'
+        ? techFiltrados
+        : abaAtiva === 'fe'
+          ? feFiltrados
+          : [...techFiltrados, ...feFiltrados]
+
+    return ordenarPorData(base.filter((p) => !noBanner.has(p.slug)))
   }, [abaAtiva, techFiltrados, feFiltrados, destaques])
 
   // ─── TAGS DINÂMICAS POR ABA E POR ORIGEM ───
@@ -304,23 +332,8 @@ export function ConteudoBlogAbas({
         )}
       </div>
 
-      {/* ─── DESTAQUES: UMA COLUNA, LARGURA TOTAL ─── */}
-      {destaques.length > 0 && (
-        <section className="animate-fade-in flex flex-col gap-6">
-          <div className="border-b border-slate-200 pb-4 dark:border-slate-800">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Em destaque
-            </h2>
-            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-              {COPIA[abaAtiva].destaque}
-            </p>
-          </div>
-
-          {destaques.map((d) => (
-            <PostCardDestaque key={d.post.slug} post={d.post} rotulo={d.rotulo} />
-          ))}
-        </section>
-      )}
+      {/* ─── DESTAQUES: BANNER EM SLIDE, UMA COLUNA DE LARGURA TOTAL ─── */}
+      <BannerDestaques destaques={destaques} descricao={COPIA[abaAtiva].destaque} />
 
       {/* ─── ABAIXO: ESTEIRA À ESQUERDA, WIDGETS À DIREITA ─── */}
       <div className="grid grid-cols-1 gap-12 lg:grid-cols-12">

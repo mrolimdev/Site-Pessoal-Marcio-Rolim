@@ -128,7 +128,7 @@ export default function CurriculumPage() {
   return (
     <div className="cv-root min-h-screen bg-stone-50 text-slate-800 transition-colors duration-500 dark:bg-slate-950 dark:text-slate-100">
       {/* Barra flutuante */}
-      <div className="no-print fixed inset-x-4 top-4 z-50 mx-auto flex max-w-5xl items-center justify-between">
+      <div className="no-print fixed inset-x-4 top-4 z-50 mx-auto flex max-w-7xl items-center justify-between">
         <Link
           href="/"
           className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-4 py-2.5 text-slate-600 shadow-xl backdrop-blur-xl transition-all hover:border-slate-400 hover:text-slate-900 dark:border-slate-700/50 dark:bg-slate-800/90 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white"
@@ -150,7 +150,7 @@ export default function CurriculumPage() {
           <div className="absolute right-10 bottom-10 h-96 w-96 rounded-full bg-emerald-300/15 blur-3xl dark:bg-emerald-500/10" />
         </div>
 
-        <div className="cv-header-inner relative mx-auto max-w-5xl px-6 pt-24 pb-16 md:pt-28 md:pb-20">
+        <div className="cv-header-inner relative mx-auto max-w-7xl px-6 pt-24 pb-16 md:pt-28 md:pb-20">
           <div className="cv-header-row flex flex-col items-center gap-10 md:flex-row md:items-start">
             <div className="cv-photo animate-scale-in shrink-0">
               <div className="relative">
@@ -221,7 +221,7 @@ export default function CurriculumPage() {
         </div>
       </header>
 
-      <main className="cv-main mx-auto max-w-5xl space-y-16 px-6 py-12">
+      <main className="cv-main mx-auto max-w-7xl space-y-16 px-6 py-12">
         {/* Propósito */}
         <section className="cv-section animate-fade-in-up">
           <CabecalhoSecao titulo={PROPOSITO_TITULO} gradiente="from-amber-500 to-orange-500 shadow-amber-500/20">
@@ -497,7 +497,7 @@ export default function CurriculumPage() {
       </main>
 
       <footer className="cv-footer border-t border-slate-200 px-6 py-10 dark:border-slate-800">
-        <div className="mx-auto max-w-5xl text-center">
+        <div className="mx-auto max-w-7xl text-center">
           <p className="mb-2 text-sm text-slate-400 dark:text-slate-500">
             © {new Date().getFullYear()} {NOME}.{' '}
             <Link href="/privacidade" className="underline-offset-4 hover:text-amber-400">

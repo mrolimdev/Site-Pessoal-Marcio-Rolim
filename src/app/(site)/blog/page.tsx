@@ -79,7 +79,7 @@ export default async function BlogPage() {
         </div>
       </CabecalhoBlog>
 
-      <main className="mx-auto max-w-5xl px-6 py-12">
+      <main className="mx-auto max-w-7xl px-6 py-12">
         <ConteudoBlogAbas
           postsTecnologia={postsTecnologia}
           postsVidaCrista={postsVidaCrista}

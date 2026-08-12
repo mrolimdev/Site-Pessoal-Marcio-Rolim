@@ -68,7 +68,7 @@ export function SiteNav() {
           opaca ? `${FUNDO_NAV} shadow-xl shadow-black/5` : 'bg-transparent'
         } border-b ${opaca ? DIVISOR : 'border-transparent'}`}
       >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 md:h-18">
             {/* Logo. Triplo clique é a porta discreta do painel: não há link
                 visível para /admin em lugar nenhum do site público, de propósito.

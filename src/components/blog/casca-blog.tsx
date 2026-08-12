@@ -25,7 +25,7 @@ export function CascaBlog({
 }) {
   return (
     <div className="min-h-screen bg-stone-50 text-slate-800 transition-colors duration-500 dark:bg-slate-950 dark:text-slate-100">
-      <div className="pointer-events-none fixed inset-x-4 top-4 z-50 mx-auto flex max-w-5xl items-center justify-between">
+      <div className="pointer-events-none fixed inset-x-4 top-4 z-50 mx-auto flex max-w-7xl items-center justify-between">
         <div>
           {voltar && (
             <Link
@@ -47,7 +47,7 @@ export function CascaBlog({
       <BotaoVoltarAoTopo />
 
       <footer className="border-t border-slate-200 px-6 py-10 dark:border-slate-800">
-        <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 text-center">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-3 text-center">
           <Link href="/" className="text-lg font-bold tracking-tight">
             {LOGO.prefix}
             <span className="text-amber-600 dark:text-amber-400">{LOGO.accent}</span>
@@ -86,7 +86,7 @@ export function CabecalhoBlog({ children }: { children: React.ReactNode }) {
         className="absolute -bottom-24 -left-10 h-72 w-72 rounded-full bg-emerald-300/15 blur-3xl dark:bg-emerald-500/10"
       />
 
-      <div className="animate-fade-in-up relative mx-auto flex max-w-5xl flex-col gap-5 px-6 pt-28 pb-14 md:pt-32 md:pb-16">
+      <div className="animate-fade-in-up relative mx-auto flex max-w-7xl flex-col gap-5 px-6 pt-28 pb-14 md:pt-32 md:pb-16">
         {children}
       </div>
     </header>

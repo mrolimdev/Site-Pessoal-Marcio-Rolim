@@ -159,7 +159,7 @@ export default function PrivacidadePage() {
   return (
     <div className="min-h-screen bg-stone-50 text-slate-800 transition-colors duration-500 dark:bg-slate-950 dark:text-slate-100">
       {/* Barra flutuante */}
-      <div className="fixed inset-x-4 top-4 z-50 mx-auto flex max-w-5xl items-center justify-between">
+      <div className="fixed inset-x-4 top-4 z-50 mx-auto flex max-w-7xl items-center justify-between">
         <Link
           href="/"
           className="flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-4 py-2.5 text-slate-600 shadow-xl backdrop-blur-xl transition-all hover:border-slate-400 hover:text-slate-900 dark:border-slate-700/50 dark:bg-slate-800/90 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white"
@@ -178,7 +178,7 @@ export default function PrivacidadePage() {
           className="absolute top-10 -right-16 h-72 w-72 rounded-full bg-amber-300/20 blur-3xl dark:bg-amber-500/10"
         />
 
-        <div className="animate-fade-in-up relative mx-auto flex max-w-5xl flex-col gap-5 px-6 pt-28 pb-14 md:pt-32 md:pb-16">
+        <div className="animate-fade-in-up relative mx-auto flex max-w-7xl flex-col gap-5 px-6 pt-28 pb-14 md:pt-32 md:pb-16">
           <span className="w-fit rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1 font-mono text-xs text-amber-700 dark:text-amber-400">
             Versão {POLICY_VERSION} · em vigor desde {POLICY_VERSION_LABEL}
           </span>
@@ -198,7 +198,7 @@ export default function PrivacidadePage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-5xl px-6 py-12 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-start lg:gap-12">
+      <div className="mx-auto max-w-7xl px-6 py-12 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-start lg:gap-12">
         {/* Sumário. A ANPD pede acesso facilitado às seções — "por meio de uma
             guia, barra lateral ou sumário no início". Aqui é sumário no início
             no celular e barra lateral fixa a partir de lg. */}
@@ -257,7 +257,7 @@ export default function PrivacidadePage() {
       </div>
 
       <footer className="border-t border-slate-200 px-6 py-10 dark:border-slate-800">
-        <div className="mx-auto flex max-w-5xl flex-col gap-2 text-center">
+        <div className="mx-auto flex max-w-7xl flex-col gap-2 text-center">
           <p className="text-sm text-slate-500 dark:text-slate-400">{POLICY_FOOTER_NOTE}</p>
           <p className="text-sm text-slate-400 dark:text-slate-500">
             © {new Date().getFullYear()} {SITE.name} ·{' '}

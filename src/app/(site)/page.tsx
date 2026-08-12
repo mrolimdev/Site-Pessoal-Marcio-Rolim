@@ -178,7 +178,7 @@ export default function HomePage() {
             <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-emerald-200/30 dark:bg-emerald-500/8 rounded-full blur-3xl" />
           </div>
 
-          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 lg:py-28">
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 lg:py-28">
             <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16">
               {/* Foto */}
               <div className="relative flex-shrink-0">
@@ -252,7 +252,7 @@ export default function HomePage() {
 
         {/* ─── Faixa de números ─── */}
         <section className="bg-gradient-to-r from-stone-900 via-stone-800 to-stone-900 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 dark:border-y dark:border-slate-800/50 py-10 md:py-14">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
               {estatisticas.map((stat) => (
                 <div key={stat.label} className="group">
@@ -268,7 +268,7 @@ export default function HomePage() {
 
         {/* ─── Sobre / dupla identidade ─── */}
         <section id="sobre" className="relative py-20 md:py-28 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
               <p
                 className={`text-sm font-semibold uppercase tracking-widest ${ACENTO} mb-3`}
@@ -337,7 +337,7 @@ export default function HomePage() {
           id={SERVICES.id}
           className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 bg-stone-100/50 dark:bg-slate-900/50"
         >
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <ServicesTabs>
               <p
                 className={`text-sm font-semibold uppercase tracking-widest ${ACENTO} mb-3`}
@@ -393,7 +393,7 @@ export default function HomePage() {
           id={CONTACT_SECTION.id}
           className="py-20 md:py-28 px-4 sm:px-6 lg:px-8"
         >
-          <div className="max-w-6xl mx-auto text-center">
+          <div className="max-w-7xl mx-auto text-center">
             <p className={`text-sm font-semibold uppercase tracking-widest ${ACENTO} mb-3`}>
               {CONTACT_SECTION.eyebrow}
             </p>
@@ -431,7 +431,7 @@ export default function HomePage() {
 
         {/* ─── Rodapé ─── */}
         <footer className="bg-stone-900 dark:bg-slate-950 dark:border-t dark:border-slate-800/50 text-white py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="text-center md:text-left">
                 <div className="flex items-center gap-3 justify-center md:justify-start font-bold text-lg mb-2">
