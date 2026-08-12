@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 }
 
 export default async function CategoriasPage() {
-  const categorias = await obterEstatisticasCategorias()
+  const dadosCategorias = await obterEstatisticasCategorias()
 
-  return <CategoriasClient categoriasIniciais={categorias} />
+  return <CategoriasClient dadosIniciais={dadosCategorias} />
 }

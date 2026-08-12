@@ -15,6 +15,21 @@ export type EstatisticaCategoria = {
   cor: string
 }
 
+export type EstatisticaRamoCategoria = {
+  titulo: string
+  chaveRamo: 'tecnologia_ia' | 'fe_vida_crista'
+  descricao: string
+  totalPosts: number
+  publicados: number
+  rascunhos: number
+  subcategorias: EstatisticaCategoria[]
+}
+
+export type RespostaEstatisticasCategorias = {
+  subcategorias: EstatisticaCategoria[]
+  ramos: EstatisticaRamoCategoria[]
+}
+
 export type EstatisticaTag = {
   tag: string
   totalPosts: number
@@ -49,9 +64,9 @@ const METADADOS_CATEGORIAS: Record<
 }
 
 /**
- * Retorna as estatísticas detalhadas de todas as categorias do blog.
+ * Retorna as estatísticas detalhadas de todas as categorias do blog (organizadas hierarquicamente em ramos e subcategorias).
  */
-export async function obterEstatisticasCategorias(): Promise<EstatisticaCategoria[]> {
+export async function obterEstatisticasCategorias(): Promise<RespostaEstatisticasCategorias> {
   await requireAdmin()
   const supabase = await createClient()
 
@@ -81,7 +96,7 @@ export async function obterEstatisticasCategorias(): Promise<EstatisticaCategori
     })
   }
 
-  return VALORES_CATEGORIA.map((cat) => ({
+  const subcategoriasList: EstatisticaCategoria[] = VALORES_CATEGORIA.map((cat) => ({
     id: cat,
     nome: ROTULO_CATEGORIA[cat] || cat,
     descricao: METADADOS_CATEGORIAS[cat]?.descricao || 'Categoria de artigos.',
@@ -90,6 +105,35 @@ export async function obterEstatisticasCategorias(): Promise<EstatisticaCategori
     publicados: estatisticas[cat]?.publicados || 0,
     rascunhos: estatisticas[cat]?.rascunhos || 0,
   }))
+
+  const subsTech = subcategoriasList.filter((s) => s.id !== 'fe')
+  const subsFe = subcategoriasList.filter((s) => s.id === 'fe')
+
+  const ramos: EstatisticaRamoCategoria[] = [
+    {
+      titulo: 'Tecnologia & IA',
+      chaveRamo: 'tecnologia_ia',
+      descricao: 'Grande área dedicada a Engenharia de Software, Agentes de IA, Automações e Estratégia Digital.',
+      totalPosts: subsTech.reduce((acc, c) => acc + c.totalPosts, 0),
+      publicados: subsTech.reduce((acc, c) => acc + c.publicados, 0),
+      rascunhos: subsTech.reduce((acc, c) => acc + c.rascunhos, 0),
+      subcategorias: subsTech,
+    },
+    {
+      titulo: 'Vida Cristã & Fé',
+      chaveRamo: 'fe_vida_crista',
+      descricao: 'Grande área dedicada a Estudos Bíblicos, Teologia Prática e Reflexões sobre Fé no Cotidiano.',
+      totalPosts: subsFe.reduce((acc, c) => acc + c.totalPosts, 0),
+      publicados: subsFe.reduce((acc, c) => acc + c.publicados, 0),
+      rascunhos: subsFe.reduce((acc, c) => acc + c.rascunhos, 0),
+      subcategorias: subsFe,
+    },
+  ]
+
+  return {
+    subcategorias: subcategoriasList,
+    ramos,
+  }
 }
 
 /**
