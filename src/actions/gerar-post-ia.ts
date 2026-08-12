@@ -153,6 +153,47 @@ export async function testarConfiguracaoModeloAction({
 }
 
 /**
+ * Valida o Token de API do Apify consultando a conta do usuário
+ */
+export async function testarChaveApifyAction(apifyTokenInformado?: string): Promise<{
+  ok: boolean
+  usuario?: string
+  plano?: string
+  erro?: string
+}> {
+  try {
+    await requireAdmin()
+    const token = (apifyTokenInformado || process.env.APIFY_API_TOKEN || '').trim()
+
+    if (!token) {
+      return { ok: false, erro: 'Informe um Token de API do Apify válido (ex: apify_api_...).' }
+    }
+
+    const res = await fetch(`https://api.apify.com/v2/users/me?token=${token}`)
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}))
+      return {
+        ok: false,
+        erro: errData.error?.message || `Token do Apify inválido ou recusado (Status HTTP ${res.status}).`,
+      }
+    }
+
+    const data = await res.json()
+    const usuario = data.data?.username || data.data?.email || 'Usuário Apify'
+    const plano = data.data?.plan?.name || 'Ativo'
+
+    return {
+      ok: true,
+      usuario,
+      plano,
+    }
+  } catch (error: any) {
+    return { ok: false, erro: error.message || 'Falha ao validar token do Apify.' }
+  }
+}
+
+/**
  * Passo 1: Analisa tendências e sugere 4 títulos de alta busca com base no tema.
  */
 export async function obterSugestoesDeTitulosAction({

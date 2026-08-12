@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 
 import {
+  testarChaveApifyAction,
   testarConfiguracaoModeloAction,
   validarEListarModelosGeminiAction,
   type ModeloGemini,
@@ -11,6 +12,15 @@ import {
 export function ConfiguracoesIaClient() {
   const [apiKey, setApiKey] = useState('')
   const [mostrarApiKey, setMostrarApiKey] = useState(false)
+
+  const [apifyToken, setApifyToken] = useState('')
+  const [mostrarApifyToken, setMostrarApifyToken] = useState(false)
+  const [validandoApify, setValidandoApify] = useState(false)
+  const [apifyStatus, setApifyStatus] = useState<{
+    ok: boolean
+    usuario?: string
+    plano?: string
+  } | null>(null)
 
   const [modelos, setModelos] = useState<ModeloGemini[]>([])
   const [modeloSelecionado, setModeloSelecionado] = useState<string>('gemini-2.0-flash')
@@ -21,11 +31,12 @@ export function ConfiguracoesIaClient() {
   const [erro, setErro] = useState<string | null>(null)
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null)
 
-  // Carrega chave e modelo salvos do localStorage
+  // Carrega chaves e modelo salvos do localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const keySalva = localStorage.getItem('gemini_admin_api_key')
       const modSalvo = localStorage.getItem('gemini_admin_model_id')
+      const apifySalvo = localStorage.getItem('apify_admin_token')
 
       if (keySalva) {
         setApiKey(keySalva)
@@ -35,10 +46,15 @@ export function ConfiguracoesIaClient() {
       if (modSalvo) {
         setModeloSelecionado(modSalvo)
       }
+
+      if (apifySalvo) {
+        setApifyToken(apifySalvo)
+        handleValidarApify(apifySalvo)
+      }
     }
   }, [])
 
-  // Passo 1: Validar Chave e Buscar Modelos
+  // Passo 1: Validar Chave e Buscar Modelos Gemini
   const handleValidarEListarModelos = async (chaveUsar?: string) => {
     const key = chaveUsar ?? apiKey
     if (!key.trim()) {
@@ -67,14 +83,47 @@ export function ConfiguracoesIaClient() {
       setModeloSelecionado(recomendado.id)
     }
 
-    setMensagemSucesso(`Chave de API válida! ${resp.modelos.length} modelos Gemini disponíveis na sua conta.`)
+    setMensagemSucesso(`Chave do Gemini válida! ${resp.modelos.length} modelos Gemini disponíveis na sua conta.`)
   }
 
-  // Passo 2: Salvar e Testar Configuração
+  // Passo 2: Validar Chave do Apify
+  const handleValidarApify = async (tokenUsar?: string) => {
+    const token = tokenUsar ?? apifyToken
+    if (!token.trim()) {
+      setErro('Por favor, insira um Token de API do Apify.')
+      return
+    }
+
+    setErro(null)
+    setValidandoApify(true)
+
+    const resp = await testarChaveApifyAction(token)
+    setValidandoApify(false)
+
+    if (!resp.ok) {
+      setApifyStatus(null)
+      setErro(resp.erro || 'Falha ao validar token do Apify.')
+      return
+    }
+
+    setApifyStatus({
+      ok: true,
+      usuario: resp.usuario,
+      plano: resp.plano,
+    })
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('apify_admin_token', token.trim())
+    }
+
+    setMensagemSucesso(`✅ Token do Apify validado com sucesso! Conta ativa: ${resp.usuario} (${resp.plano})`)
+  }
+
+  // Passo 3: Salvar e Testar Configuração Geral
   const handleSalvarETestar = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!apiKey.trim()) {
-      setErro('Informe uma chave de API válida.')
+      setErro('Informe uma chave de API válida para o Gemini.')
       return
     }
 
@@ -102,10 +151,14 @@ export function ConfiguracoesIaClient() {
     if (typeof window !== 'undefined') {
       localStorage.setItem('gemini_admin_api_key', apiKey.trim())
       localStorage.setItem('gemini_admin_model_id', modeloSelecionado)
+
+      if (apifyToken.trim()) {
+        localStorage.setItem('apify_admin_token', apifyToken.trim())
+      }
     }
 
     setMensagemSucesso(
-      `🎉 ${resp.mensagem} Chave e Modelo salvos com sucesso!`
+      `🎉 ${resp.mensagem} Configurações salvas com sucesso!`
     )
   }
 
@@ -119,10 +172,10 @@ export function ConfiguracoesIaClient() {
           </span>
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-              Configurações da API de IA (Google Gemini)
+              Configurações de IA & Web Scraping (Gemini + Apify)
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Valide sua chave de API, visualize os modelos ativos e defina o modelo recomendado para criar artigos do Blog.
+              Gerencie suas chaves de API, valide o modelo Gemini e conecte o Apify para busca de tendências e notícias em tempo real.
             </p>
           </div>
         </div>
@@ -144,11 +197,11 @@ export function ConfiguracoesIaClient() {
       )}
 
       <form onSubmit={handleSalvarETestar} className="flex flex-col gap-6">
-        {/* CARD 1: VALIDAÇÃO DA CHAVE */}
+        {/* CARD 1: CHAVE DA API GEMINI */}
         <div className="flex flex-col gap-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-              1. Chave da API Gemini (API Key)
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span>🤖 1. Chave da API Gemini (Google AI)</span>
             </h2>
             <button
               type="button"
@@ -179,12 +232,57 @@ export function ConfiguracoesIaClient() {
           </div>
         </div>
 
-        {/* CARD 2: LISTA RESUMIDA DE MODELOS COM RECOMENDADOS */}
+        {/* CARD 2: CHAVE DA API DO APIFY */}
+        <div className="flex flex-col gap-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>🌐 2. Token da API do Apify (Web Scraping de Notícias)</span>
+              </h2>
+              {apifyStatus?.ok && (
+                <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 font-mono text-[0.65rem] font-bold text-emerald-700 dark:text-emerald-300">
+                  ✅ CONECTADO ({apifyStatus.usuario})
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setMostrarApifyToken(!mostrarApifyToken)}
+              className="cursor-pointer text-xs font-bold text-amber-600 hover:underline dark:text-amber-400"
+            >
+              {mostrarApifyToken ? '👁️ Ocultar' : '👁️ Mostrar'}
+            </button>
+          </div>
+
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Permite extrair notícias atuais e artigos em tempo real da web para alimentar a criação de posts no blog. Obtenha seu token gratuito em <a href="https://apify.com" target="_blank" rel="noreferrer" className="text-amber-600 underline font-bold dark:text-amber-400">apify.com</a>.
+          </p>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              type={mostrarApifyToken ? 'text' : 'password'}
+              value={apifyToken}
+              onChange={(e) => setApifyToken(e.target.value)}
+              placeholder="Digite seu Token do Apify (ex: apify_api_...)"
+              className="w-full flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+            />
+            <button
+              type="button"
+              onClick={() => handleValidarApify()}
+              disabled={validandoApify || !apifyToken.trim()}
+              className="cursor-pointer whitespace-nowrap rounded-2xl border border-sky-500/40 bg-sky-500/10 px-5 py-2.5 text-xs font-bold text-sky-700 hover:bg-sky-500/20 disabled:opacity-50 dark:text-sky-300"
+            >
+              {validandoApify ? 'Validando...' : '⚡ Validar Token Apify'}
+            </button>
+          </div>
+        </div>
+
+        {/* CARD 3: LISTA RESUMIDA DE MODELOS COM RECOMENDADOS */}
         {modelos.length > 0 && (
           <div className="animate-fade-in flex flex-col gap-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
               <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-                2. Modelos Disponíveis (Selecione o desejado):
+                3. Modelos Gemini Disponíveis (Selecione o desejado):
               </h2>
               <span className="text-xs text-slate-400 font-mono">
                 {modelos.length} modelos ativos
@@ -257,7 +355,7 @@ export function ConfiguracoesIaClient() {
                 Testando Conexão com a API...
               </>
             ) : (
-              <>💾 Salvar & Testar Modelo {modeloSelecionado}</>
+              <>💾 Salvar & Testar Configurações</>
             )}
           </button>
         </div>
@@ -265,3 +363,4 @@ export function ConfiguracoesIaClient() {
     </div>
   )
 }
+
