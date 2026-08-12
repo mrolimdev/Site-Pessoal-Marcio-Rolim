@@ -125,6 +125,8 @@ function normalizarTags(bruto: string): string[] {
 }
 
 function urlDeCapaValida(valor: string): boolean {
+  if (!valor) return false
+  if (valor.startsWith('/') || valor.startsWith('data:image/')) return true
   try {
     const url = new URL(valor)
     return url.protocol === 'http:' || url.protocol === 'https:'

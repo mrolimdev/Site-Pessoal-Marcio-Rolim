@@ -20,14 +20,18 @@ import { env } from '@/lib/env'
 const HOSTS_OTIMIZADOS = new Set([
   new URL(env.NEXT_PUBLIC_SUPABASE_URL).hostname,
   'files.restaure.online',
+  'images.unsplash.com',
+  'images.pexels.com',
 ])
 
 function podeOtimizar(src: string): boolean {
+  if (!src) return false
+  if (src.startsWith('/') || src.startsWith('data:')) return true
   try {
-    return HOSTS_OTIMIZADOS.has(new URL(src).hostname)
+    const host = new URL(src).hostname
+    return HOSTS_OTIMIZADOS.has(host) || host.endsWith('.supabase.co') || host.endsWith('.restaure.online')
   } catch {
-    // URL relativa (mesmo domínio): o next/image serve sem restrição de host.
-    return src.startsWith('/')
+    return false
   }
 }
 

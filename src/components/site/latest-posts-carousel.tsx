@@ -4,6 +4,7 @@ import { useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 
+import { ImagemDeCapa } from '@/components/blog/imagem-capa'
 import { ROTULO_CATEGORIA } from '@/lib/blog/constantes'
 import type { PostResumo } from '@/lib/blog/queries'
 
@@ -109,12 +110,10 @@ export function LatestPostsCarousel({ posts }: Props) {
                   className="relative aspect-video w-full overflow-hidden rounded-2xl border border-stone-100 bg-stone-100 dark:border-slate-800 dark:bg-slate-950"
                 >
                   {post.capaUrl ? (
-                    <Image
+                    <ImagemDeCapa
                       src={post.capaUrl}
                       alt={post.capaAlt || post.titulo}
-                      fill
                       sizes="(max-width: 640px) 280px, 340px"
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-xs font-bold text-stone-400 dark:text-slate-600">

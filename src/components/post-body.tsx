@@ -53,13 +53,13 @@ function numeroAttr(node: JSONNodeType, nome: string): number | null {
  * atributos: `href` é texto livre, e `javascript:` num href é execução de
  * script no clique. Allowlist de protocolo, e ponto.
  */
-const PROTOCOLOS_PERMITIDOS = new Set(['http:', 'https:', 'mailto:', 'tel:'])
+const PROTOCOLOS_PERMITIDOS = new Set(['http:', 'https:', 'mailto:', 'tel:', 'data:'])
 
 function hrefSeguro(valor: string | null): string | null {
   if (!valor) return null
 
-  // Relativo (mesmo site) é sempre seguro: não carrega protocolo.
-  if (valor.startsWith('/') || valor.startsWith('#')) return valor
+  // Relativo ou data-URI (mesmo site/imagem base64): seguro para exibição
+  if (valor.startsWith('/') || valor.startsWith('#') || valor.startsWith('data:image/')) return valor
 
   try {
     const url = new URL(valor)

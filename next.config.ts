@@ -10,13 +10,26 @@ const config: NextConfig = {
   // e transforma Date.now()/Math.random() durante prerender em erro de build.
   images: {
     remotePatterns: [
-      // Foto de perfil e mídia hospedadas hoje fora do repositório.
+      // Foto de perfil e mídia hospedadas no servidor próprio ou restaure.online
       { protocol: 'https', hostname: 'files.restaure.online', pathname: '/**' },
-      // Bucket público de imagens do blog (Supabase Storage).
+      { protocol: 'https', hostname: '*.restaure.online', pathname: '/**' },
+      // Bucket público de imagens do blog (Supabase Storage) - todos os projetos
       {
         protocol: 'https',
-        hostname: 'aknegwrfbgaavdsylhiw.supabase.co',
+        hostname: '*.supabase.co',
         pathname: '/storage/v1/object/public/**',
+      },
+      // Fotos do Unsplash usadas nas capas de blog
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
+      // Fotos do Pexels
+      {
+        protocol: 'https',
+        hostname: 'images.pexels.com',
+        pathname: '/**',
       },
     ],
   },
