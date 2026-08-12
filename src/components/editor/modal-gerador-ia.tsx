@@ -317,7 +317,7 @@ export function ModalGeradorIa({
                       : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
                   }`}
                 >
-                  💻 Tecnologia, IA & Automação
+                  Tecnologia, IA & Automação
                 </button>
 
                 <button
@@ -329,7 +329,7 @@ export function ModalGeradorIa({
                       : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
                   }`}
                 >
-                  ✝️ Vida Cristã & Fé
+                  Vida Cristã & Fé
                 </button>
               </div>
             </div>

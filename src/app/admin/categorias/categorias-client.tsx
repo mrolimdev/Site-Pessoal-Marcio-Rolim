@@ -105,21 +105,16 @@ export function CategoriasClient({ categoriasIniciais }: Props) {
           >
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <div
-                  className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br text-2xl border ${cat.cor}`}
-                >
-                  {cat.icone}
-                </div>
+                <h3 className="text-lg font-bold text-slate-900 transition-colors group-hover:text-amber-500 dark:text-white">
+                  {cat.nome}
+                </h3>
                 <span className="rounded-full bg-slate-100 px-3 py-1 font-mono text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                   {cat.id}
                 </span>
               </div>
 
               <div>
-                <h3 className="text-lg font-bold text-slate-900 transition-colors group-hover:text-amber-500 dark:text-white">
-                  {cat.nome}
-                </h3>
-                <p className="mt-1 text-xs text-slate-500 leading-relaxed dark:text-slate-400">
+                <p className="text-xs text-slate-500 leading-relaxed dark:text-slate-400">
                   {cat.descricao}
                 </p>
               </div>

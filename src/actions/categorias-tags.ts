@@ -12,7 +12,6 @@ export type EstatisticaCategoria = {
   totalPosts: number
   publicados: number
   rascunhos: number
-  icone: string
   cor: string
 }
 
@@ -25,31 +24,26 @@ export type EstatisticaTag = {
 
 const METADADOS_CATEGORIAS: Record<
   Categoria,
-  { descricao: string; icone: string; cor: string }
+  { descricao: string; cor: string }
 > = {
   tecnologia: {
     descricao: 'Artigos sobre engenharia de software, desenvolvimento web, arquitetura e infraestrutura.',
-    icone: '💻',
     cor: 'from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-blue-600 dark:text-blue-400',
   },
   ia: {
     descricao: 'Inteligência Artificial, modelos LLM, engenharia de prompt e agentes autônomos.',
-    icone: '🤖',
     cor: 'from-purple-500/20 to-pink-500/20 border-purple-500/30 text-purple-600 dark:text-purple-400',
   },
   automacao: {
     descricao: 'Workflows automatizados, n8n, integração de APIs e otimização de processos digitais.',
-    icone: '⚡',
     cor: 'from-amber-500/20 to-orange-500/20 border-amber-500/30 text-amber-600 dark:text-amber-400',
   },
   negocios: {
     descricao: 'Empreendedorismo, estratégias de negócios, gestão de produtos e liderança técnica.',
-    icone: '📈',
     cor: 'from-emerald-500/20 to-teal-500/20 border-emerald-500/30 text-emerald-600 dark:text-emerald-400',
   },
   fe: {
     descricao: 'Estudos bíblicos, vida cristã, teologia prática e reflexões de fé no cotidiano.',
-    icone: '✝️',
     cor: 'from-amber-600/20 to-yellow-600/20 border-amber-600/30 text-amber-700 dark:text-amber-300',
   },
 }
@@ -91,7 +85,6 @@ export async function obterEstatisticasCategorias(): Promise<EstatisticaCategori
     id: cat,
     nome: ROTULO_CATEGORIA[cat] || cat,
     descricao: METADADOS_CATEGORIAS[cat]?.descricao || 'Categoria de artigos.',
-    icone: METADADOS_CATEGORIAS[cat]?.icone || '📁',
     cor: METADADOS_CATEGORIAS[cat]?.cor || 'from-slate-500/20 to-slate-600/20 border-slate-500/30 text-slate-600',
     totalPosts: estatisticas[cat]?.total || 0,
     publicados: estatisticas[cat]?.publicados || 0,

@@ -432,7 +432,6 @@ export type CategoriaNo = {
 
 export type RamoCategoria = {
   titulo: string
-  icone: string
   subcategorias: CategoriaNo[]
   totalRamo: number
 }
@@ -484,7 +483,6 @@ export async function obterEstatisticasWidgets(): Promise<DadosWidgets> {
   // 2. Árvore de Categorias Hierárquica
   const ramoTech: RamoCategoria = {
     titulo: 'Tecnologia & Inovação',
-    icone: '💻',
     subcategorias: [
       { chave: 'ia', rotulo: 'Inteligência Artificial', count: mapaCategorias.get('ia') ?? 0 },
       { chave: 'automacao', rotulo: 'Automação & n8n', count: mapaCategorias.get('automacao') ?? 0 },
@@ -500,7 +498,6 @@ export async function obterEstatisticasWidgets(): Promise<DadosWidgets> {
 
   const ramoFe: RamoCategoria = {
     titulo: 'Vida Cristã & Fé',
-    icone: '✝️',
     subcategorias: [
       { chave: 'fe', rotulo: 'Fé, Devocional & Família', count: mapaCategorias.get('fe') ?? 0 },
     ],

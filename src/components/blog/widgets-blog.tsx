@@ -333,13 +333,7 @@ export function CardArvoreDeCategorias({
                 <span
                   className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${estilo.chip}`}
                 >
-                  {Icone ? (
-                    <Icone className="h-3.5 w-3.5" />
-                  ) : (
-                    <span aria-hidden="true" className="text-xs">
-                      {ramo.icone}
-                    </span>
-                  )}
+                  {Icone ? <Icone className="h-3.5 w-3.5" /> : <span className="h-2 w-2 rounded-full bg-current" />}
                 </span>
 
                 <span className="min-w-0 flex-1 truncate text-xs font-bold text-slate-800 dark:text-slate-100">
