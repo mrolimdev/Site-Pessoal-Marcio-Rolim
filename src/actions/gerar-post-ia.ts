@@ -1,7 +1,9 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { Categoria } from '@/lib/blog/constantes'
+import { derivarConteudo } from '@/lib/blog/derivar'
 import { createClient } from '@/lib/supabase/server'
 
 export type SugestaoTitulo = {
@@ -367,6 +369,7 @@ export async function gerarPostCompletoComIaAction({
   apiKeyInformada,
   modeloId = 'gemini-2.0-flash',
   modeloImagemId = 'imagen-3.0-generate-002',
+  publicarDireto = true,
 }: {
   titulo: string
   tema: string
@@ -374,7 +377,8 @@ export async function gerarPostCompletoComIaAction({
   apiKeyInformada?: string
   modeloId?: string
   modeloImagemId?: string
-}): Promise<{ ok: boolean; post?: ResultadoPostIa; erro?: string }> {
+  publicarDireto?: boolean
+}): Promise<{ ok: boolean; post?: ResultadoPostIa; postCriadoId?: string; publicado?: boolean; erro?: string }> {
   try {
     await requireAdmin()
     const apiKey = obterApiKey(apiKeyInformada)
@@ -698,7 +702,60 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
       minutosDeLeitura: gerado.minutosDeLeitura || 8,
     }
 
-    return { ok: true, post: postFinal }
+    let publicado = false
+    let postCriadoId: string | undefined = undefined
+
+    if (publicarDireto) {
+      try {
+        const derivado = derivarConteudo(contentJson)
+        const claims = await requireAdmin()
+
+        // Garante slug único
+        let slugFinal = slug
+        const { data: existente } = await supabase.from('posts').select('id').eq('slug', slugFinal).maybeSingle()
+        if (existente) {
+          slugFinal = `${slug}-${Date.now().toString(36)}`
+          postFinal.slug = slugFinal
+        }
+
+        const { data: criado, error: insertErr } = await supabase
+          .from('posts')
+          .insert({
+            slug: slugFinal,
+            title: titulo,
+            excerpt: postFinal.resumo,
+            content_json: contentJson,
+            content_html: derivado.html,
+            content_text: derivado.texto,
+            cover_url: capaUrl,
+            cover_alt: postFinal.capaAlt,
+            category: categoria,
+            tags: tagsFinais,
+            reading_minutes: derivado.minutos,
+            status: 'published',
+            published_at: new Date().toISOString(),
+            seo_title: postFinal.seoTitulo,
+            seo_description: postFinal.seoDescricao,
+            author_id: claims.sub,
+          })
+          .select('id')
+          .single()
+
+        if (!insertErr && criado) {
+          publicado = true
+          postCriadoId = criado.id
+          revalidatePath('/blog')
+          revalidatePath(`/blog/${slugFinal}`)
+          revalidatePath('/admin/posts')
+        } else if (insertErr) {
+          console.error('[Action Gerar Post] Erro no INSERT Supabase:', insertErr)
+        }
+      } catch (errPublish) {
+        console.warn('Aviso ao publicar diretamente no banco:', errPublish)
+      }
+    }
+
+    return { ok: true, post: postFinal, postCriadoId, publicado }
   } catch (error: any) {
     console.error('[Action Gerar Post IA] Erro:', error)
     return { ok: false, erro: error.message || 'Falha ao gerar post completo com IA.' }
