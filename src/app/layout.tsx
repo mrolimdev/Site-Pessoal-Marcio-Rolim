@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
+import Script from 'next/script'
 import { Suspense } from 'react'
 import { Tracker } from '@/analytics/tracker'
 import './globals.css'
@@ -51,8 +52,9 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={inter.variable} suppressHydrationWarning>
       <body className="font-sans antialiased">
-        <script
+        <Script
           id="theme-script"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: themeScript }}
         />
         {children}
