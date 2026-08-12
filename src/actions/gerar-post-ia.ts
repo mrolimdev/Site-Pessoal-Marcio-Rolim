@@ -1202,3 +1202,262 @@ export async function gerarNovaImagemCapaIaAction({
     return { ok: false, erro: error.message || 'Falha ao gerar imagem de capa por IA.' }
   }
 }
+
+function obterApifyToken(apifyTokenInformado?: string): string | undefined {
+  return (
+    apifyTokenInformado?.trim() ||
+    process.env.APIFY_API_TOKEN?.trim() ||
+    process.env.APIFY_TOKEN?.trim() ||
+    undefined
+  )
+}
+
+
+function extrairTextoLimpoDeHtml(html: string): string {
+  if (!html) return ''
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
+    .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, ' ')
+    .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, ' ')
+    .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
+ * 🕸️ Extrair Conteúdo de URL usando Apify (com detecção de Redes Sociais e busca por links externos)
+ */
+export async function extrairConteudoDeUrlViaApify({
+  url,
+  apifyToken,
+}: {
+  url: string
+  apifyToken?: string
+}): Promise<{
+  ok: boolean
+  tituloFonte?: string
+  textoExtraido?: string
+  urlFonte: string
+  ehRedeSocial: boolean
+  urlExternaEncontrada?: string
+  erro?: string
+}> {
+  try {
+    let urlLimpa = url.trim()
+    if (!urlLimpa.startsWith('http://') && !urlLimpa.startsWith('https://')) {
+      urlLimpa = `https://${urlLimpa}`
+    }
+
+    const ehRedeSocial = Boolean(
+      urlLimpa.match(
+        /(instagram\.com|twitter\.com|x\.com|linkedin\.com|threads\.net|youtube\.com|youtu\.be|facebook\.com|tiktok\.com)/i
+      )
+    )
+
+    let textoResultado = ''
+    let tituloFonte = ''
+    let urlExternaLegenda: string | undefined
+
+    const token = obterApifyToken(apifyToken)
+
+    // Se houver token da Apify, tenta o scraper da Apify primeiro
+    if (token) {
+      try {
+        const apifyRunRes = await fetch(
+          `https://api.apify.com/v2/acts/apify~cheerio-scraper/run-sync-get-dataset-items?token=${token}&timeout=25`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              startUrls: [{ url: urlLimpa }],
+              maxPagesPerCrawl: 1,
+              pageFunction: `async function pageFunction(context) {
+                const { $ } = context;
+                const title = $('title').text() || $('h1').first().text() || '';
+                const bodyText = $('article, main, body').text() || '';
+                return { title, bodyText };
+              }`,
+            }),
+          }
+        )
+
+        if (apifyRunRes.ok) {
+          const items = await apifyRunRes.json()
+          if (Array.isArray(items) && items[0]) {
+            tituloFonte = items[0].title || ''
+            textoResultado = items[0].bodyText || ''
+          }
+        }
+      } catch (errApify) {
+        console.warn('[Apify Scraper Sync] Aviso, usando fallback HTTP:', errApify)
+      }
+    }
+
+    // Fallback via fetch direto com headers de navegador
+    if (!textoResultado || textoResultado.length < 100) {
+      const resFetch = await fetch(urlLimpa, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+        },
+        signal: AbortSignal.timeout(12000),
+      })
+
+      if (resFetch.ok) {
+        const html = await resFetch.text()
+        const matchTitle = html.match(/<title[^>]*>([^<]+)<\/title>/i) || html.match(/<h1[^>]*>([^<]+)<\/h1>/i)
+        if (matchTitle && matchTitle[1]) {
+          tituloFonte = matchTitle[1].trim()
+        }
+        textoResultado = extrairTextoLimpoDeHtml(html)
+      }
+    }
+
+    if (!textoResultado) {
+      return { ok: false, urlFonte: urlLimpa, ehRedeSocial, erro: 'Não foi possível extrair o texto desta URL.' }
+    }
+
+    // Procura por links externos na legenda/post de rede social
+    const linksEncontrados = textoResultado.match(/https?:\/\/[^\s"'<>]+/gi) || []
+    const linkExternoValido = linksEncontrados.find((link) => {
+      try {
+        const host = new URL(link).hostname.toLowerCase()
+        return (
+          !host.includes('instagram.com') &&
+          !host.includes('twitter.com') &&
+          !host.includes('x.com') &&
+          !host.includes('linkedin.com') &&
+          !host.includes('facebook.com') &&
+          !host.includes('youtube.com') &&
+          !host.includes('tiktok.com')
+        )
+      } catch {
+        return false
+      }
+    })
+
+    if (linkExternoValido) {
+      urlExternaLegenda = linkExternoValido
+      try {
+        console.log(`[Extração URL] Link externo encontrado (${linkExternoValido}). Raspando artigo de origem...`)
+        const resArtigo = await fetch(linkExternoValido, { signal: AbortSignal.timeout(12000) })
+        if (resArtigo.ok) {
+          const htmlArtigo = await resArtigo.text()
+          const textoArtigo = extrairTextoLimpoDeHtml(htmlArtigo)
+          if (textoArtigo.length > 200) {
+            textoResultado = `--- CONTEÚDO DA REDE SOCIAL ---\n${textoResultado}\n\n--- ARTIGO COMPLETO DA LEGENDA (${linkExternoValido}) ---\n${textoArtigo}`
+          }
+        }
+      } catch (errArtigo) {
+        console.warn('[Extração Link Externo] Aviso ao buscar artigo:', errArtigo)
+      }
+    }
+
+    return {
+      ok: true,
+      tituloFonte: tituloFonte || 'Artigo de Referência',
+      textoExtraido: textoResultado.substring(0, 15000),
+      urlFonte: urlLimpa,
+      ehRedeSocial,
+      urlExternaEncontrada: urlExternaLegenda,
+    }
+  } catch (error: any) {
+    return { ok: false, urlFonte: url, ehRedeSocial: false, erro: error.message || 'Falha ao extrair o conteúdo da URL.' }
+  }
+}
+
+/**
+ * ⚡ Action para Gerar 5 Sugestões de Posts a partir de uma URL (artigo ou rede social)
+ */
+export async function gerarOpcoesApartirDeUrlAction({
+  url,
+  categoria = 'tecnologia',
+  apiKeyInformada,
+  apifyTokenInformado,
+  modeloId = 'gemini-2.0-flash',
+}: {
+  url: string
+  categoria?: Categoria
+  apiKeyInformada?: string
+  apifyTokenInformado?: string
+  modeloId?: string
+}): Promise<{ ok: boolean; opcoes?: OpcaoNoticiaQuente[]; tituloFonte?: string; urlFonte?: string; erro?: string }> {
+  try {
+    await requireAdmin()
+    const apiKey = obterApiKey(apiKeyInformada)
+
+    const extracao = await extrairConteudoDeUrlViaApify({ url, apifyToken: apifyTokenInformado })
+    if (!extracao.ok || !extracao.textoExtraido) {
+      return { ok: false, erro: extracao.erro || 'Não foi possível extrair o conteúdo do link fornecido.' }
+    }
+
+    const eFe = categoria === 'fe'
+    const estiloEditorial = eFe
+      ? 'Fé Cristã, Teologia Prática, Mordomia do Tempo/Recursos, Liderança Cristã e Vida de Oração'
+      : 'Inteligência Artificial, Automação No-Code, Liderança Técnica, Cibersegurança e Produtividade com IA'
+
+    const promptAdaptacao = `
+Você é um estrategista de conteúdo sênior e autor principal do blog Márcio Rolim.
+Sua missão é analisar o texto extraído da URL a seguir (artigo de notícias ou post de rede social) e gerar 5 PROPOSTAS DE ARTIGOS COMPLETAMENTE INÉDITOS, AUTÊNTICOS E PROFUNDOS em português do Brasil.
+
+URL de Origem: ${extracao.urlFonte}
+Título de Origem: ${extracao.tituloFonte}
+Conteúdo Raspado:
+"""
+${extracao.textoExtraido.substring(0, 8000)}
+"""
+
+--- REGRAS DE GERAÇÃO ---
+1. Crie 5 opções de títulos e resumos inéditos baseados nas ideias centrais deste conteúdo.
+2. Adapte 100% o tom ao perfil editorial do blog na categoria '${categoria}' (${estiloEditorial}).
+3. NÃO faça cópia direta ou plágio. Reinterprete com profundidade, trazendo reflexões práticas, insights de liderança ou aplicação cristã/tecnológica.
+4. Responda ESTRITAMENTE um JSON válido no formato:
+{
+  "opcoes": [
+    {
+      "id": 1,
+      "titulo": "Título chamativo e inédito para o post",
+      "resumo": "Resumo envolvente do artigo em 2 frases",
+      "porQueEQuente": "Por que esta perspectiva é relevante e inovadora para os leitores"
+    },
+    { "id": 2, "titulo": "...", "resumo": "...", "porQueEQuente": "..." },
+    { "id": 3, "titulo": "...", "resumo": "...", "porQueEQuente": "..." },
+    { "id": 4, "titulo": "...", "resumo": "...", "porQueEQuente": "..." },
+    { "id": 5, "titulo": "...", "resumo": "...", "porQueEQuente": "..." }
+  ]
+}`
+
+    const data = await chamarGeminiComRetryEFallback({
+      apiKey,
+      modeloId,
+      contents: [{ parts: [{ text: promptAdaptacao }] }],
+      generationConfig: { responseMimeType: 'application/json', temperature: 0.7 },
+    })
+
+    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text
+    if (!rawText) throw new Error('Retorno vazio da API Gemini ao processar a URL.')
+
+    const parsed = JSON.parse(rawText)
+    const opcoesList: OpcaoNoticiaQuente[] = (parsed.opcoes || []).map((op: any, index: number) => ({
+      id: index + 1,
+      titulo: op.titulo,
+      resumo: op.resumo,
+      porQueEQuente: op.porQueEQuente,
+      categoria,
+    }))
+
+    return {
+      ok: true,
+      opcoes: opcoesList,
+      tituloFonte: extracao.tituloFonte,
+      urlFonte: extracao.urlFonte,
+    }
+  } catch (error: any) {
+    console.error('[Action Gerar Opções por URL] Erro:', error)
+    return { ok: false, erro: error.message || 'Falha ao processar e gerar post a partir da URL.' }
+  }
+}

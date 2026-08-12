@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import {
+  gerarOpcoesApartirDeUrlAction,
   gerarPostCompletoComIaAction,
   obter5OpcoesNoticiasQuentesAction,
   obterSugestoesDeTitulosAction,
@@ -48,6 +49,11 @@ export function ModalGeradorIa({
   const [tema, setTema] = useState('')
   const [categoria, setCategoria] = useState<Categoria>(categoriaAtual)
 
+  // Modo de geração: por Tema/Tendências ou por URL (Apify)
+  const [modoGeracao, setModoGeracao] = useState<'tema' | 'url'>('tema')
+  const [urlFonte, setUrlFonte] = useState('')
+  const [apifyToken, setApifyToken] = useState('')
+
   const [passo, setPasso] = useState<
     'formulario' | 'opcoes' | 'gerando_post' | 'concluido'
   >('formulario')
@@ -70,10 +76,12 @@ export function ModalGeradorIa({
       const salvaKey = localStorage.getItem('gemini_admin_api_key')
       const salvaMod = localStorage.getItem('gemini_admin_model_id')
       const salvaImgMod = localStorage.getItem('gemini_admin_image_model_id')
+      const salvaApify = localStorage.getItem('apify_admin_token')
 
       if (salvaKey) setApiKey(salvaKey)
       if (salvaMod) setModeloId(salvaMod)
       if (salvaImgMod) setModeloImagemId(salvaImgMod)
+      if (salvaApify) setApifyToken(salvaApify)
     }
   }, [aberto])
 
@@ -114,6 +122,43 @@ export function ModalGeradorIa({
     setOpcoes([])
     setOpcoesSelecionadas([])
 
+    if (modoGeracao === 'url') {
+      if (!urlFonte.trim()) {
+        setErro('Por favor, informe uma URL válida de artigo ou post de rede social.')
+        setCarregando(false)
+        return
+      }
+
+      setStatusMensagem(`🕸️ Fazendo scraping do link com Apify & gerando 5 propostas de artigos com ${modeloId}...`)
+
+      const resp = await gerarOpcoesApartirDeUrlAction({
+        url: urlFonte.trim(),
+        categoria,
+        apiKeyInformada: apiKey,
+        apifyTokenInformado: apifyToken,
+        modeloId,
+      })
+
+      setCarregando(false)
+
+      if (!resp.ok || !resp.opcoes || resp.opcoes.length === 0) {
+        setErro(resp.erro || 'Não foi possível extrair o conteúdo da URL informada.')
+        return
+      }
+
+      const listaMapeada: ItemOpcaoIa[] = resp.opcoes.map((o) => ({
+        id: `url-opt-${o.id}-${Date.now()}`,
+        titulo: o.titulo,
+        resumo: o.resumo,
+        detalhe: `Fonte: ${resp.tituloFonte || resp.urlFonte || urlFonte}`,
+      }))
+
+      setOpcoes(listaMapeada)
+      setOpcoesSelecionadas([listaMapeada[0].id])
+      setPasso('opcoes')
+      return
+    }
+
     if (tema.trim()) {
       // Se informou tema: gera sugestões otimizadas focadas no assunto
       setStatusMensagem(`Consultando tendências no Google e gerando 5 sugestões com o modelo ${modeloId}...`)
@@ -143,7 +188,7 @@ export function ModalGeradorIa({
       setPasso('opcoes')
     } else {
       // Se em branco: busca as 5 principais notícias/tendências quentes no Apify/Google
-      const apifyToken =
+      const salvaApify =
         typeof window !== 'undefined' ? localStorage.getItem('apify_admin_token') || undefined : undefined
       setStatusMensagem(
         `⚡ Pesquisando as 5 principais tendências em ${
@@ -155,7 +200,7 @@ export function ModalGeradorIa({
         categoria,
         assuntoOpcional: '',
         apiKeyInformada: apiKey,
-        apifyTokenInformado: apifyToken,
+        apifyTokenInformado: apifyToken || salvaApify,
         modeloId,
       })
 
@@ -302,10 +347,42 @@ export function ModalGeradorIa({
         {/* PASSO 1: FORMULÁRIO INICIAL */}
         {passo === 'formulario' && (
           <form onSubmit={handleBuscar5Sugestoes} className="mt-5 flex flex-col gap-5">
+            {/* SELETOR DE MODO */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                ⚡ Modo de Criação
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setModoGeracao('tema')}
+                  className={`cursor-pointer rounded-2xl border p-3 text-center text-xs font-bold transition-all ${
+                    modoGeracao === 'tema'
+                      ? 'border-amber-500 bg-amber-500/15 text-amber-900 dark:bg-amber-500/20 dark:text-amber-300 ring-2 ring-amber-500/30'
+                      : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
+                  }`}
+                >
+                  💡 Por Tema ou Tendências
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setModoGeracao('url')}
+                  className={`cursor-pointer rounded-2xl border p-3 text-center text-xs font-bold transition-all ${
+                    modoGeracao === 'url'
+                      ? 'border-amber-500 bg-amber-500/15 text-amber-900 dark:bg-amber-500/20 dark:text-amber-300 ring-2 ring-amber-500/30'
+                      : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
+                  }`}
+                >
+                  🔗 A partir de URL (Apify)
+                </button>
+              </div>
+            </div>
+
             {/* SELETOR DE CATEGORIA */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                📂 1. Área / Categoria dos Posts
+                📂 Categoria do Post
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -334,26 +411,44 @@ export function ModalGeradorIa({
               </div>
             </div>
 
-            {/* CAMPO DE TEMA OU ASSUNTO */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                🎯 2. Tema ou Assunto (Opcional - Deixe em branco para tendências e notícias)
-              </label>
-              <input
-                type="text"
-                value={tema}
-                onChange={(e) => setTema(e.target.value)}
-                placeholder={
-                  categoria === 'fe'
-                    ? 'Ex: Oração na rotina agitada, Provérbios... ou deixe em branco para tendências'
-                    : 'Ex: DeepSeek R1, Agentic AI, No-Code... ou deixe em branco para notícias quentes'
-                }
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-all focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-              />
-              <p className="mt-1 text-[0.7rem] text-slate-500 dark:text-slate-400">
-                Se digitado, a IA focará no seu tema. Se em branco, pesquisará notícias em alta no Apify/Google.
-              </p>
-            </div>
+            {/* CAMPO DEPENDENTE DO MODO */}
+            {modoGeracao === 'url' ? (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  🔗 Cole o Link da Notícia ou Rede Social (Apify Scraping)
+                </label>
+                <input
+                  type="url"
+                  value={urlFonte}
+                  onChange={(e) => setUrlFonte(e.target.value)}
+                  placeholder="https://techcrunch.com/... ou https://instagram.com/p/..."
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-all focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                />
+                <p className="mt-1 text-[0.7rem] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Raspagem automática via <strong>Apify</strong>. Se for link de rede social com URL externa na legenda, o artigo completo de origem será extraído!
+                </p>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  🎯 Tema ou Assunto (Opcional - Deixe em branco para notícias quentes)
+                </label>
+                <input
+                  type="text"
+                  value={tema}
+                  onChange={(e) => setTema(e.target.value)}
+                  placeholder={
+                    categoria === 'fe'
+                      ? 'Ex: Oração na rotina agitada, Provérbios... ou deixe em branco para tendências'
+                      : 'Ex: DeepSeek R1, Agentic AI, No-Code... ou deixe em branco para notícias quentes'
+                  }
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-all focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+                />
+                <p className="mt-1 text-[0.7rem] text-slate-500 dark:text-slate-400">
+                  Se digitado, a IA focará no seu tema. Se em branco, pesquisará notícias em alta no Apify/Google.
+                </p>
+              </div>
+            )}
 
             {/* BOTÃO ÚNICO DE AÇÃO */}
             <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
@@ -373,10 +468,12 @@ export function ModalGeradorIa({
                 {carregando ? (
                   <>
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Pesquisando tendências...
+                    {modoGeracao === 'url' ? 'Extraindo URL via Apify...' : 'Pesquisando tendências...'}
                   </>
                 ) : (
-                  <>✨ Gerar 5 Sugestões de Posts</>
+                  <>
+                    {modoGeracao === 'url' ? '🕸️ Extrair URL & Gerar 5 Sugestões' : '✨ Gerar 5 Sugestões de Posts'}
+                  </>
                 )}
               </button>
             </div>
