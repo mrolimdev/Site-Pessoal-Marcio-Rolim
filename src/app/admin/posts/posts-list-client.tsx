@@ -288,23 +288,23 @@ export function PostsListClient({ postsIniciais }: Props) {
                   </div>
                 </div>
 
-                {/* DIREITA: BARRA DE AÇÕES */}
-                <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-3 dark:border-slate-800 sm:border-t-0 sm:pt-0 shrink-0">
+                {/* DIREITA: BARRA DISCRETA DE ÍCONES DE AÇÃO */}
+                <div className="flex items-center gap-1 rounded-2xl border border-slate-200/80 bg-slate-50 p-1.5 dark:border-slate-800 dark:bg-slate-950 shrink-0 self-start sm:self-center">
                   <Link
                     href={`/blog/${p.slug}`}
                     target="_blank"
-                    className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm transition-all hover:border-amber-500 hover:text-amber-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:text-amber-400"
-                    title="Ver post no Blog público"
+                    className="cursor-pointer flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-xs transition-all hover:border-amber-500 hover:text-amber-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-amber-400"
+                    title="Ver no Blog público"
                   >
-                    🔗 Ver no Blog
+                    🔗
                   </Link>
 
                   <Link
                     href={`/admin/posts/${p.id}`}
-                    className="cursor-pointer rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-bold text-amber-700 transition-all hover:bg-amber-500/20 dark:text-amber-300"
-                    title="Editar Post"
+                    className="cursor-pointer flex h-8 w-8 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 text-xs font-bold text-amber-700 transition-all hover:bg-amber-500/20 dark:text-amber-300"
+                    title="Editar artigo"
                   >
-                    ✏️ Editar
+                    ✏️
                   </Link>
 
                   <AcoesPost id={p.id} titulo={p.title} status={p.status} />
