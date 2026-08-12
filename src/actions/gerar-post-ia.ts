@@ -1115,35 +1115,41 @@ async function gerarImagemDeCapaRobusta({
     }
   }
 
-  // 2. Fallback: Pollinations AI (com seed dinâmico para gerar uma imagem nova a cada clique)
+  // 2. Fallback por IA Gerativa: Pollinations AI (geração em tempo real com Flux/Diffusion)
   try {
     const seed = Math.floor(Math.random() * 1_000_000_000)
     const promptCodificado = encodeURIComponent(`${promptVisual} professional editorial photography 16:9 warm lighting no text`)
-    const urlIaImg = `https://image.pollinations.ai/prompt/${promptCodificado}?width=1200&height=675&seed=${seed}&nologo=true`
+    const urlIaImg = `https://image.pollinations.ai/prompt/${promptCodificado}?width=1200&height=675&seed=${seed}&model=flux&nologo=true`
 
-    const resIaImg = await fetch(urlIaImg, { signal: AbortSignal.timeout(8000) })
-    if (resIaImg.ok) {
-      const contentType = resIaImg.headers.get('content-type') || ''
-      if (contentType.includes('image/')) {
-        const arrayBuffer = await resIaImg.arrayBuffer()
-        const buffer = Buffer.from(arrayBuffer)
-        const filename = `capa-ia-${slug}-${Date.now()}.jpg`
-        const { error: uploadErr } = await supabase.storage
-          .from('capas')
-          .upload(filename, buffer, { contentType: 'image/jpeg', upsert: true })
+    try {
+      const resIaImg = await fetch(urlIaImg, { signal: AbortSignal.timeout(25000) })
+      if (resIaImg.ok) {
+        const contentType = resIaImg.headers.get('content-type') || ''
+        if (contentType.includes('image/')) {
+          const arrayBuffer = await resIaImg.arrayBuffer()
+          const buffer = Buffer.from(arrayBuffer)
+          const filename = `capa-ia-${slug}-${Date.now()}.jpg`
+          const { error: uploadErr } = await supabase.storage
+            .from('capas')
+            .upload(filename, buffer, { contentType: 'image/jpeg', upsert: true })
 
-        if (!uploadErr) {
-          const { data: publicData } = supabase.storage.from('capas').getPublicUrl(filename)
-          if (publicData?.publicUrl) return publicData.publicUrl
+          if (!uploadErr) {
+            const { data: publicData } = supabase.storage.from('capas').getPublicUrl(filename)
+            if (publicData?.publicUrl) return publicData.publicUrl
+          }
         }
-        return urlIaImg
       }
+    } catch (eFetch) {
+      console.warn('[Pollinations AI Upload Server-side] Timeout ou aviso:', eFetch)
     }
+
+    // Retorna a URL direta da IA para renderizar no navegador se o upload no servidor expirar
+    return urlIaImg
   } catch (e) {
     console.warn('[Pollinations AI] Fallback indisponível:', e)
   }
 
-  // 3. Fallback final: Fotos temáticas dinâmicas do Unsplash (seleciona uma imagem diferente a cada chamada)
+  // 3. Fallback final caso a rede do servidor falhe totalmente
   const fotosCategoria = BANCO_FOTOS_FALLBACK[categoria] || BANCO_FOTOS_FALLBACK.tecnologia
   const indiceSorteado = Math.floor(Math.random() * fotosCategoria.length)
   return fotosCategoria[indiceSorteado]
