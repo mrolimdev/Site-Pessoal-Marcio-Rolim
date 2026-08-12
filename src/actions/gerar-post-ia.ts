@@ -699,3 +699,155 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
     return { ok: false, erro: error.message || 'Falha ao gerar o post automático com 1 clique.' }
   }
 }
+
+export type OpcaoNoticiaQuente = {
+  id: number
+  titulo: string
+  resumo: string
+  porQueEQuente: string
+  categoria: Categoria
+}
+
+/**
+ * ⚡ Obter 5 Opções de Notícias Quentes e Inéditas de Tecnologia
+ */
+export async function obter5OpcoesNoticiasQuentesAction({
+  apiKeyInformada,
+  apifyTokenInformado,
+  modeloId = 'gemini-2.0-flash',
+}: {
+  apiKeyInformada?: string
+  apifyTokenInformado?: string
+  modeloId?: string
+}): Promise<{ ok: boolean; opcoes?: OpcaoNoticiaQuente[]; erro?: string }> {
+  try {
+    await requireAdmin()
+    const apiKey = obterApiKey(apiKeyInformada)
+    const supabase = await createClient()
+
+    // 1. Busca posts existentes no banco para anti-duplicação
+    const { data: postsExistentes } = await supabase
+      .from('posts')
+      .select('title, slug')
+      .order('published_at', { ascending: false })
+
+    const titulosExistentes = (postsExistentes || []).map((p: any) => p.title)
+
+    // 2. Busca notícias com Apify
+    let contextoNoticias = ''
+    const apifyToken = (apifyTokenInformado || process.env.APIFY_API_TOKEN || '').trim()
+
+    if (apifyToken) {
+      try {
+        const resApify = await fetch(
+          `https://api.apify.com/v2/acts/apify~google-search-scraper/run-sync-get-dataset-items?token=${apifyToken}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              queries: 'Inteligencia Artificial novidades tendencias tecnologia',
+              maxPagesPerQuery: 1,
+              resultsPerPage: 10,
+              type: 'NEWS',
+            }),
+          }
+        )
+
+        if (resApify.ok) {
+          const itens = await resApify.json()
+          if (Array.isArray(itens) && itens.length > 0) {
+            const manchetes = (itens[0]?.organicResults || itens || [])
+              .slice(0, 10)
+              .map((it: any) => `- ${it.title || it.headline}: ${it.description || it.snippet || ''}`)
+              .join('\n')
+            if (manchetes) {
+              contextoNoticias = `NOTÍCIAS EXTRAÍDAS DA WEB VIA APIFY:\n${manchetes}`
+            }
+          }
+        }
+      } catch (errApify) {
+        console.warn('Aviso: Falha no Apify ao buscar notícias, usando fallback Gemini:', errApify)
+      }
+    }
+
+    // 3. Prompt do Gemini para gerar 5 opções de notícias quentes e inéditas
+    const prompt5Opcoes = `Você é um curador de conteúdo e jornalista de tecnologia para o blog de Márcio Rolim.
+Sua missão: Identifique exatamente 5 NOTÍCIAS OU TENDÊNCIAS RECENTES, inovadoras e quentes sobre Tecnologia, Inteligência Artificial e Automação.
+
+REGRA CRÍTICA DE ANTI-DUPLICAÇÃO:
+Nenhuma das 5 opções pode ser igual ou semelhante a qualquer um dos seguintes posts que JÁ EXISTEM no banco de dados:
+${titulosExistentes.map((t: string) => `- "${t}"`).join('\n')}
+
+${contextoNoticias ? contextoNoticias : 'Busque 5 tendências reais e atuais do setor de tecnologia (ex: DeepSeek V3, ChatGPT 5/o1, agentes autônomos, frameworks de IA, automações no-code, novidades Apple/Google/Microsoft).'}
+
+Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
+{
+  "opcoes": [
+    {
+      "id": 1,
+      "titulo": "Título chamativo e inédito para o post de tecnologia",
+      "resumo": "Resumo conciso em 1 a 2 frases da notícia",
+      "porQueEQuente": "Por que este tema é uma grande tendência agora"
+    },
+    {
+      "id": 2,
+      "titulo": "Segundo título de notícia recente",
+      "resumo": "Resumo...",
+      "porQueEQuente": "Por que e quente..."
+    },
+    {
+      "id": 3,
+      "titulo": "Terceiro título...",
+      "resumo": "Resumo...",
+      "porQueEQuente": "Por que..."
+    },
+    {
+      "id": 4,
+      "titulo": "Quarto título...",
+      "resumo": "Resumo...",
+      "porQueEQuente": "Por que..."
+    },
+    {
+      "id": 5,
+      "titulo": "Quinto título...",
+      "resumo": "Resumo...",
+      "porQueEQuente": "Por que..."
+    }
+  ]
+}`
+
+    const resGemini = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modeloId}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt5Opcoes }] }],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0.7 },
+        }),
+      }
+    )
+
+    if (!resGemini.ok) {
+      throw new Error(`Erro na API Gemini (${resGemini.status}) ao obter 5 opções.`)
+    }
+
+    const data = await resGemini.json()
+    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text
+    if (!rawText) throw new Error('Retorno vazio da API Gemini.')
+
+    const parsed = JSON.parse(rawText)
+    const opcoesList: OpcaoNoticiaQuente[] = (parsed.opcoes || []).map((op: any, index: number) => ({
+      id: index + 1,
+      titulo: op.titulo,
+      resumo: op.resumo,
+      porQueEQuente: op.porQueEQuente,
+      categoria: 'tecnologia',
+    }))
+
+    return { ok: true, opcoes: opcoesList }
+  } catch (error: any) {
+    console.error('[Action Obter 5 Opções Notícias Quentes] Erro:', error)
+    return { ok: false, erro: error.message || 'Falha ao buscar 5 opções de notícias quentes.' }
+  }
+}

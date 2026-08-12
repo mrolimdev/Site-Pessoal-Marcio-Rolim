@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
 import {
-  gerarPostAutomaticoUmCliqueAction,
   gerarPostCompletoComIaAction,
+  obter5OpcoesNoticiasQuentesAction,
   obterSugestoesDeTitulosAction,
+  type OpcaoNoticiaQuente,
   type ResultadoPostIa,
   type SugestaoTitulo,
 } from '@/actions/gerar-post-ia'
@@ -31,10 +32,14 @@ export function ModalGeradorIa({
   const [tema, setTema] = useState('')
   const [categoria, setCategoria] = useState<Categoria>(categoriaAtual)
 
-  const [passo, setPasso] = useState<'formulario' | 'titulos' | 'gerando_post'>('formulario')
+  const [passo, setPasso] = useState<'formulario' | 'opcoes_5' | 'titulos' | 'gerando_post'>('formulario')
   const [carregando, setCarregando] = useState(false)
   const [statusMensagem, setStatusMensagem] = useState('')
   const [erro, setErro] = useState<string | null>(null)
+
+  // 5 Opções Quentes em 1 Clique
+  const [opcoes5, setOpcoes5] = useState<OpcaoNoticiaQuente[]>([])
+  const [opcoesSelecionadas, setOpcoesSelecionadas] = useState<number[]>([])
 
   const [sugestoesTitulos, setSugestoesTitulos] = useState<SugestaoTitulo[]>([])
   const [tituloSelecionado, setTituloSelecionado] = useState<string | null>(null)
@@ -52,17 +57,14 @@ export function ModalGeradorIa({
 
   if (!aberto) return null
 
-  // Handler de Geração Automática em 1 Clique (Notícia Quente Inédita)
-  const handleGerarPostUmClique = async () => {
+  // Passo A do 1-Clique: Buscar 5 Notícias Quentes no Apify/Google
+  const handleBuscar5OpcoesUmClique = async () => {
     const apifyToken = typeof window !== 'undefined' ? localStorage.getItem('apify_admin_token') || undefined : undefined
     setErro(null)
     setCarregando(true)
-    setPasso('gerando_post')
-    setStatusMensagem(
-      `⚡ Buscando notícia recente no Apify/Google, checando duplicações e redigindo artigo de 1500 palavras...`
-    )
+    setStatusMensagem('⚡ Pesquisando as 5 principais notícias e tendências no Apify/Google...')
 
-    const resp = await gerarPostAutomaticoUmCliqueAction({
+    const resp = await obter5OpcoesNoticiasQuentesAction({
       apiKeyInformada: apiKey,
       apifyTokenInformado: apifyToken,
       modeloId,
@@ -70,17 +72,80 @@ export function ModalGeradorIa({
 
     setCarregando(false)
 
-    if (!resp.ok || !resp.post) {
-      setErro(resp.erro || 'Falha ao criar o post em 1 clique.')
-      setPasso('formulario')
+    if (!resp.ok || !resp.opcoes || resp.opcoes.length === 0) {
+      setErro(resp.erro || 'Não foi possível buscar as 5 opções de notícias quentes.')
       return
     }
 
-    onAplicarAoFormulario(resp.post)
-    onFechar()
+    setOpcoes5(resp.opcoes)
+    // Marca a primeira opção por padrão
+    setOpcoesSelecionadas([resp.opcoes[0].id])
+    setPasso('opcoes_5')
   }
 
-  // Handler do Passo 1: Gerar Sugestões de Título
+  // Toggle de seleção de uma opção
+  const toggleOpcao = (id: number) => {
+    setOpcoesSelecionadas((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    )
+  }
+
+  // Toggle selecionar todas
+  const toggleSelecionarTodas = () => {
+    if (opcoesSelecionadas.length === opcoes5.length) {
+      setOpcoesSelecionadas([])
+    } else {
+      setOpcoesSelecionadas(opcoes5.map((o) => o.id))
+    }
+  }
+
+  // Passo B do 1-Clique: Gerar os posts selecionados
+  const handleGerarPostsSelecionados = async () => {
+    if (opcoesSelecionadas.length === 0) {
+      setErro('Selecione pelo menos 1 opção de post para gerar.')
+      return
+    }
+
+    const selecionadas = opcoes5.filter((o) => opcoesSelecionadas.includes(o.id))
+    setErro(null)
+    setCarregando(true)
+    setPasso('gerando_post')
+
+    let primeiroPostResult: ResultadoPostIa | null = null
+
+    for (let i = 0; i < selecionadas.length; i++) {
+      const item = selecionadas[i]
+      setStatusMensagem(
+        `[${i + 1}/${selecionadas.length}] Redigindo artigo extenso (~1500 palavras) e gerando capa com Imagen 3: "${item.titulo}"...`
+      )
+
+      const resp = await gerarPostCompletoComIaAction({
+        titulo: item.titulo,
+        tema: item.resumo,
+        categoria: 'tecnologia',
+        apiKeyInformada: apiKey,
+        modeloId,
+      })
+
+      if (resp.ok && resp.post) {
+        if (!primeiroPostResult) {
+          primeiroPostResult = resp.post
+        }
+      }
+    }
+
+    setCarregando(false)
+
+    if (primeiroPostResult) {
+      onAplicarAoFormulario(primeiroPostResult)
+      onFechar()
+    } else {
+      setErro('Falha ao gerar os posts selecionados.')
+      setPasso('opcoes_5')
+    }
+  }
+
+  // Handler do Passo 1 manual: Gerar Sugestões de Título
   const handleGerarTitulos = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!tema.trim()) {
@@ -110,14 +175,14 @@ export function ModalGeradorIa({
     setPasso('titulos')
   }
 
-  // Handler do Passo 2: Gerar Post Completo
+  // Handler do Passo 2 manual: Gerar Post Completo
   const handleGerarPostCompleto = async (tituloEscolha: string) => {
     setTituloSelecionado(tituloEscolha)
     setErro(null)
     setCarregando(true)
     setPasso('gerando_post')
     setStatusMensagem(
-      `Redigindo artigo extenso (~1500 palavras), Tiptap JSON e SEO com o modelo ${modeloId}...`
+      `Redigindo artigo extenso (~1500 palavras), imagem Imagen 3 e SEO com o modelo ${modeloId}...`
     )
 
     const resp = await gerarPostCompletoComIaAction({
@@ -136,7 +201,6 @@ export function ModalGeradorIa({
       return
     }
 
-    // Sucesso! Aplica ao formulário pai e fecha
     onAplicarAoFormulario(resp.post)
     onFechar()
   }
@@ -197,17 +261,107 @@ export function ModalGeradorIa({
                   <span>⚡ Criação Automática com 1 Clique</span>
                 </h4>
                 <p className="text-[0.75rem] text-slate-600 dark:text-slate-400">
-                  Busca a notícia de tech mais recente no Apify/Google, verifica duplicações no banco e gera o post completo.
+                  Busca 5 notícias quentes no Apify/Google e permite escolher 1 ou mais posts para criar.
                 </p>
               </div>
 
               <button
                 type="button"
-                onClick={handleGerarPostUmClique}
+                onClick={handleBuscar5OpcoesUmClique}
                 disabled={carregando}
                 className="cursor-pointer whitespace-nowrap rounded-xl bg-gradient-to-r from-sky-600 via-amber-600 to-orange-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-md transition-all hover:scale-[1.02] disabled:opacity-50"
               >
-                ⚡ Criar Post em 1 Clique
+                {carregando ? '🔍 Buscando 5 opções...' : '⚡ Buscar 5 Opções Quentes'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* PASSO 5 OPÇÕES EM 1 CLIQUE (MULTI-SELEÇÃO) */}
+        {passo === 'opcoes_5' && (
+          <div className="mt-5 flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Selecione 1 ou mais notícias para criar ({opcoesSelecionadas.length} selecionada{opcoesSelecionadas.length !== 1 ? 's' : ''}):
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Notícias e tendências em alta filtradas sem duplicações do banco.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={toggleSelecionarTodas}
+                className="text-xs font-bold text-sky-600 hover:underline dark:text-sky-400"
+              >
+                {opcoesSelecionadas.length === opcoes5.length ? 'Desmarcar todas' : 'Selecionar todas'}
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-3 max-h-[340px] overflow-y-auto pr-1">
+              {opcoes5.map((item) => {
+                const selecionada = opcoesSelecionadas.includes(item.id)
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => toggleOpcao(item.id)}
+                    className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-all ${
+                      selecionada
+                        ? 'border-sky-500 bg-sky-500/10 dark:border-sky-400 dark:bg-sky-500/15'
+                        : 'border-slate-200 bg-slate-50/80 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950/60'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selecionada}
+                      onChange={() => toggleOpcao(item.id)}
+                      className="mt-1 h-4 w-4 rounded border-slate-300 accent-sky-600 dark:border-slate-700"
+                    />
+
+                    <div className="flex flex-1 flex-col gap-1">
+                      <div className="flex items-center justify-between">
+                        <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[0.65rem] font-bold text-sky-700 dark:text-sky-300">
+                          🔥 Notícia em Alta #{item.id}
+                        </span>
+                        <span className="text-[0.7rem] font-semibold text-slate-400">
+                          {selecionada ? '✓ Selecionado' : 'Clique para selecionar'}
+                        </span>
+                      </div>
+
+                      <h5 className="text-sm font-extrabold text-slate-900 dark:text-white leading-snug">
+                        {item.titulo}
+                      </h5>
+
+                      <p className="text-xs text-slate-600 dark:text-slate-300">
+                        {item.resumo}
+                      </p>
+
+                      <p className="text-[0.7rem] font-medium text-amber-600 dark:text-amber-400 mt-0.5">
+                        💡 Tendência: {item.porQueEQuente}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="flex items-center justify-between border-t border-slate-100 pt-4 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setPasso('formulario')}
+                className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+              >
+                ← Voltar
+              </button>
+
+              <button
+                type="button"
+                onClick={handleGerarPostsSelecionados}
+                disabled={carregando || opcoesSelecionadas.length === 0}
+                className="cursor-pointer inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-sky-600 via-amber-600 to-orange-600 px-6 py-3 text-xs font-extrabold text-white shadow-lg transition-all hover:scale-105 disabled:opacity-50"
+              >
+                🚀 Criar {opcoesSelecionadas.length} Post{opcoesSelecionadas.length !== 1 ? 's' : ''} Selecionado{opcoesSelecionadas.length !== 1 ? 's' : ''}
               </button>
             </div>
           </div>
@@ -344,7 +498,7 @@ export function ModalGeradorIa({
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-amber-500 border-t-transparent" />
             <div className="flex flex-col gap-1">
               <h4 className="text-base font-extrabold text-slate-900 dark:text-white">
-                Escrevendo o Post Completo (~1500 palavras)...
+                Redigindo o Post e Gerando Capa por IA...
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-400">{statusMensagem}</p>
             </div>
