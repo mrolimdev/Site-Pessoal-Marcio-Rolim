@@ -514,11 +514,15 @@ export function PostForm({ post }: Props) {
                   }}
                   className={CLASSE_CAMPO}
                 >
-                  {VALORES_CATEGORIA.map((valor) => (
-                    <option key={valor} value={valor}>
-                      {ROTULO_CATEGORIA[valor]}
-                    </option>
-                  ))}
+                  <optgroup label="💻 Tecnologia & IA (Categoria Pai)">
+                    <option value="tecnologia">Engenharia & Web</option>
+                    <option value="ia">Inteligência Artificial</option>
+                    <option value="automacao">Automação & n8n</option>
+                    <option value="negocios">Estratégia & Negócios</option>
+                  </optgroup>
+                  <optgroup label="✝️ Vida Cristã & Fé (Categoria Pai)">
+                    <option value="fe">Fé, Devocional & Família</option>
+                  </optgroup>
                 </select>
               </div>
 

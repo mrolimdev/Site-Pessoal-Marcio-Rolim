@@ -70,23 +70,14 @@ export async function obterEstatisticasCategorias(): Promise<RespostaEstatistica
   await requireAdmin()
   const supabase = await createClient()
 
-  const { data: posts, error } = await supabase
-    .from('posts')
-    .select('category, status')
-
-  if (error) {
-    console.error('Erro ao buscar posts para estatísticas de categorias:', error)
-  }
+  // 1. Busca estatísticas dos posts no banco
+  const { data: posts } = await supabase.from('posts').select('category, status')
 
   const estatisticas: Record<string, { total: number; publicados: number; rascunhos: number }> = {}
 
-  VALORES_CATEGORIA.forEach((cat) => {
-    estatisticas[cat] = { total: 0, publicados: 0, rascunhos: 0 }
-  })
-
   if (posts) {
     posts.forEach((p) => {
-      const cat = p.category as Categoria
+      const cat = p.category as string
       if (!estatisticas[cat]) {
         estatisticas[cat] = { total: 0, publicados: 0, rascunhos: 0 }
       }
@@ -96,43 +87,177 @@ export async function obterEstatisticasCategorias(): Promise<RespostaEstatistica
     })
   }
 
-  const subcategoriasList: EstatisticaCategoria[] = VALORES_CATEGORIA.map((cat) => ({
-    id: cat,
-    nome: ROTULO_CATEGORIA[cat] || cat,
-    descricao: METADADOS_CATEGORIAS[cat]?.descricao || 'Categoria de artigos.',
-    cor: METADADOS_CATEGORIAS[cat]?.cor || 'from-slate-500/20 to-slate-600/20 border-slate-500/30 text-slate-600',
-    totalPosts: estatisticas[cat]?.total || 0,
-    publicados: estatisticas[cat]?.publicados || 0,
-    rascunhos: estatisticas[cat]?.rascunhos || 0,
-  }))
+  // 2. Tenta buscar categorias cadastradas na tabela public.categories
+  const { data: catsDoBanco } = await supabase
+    .from('categories')
+    .select('id, name, description, parent_id, color')
 
-  const subsTech = subcategoriasList.filter((s) => s.id !== 'fe')
-  const subsFe = subcategoriasList.filter((s) => s.id === 'fe')
+  let subcategoriasList: EstatisticaCategoria[] = []
+  let ramos: EstatisticaRamoCategoria[] = []
 
-  const ramos: EstatisticaRamoCategoria[] = [
-    {
-      titulo: 'Tecnologia & IA',
-      chaveRamo: 'tecnologia_ia',
-      descricao: 'Grande área dedicada a Engenharia de Software, Agentes de IA, Automações e Estratégia Digital.',
-      totalPosts: subsTech.reduce((acc, c) => acc + c.totalPosts, 0),
-      publicados: subsTech.reduce((acc, c) => acc + c.publicados, 0),
-      rascunhos: subsTech.reduce((acc, c) => acc + c.rascunhos, 0),
-      subcategorias: subsTech,
-    },
-    {
-      titulo: 'Vida Cristã & Fé',
-      chaveRamo: 'fe_vida_crista',
-      descricao: 'Grande área dedicada a Estudos Bíblicos, Teologia Prática e Reflexões sobre Fé no Cotidiano.',
-      totalPosts: subsFe.reduce((acc, c) => acc + c.totalPosts, 0),
-      publicados: subsFe.reduce((acc, c) => acc + c.publicados, 0),
-      rascunhos: subsFe.reduce((acc, c) => acc + c.rascunhos, 0),
-      subcategorias: subsFe,
-    },
-  ]
+  if (catsDoBanco && catsDoBanco.length > 0) {
+    // Separa Categoriapai (parent_id IS NULL) e Subcategorias
+    const paisDoBanco = catsDoBanco.filter((c) => !c.parent_id)
+    const subsDoBanco = catsDoBanco.filter((c) => Boolean(c.parent_id))
+
+    subcategoriasList = subsDoBanco.map((sub) => ({
+      id: sub.id as Categoria,
+      nome: sub.name,
+      descricao: sub.description || 'Subcategoria de artigos.',
+      cor: sub.color || 'from-slate-500/20 to-slate-600/20 border-slate-500/30 text-slate-600',
+      totalPosts: estatisticas[sub.id]?.total || 0,
+      publicados: estatisticas[sub.id]?.publicados || 0,
+      rascunhos: estatisticas[sub.id]?.rascunhos || 0,
+    }))
+
+    ramos = paisDoBanco.map((pai) => {
+      const subsDoPai = subcategoriasList.filter((s) => {
+        const itemObj = subsDoBanco.find((b) => b.id === s.id)
+        return itemObj?.parent_id === pai.id
+      })
+
+      return {
+        titulo: pai.name,
+        chaveRamo: pai.id as any,
+        descricao: pai.description || 'Categoria Pai',
+        totalPosts: subsDoPai.reduce((acc, c) => acc + c.totalPosts, 0),
+        publicados: subsDoPai.reduce((acc, c) => acc + c.publicados, 0),
+        rascunhos: subsDoPai.reduce((acc, c) => acc + c.rascunhos, 0),
+        subcategorias: subsDoPai,
+      }
+    })
+  } else {
+    // Fallback estático caso a migration ainda não tenha sido rodada
+    subcategoriasList = VALORES_CATEGORIA.map((cat) => ({
+      id: cat,
+      nome: ROTULO_CATEGORIA[cat] || cat,
+      descricao: METADADOS_CATEGORIAS[cat]?.descricao || 'Categoria de artigos.',
+      cor: METADADOS_CATEGORIAS[cat]?.cor || 'from-slate-500/20 to-slate-600/20 border-slate-500/30 text-slate-600',
+      totalPosts: estatisticas[cat]?.total || 0,
+      publicados: estatisticas[cat]?.publicados || 0,
+      rascunhos: estatisticas[cat]?.rascunhos || 0,
+    }))
+
+    const subsTech = subcategoriasList.filter((s) => s.id !== 'fe')
+    const subsFe = subcategoriasList.filter((s) => s.id === 'fe')
+
+    ramos = [
+      {
+        titulo: 'Tecnologia & IA',
+        chaveRamo: 'tecnologia_ia',
+        descricao: 'Grande área dedicada a Engenharia de Software, Agentes de IA, Automações e Estratégia Digital.',
+        totalPosts: subsTech.reduce((acc, c) => acc + c.totalPosts, 0),
+        publicados: subsTech.reduce((acc, c) => acc + c.publicados, 0),
+        rascunhos: subsTech.reduce((acc, c) => acc + c.rascunhos, 0),
+        subcategorias: subsTech,
+      },
+      {
+        titulo: 'Vida Cristã & Fé',
+        chaveRamo: 'fe_vida_crista',
+        descricao: 'Grande área dedicada a Estudos Bíblicos, Teologia Prática e Reflexões sobre Fé no Cotidiano.',
+        totalPosts: subsFe.reduce((acc, c) => acc + c.totalPosts, 0),
+        publicados: subsFe.reduce((acc, c) => acc + c.publicados, 0),
+        rascunhos: subsFe.reduce((acc, c) => acc + c.rascunhos, 0),
+        subcategorias: subsFe,
+      },
+    ]
+  }
 
   return {
     subcategorias: subcategoriasList,
     ramos,
+  }
+}
+
+/**
+ * Salva (cria ou edita) uma Categoria Pai ou Subcategoria.
+ */
+export async function salvarCategoriaAction({
+  id,
+  nome,
+  descricao,
+  parentId,
+  isParent,
+}: {
+  id: string
+  nome: string
+  descricao: string
+  parentId?: string | null
+  isParent?: boolean
+}): Promise<{ ok: boolean; erro?: string }> {
+  try {
+    await requireAdmin()
+    const supabase = await createClient()
+
+    const slugLimpo = id
+      .toLowerCase()
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9_-]+/g, '-')
+
+    if (!slugLimpo) {
+      return { ok: false, erro: 'Informe um identificador/slug válido para a categoria.' }
+    }
+
+    if (!nome.trim()) {
+      return { ok: false, erro: 'Informe um nome legível para a categoria.' }
+    }
+
+    const payload = {
+      id: slugLimpo,
+      name: nome.trim(),
+      description: descricao.trim(),
+      parent_id: isParent ? null : parentId || null,
+      updated_at: new Date().toISOString(),
+    }
+
+    const { error } = await supabase.from('categories').upsert(payload, { onConflict: 'id' })
+
+    if (error) {
+      console.error('[salvarCategoriaAction] Erro no Supabase:', error)
+      return { ok: false, erro: `Falha ao salvar no banco: ${error.message}` }
+    }
+
+    revalidatePath('/admin/categorias')
+    revalidatePath('/admin/posts')
+    revalidatePath('/blog')
+    return { ok: true }
+  } catch (err: any) {
+    console.error('[salvarCategoriaAction] Exceção:', err)
+    return { ok: false, erro: err.message || 'Falha ao salvar categoria.' }
+  }
+}
+
+/**
+ * Exclui uma subcategoria ou categoria pai.
+ */
+export async function excluirCategoriaAction({
+  id,
+}: {
+  id: string
+}): Promise<{ ok: boolean; erro?: string }> {
+  try {
+    await requireAdmin()
+    const supabase = await createClient()
+
+    // Realoca posts vinculados a esta subcategoria para a categoria 'tecnologia' padrão
+    await supabase.from('posts').update({ category: 'tecnologia' }).eq('category', id)
+
+    const { error } = await supabase.from('categories').delete().eq('id', id)
+
+    if (error) {
+      console.error('[excluirCategoriaAction] Erro no Supabase:', error)
+      return { ok: false, erro: error.message }
+    }
+
+    revalidatePath('/admin/categorias')
+    revalidatePath('/admin/posts')
+    revalidatePath('/blog')
+    return { ok: true }
+  } catch (err: any) {
+    console.error('[excluirCategoriaAction] Exceção:', err)
+    return { ok: false, erro: err.message || 'Falha ao excluir categoria.' }
   }
 }
 
