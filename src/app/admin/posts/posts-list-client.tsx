@@ -33,12 +33,12 @@ const CORES_STATUS: Record<StatusPost, string> = {
   archived: 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border border-slate-500/20',
 }
 
-function Etiqueta({ status }: { status: StatusPost }) {
+function EtiquetaStatus({ status }: { status: StatusPost }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-mono text-[0.65rem] font-bold ${CORES_STATUS[status]}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-xs font-bold ${CORES_STATUS[status]}`}
     >
-      <span>{status === 'published' ? '●' : '○'}</span>
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
       <span>{ROTULO_STATUS[status]}</span>
     </span>
   )
@@ -54,7 +54,7 @@ export function PostsListClient({ postsIniciais }: Props) {
   const [filtroCategoria, setFiltroCategoria] = useState<string>('todas')
   const [ordenacao, setOrdenacao] = useState<'updated' | 'published' | 'title'>('updated')
 
-  // Contadores para os Cards de Estatísticas
+  // Contadores para as Estatísticas
   const totalPosts = postsIniciais.length
   const totalPublicados = postsIniciais.filter((p) => p.status === 'published').length
   const totalRascunhos = postsIniciais.filter((p) => p.status === 'draft').length
@@ -65,13 +65,12 @@ export function PostsListClient({ postsIniciais }: Props) {
   const postsFiltrados = useMemo(() => {
     return postsIniciais
       .filter((p) => {
-        // Filtro por texto (título, slug ou tags)
+        // Filtro por texto (título ou tags)
         if (busca.trim()) {
           const termo = busca.toLowerCase()
           const noTitulo = p.title.toLowerCase().includes(termo)
-          const noSlug = p.slug.toLowerCase().includes(termo)
           const nasTags = p.tags?.some((t) => t.toLowerCase().includes(termo))
-          if (!noTitulo && !noSlug && !nasTags) return false
+          if (!noTitulo && !nasTags) return false
         }
 
         // Filtro por status
@@ -93,14 +92,13 @@ export function PostsListClient({ postsIniciais }: Props) {
         if (ordenacao === 'title') {
           return a.title.localeCompare(b.title)
         }
-        // padrão: updated_at mais recente primeiro
         return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
       })
   }, [postsIniciais, busca, filtroStatus, filtroCategoria, ordenacao])
 
   return (
     <div className="flex flex-col gap-6">
-      {/* CARDS DE ESTATÍSTICAS RÁPIDAS */}
+      {/* CARDS DE RESUMO DE ESTATÍSTICAS */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <span className="text-[0.65rem] font-bold uppercase tracking-wider text-slate-400">
@@ -131,13 +129,13 @@ export function PostsListClient({ postsIniciais }: Props) {
           <span className="text-[0.65rem] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
             Tech vs Fé
           </span>
-          <p className="mt-1 text-base font-black text-slate-800 dark:text-slate-200">
+          <p className="mt-1 text-sm font-black text-slate-800 dark:text-slate-200">
             {totalTech} <span className="text-slate-400">Tech |</span> {totalFe} <span className="text-slate-400">Fé</span>
           </p>
         </div>
       </div>
 
-      {/* BARRA DE FILTROS E PESQUISA */}
+      {/* BARRA DE PESQUISA E FILTROS */}
       <div className="flex flex-col gap-3 rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between">
         {/* Campo de Pesquisa */}
         <div className="relative flex-1">
@@ -148,8 +146,8 @@ export function PostsListClient({ postsIniciais }: Props) {
             type="text"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por título, slug ou tags..."
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 pl-9 pr-4 py-2 text-xs text-slate-900 outline-none transition-all focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+            placeholder="Pesquisar artigo por título ou tags..."
+            className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 pl-9 pr-4 py-2.5 text-xs text-slate-900 outline-none transition-all focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
           />
           {busca && (
             <button
@@ -164,33 +162,30 @@ export function PostsListClient({ postsIniciais }: Props) {
 
         {/* Filtros em Pílulas */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Status */}
           <select
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
+            className="rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-700 outline-none transition-all dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
           >
             <option value="todos">Todos Status</option>
             <option value="published">Publicados ({totalPublicados})</option>
             <option value="draft">Rascunhos ({totalRascunhos})</option>
           </select>
 
-          {/* Categoria */}
           <select
             value={filtroCategoria}
             onChange={(e) => setFiltroCategoria(e.target.value)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
+            className="rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-700 outline-none transition-all dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
           >
             <option value="todas">Todas Categorias</option>
             <option value="tecnologia">Tecnologia & IA ({totalTech})</option>
             <option value="fe">Fé & Vida Cristã ({totalFe})</option>
           </select>
 
-          {/* Ordenação */}
           <select
             value={ordenacao}
             onChange={(e) => setOrdenacao(e.target.value as any)}
-            className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
+            className="rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-700 outline-none transition-all dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
           >
             <option value="updated">Mais Recentes</option>
             <option value="published">Data de Publicação</option>
@@ -199,7 +194,7 @@ export function PostsListClient({ postsIniciais }: Props) {
         </div>
       </div>
 
-      {/* LISTA E TABELA DE POSTS COM MINIATURA DE CAPA */}
+      {/* LISTA ESPAÇOSA DE CARDS DE POSTS (TÍTULO TOTALMENTE VISÍVEL E SEM SLUG) */}
       {postsFiltrados.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-slate-300 p-12 text-center dark:border-slate-800">
           <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
@@ -218,147 +213,105 @@ export function PostsListClient({ postsIniciais }: Props) {
           </button>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-3xl border-collapse text-left">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/80 text-[0.68rem] font-black uppercase tracking-wider text-slate-400 dark:border-slate-800 dark:bg-slate-950/60">
-                  <th scope="col" className="px-4 py-3.5">
-                    Capa & Artigo
-                  </th>
-                  <th scope="col" className="px-4 py-3.5">
-                    Status
-                  </th>
-                  <th scope="col" className="px-4 py-3.5">
-                    Categoria
-                  </th>
-                  <th scope="col" className="px-4 py-3.5">
-                    Datas
-                  </th>
-                  <th scope="col" className="px-4 py-3.5 text-right">
-                    Ações de Gestão
-                  </th>
-                </tr>
-              </thead>
+        <div className="flex flex-col gap-4">
+          {postsFiltrados.map((p) => {
+            return (
+              <div
+                key={p.id}
+                className="group flex flex-col gap-4 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all hover:border-amber-500/40 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between"
+              >
+                {/* ESQUERDA: CAPA + TÍTULO E METADADOS */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5 flex-1 min-w-0">
+                  {/* MINIATURA DA CAPA */}
+                  <div className="relative aspect-video h-28 w-full sm:w-44 shrink-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                    {p.cover_url ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={p.cover_url}
+                        alt={p.cover_alt || p.title}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs font-bold text-slate-400 dark:text-slate-600">
+                        Sem capa
+                      </div>
+                    )}
+                  </div>
 
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                {postsFiltrados.map((p) => {
-                  const eFe = p.category === 'fe'
-                  return (
-                    <tr
-                      key={p.id}
-                      className="group transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-950/40"
+                  {/* TÍTULO E DETALHES DE LEITURA */}
+                  <div className="flex flex-col gap-2 flex-1 min-w-0">
+                    {/* BADGES SUPERIORES */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <EtiquetaStatus status={p.status} />
+
+                      <span className="rounded-full bg-slate-100 px-3 py-0.5 text-xs font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                        {ROTULO_CATEGORIA[p.category] ?? p.category}
+                      </span>
+
+                      <span className="font-mono text-xs font-semibold text-slate-400">
+                        ⏱️ {p.reading_minutes} min de leitura
+                      </span>
+                    </div>
+
+                    {/* TÍTULO COMPLETO E VISÍVEL (SEM TRUNCAR) */}
+                    <Link
+                      href={`/admin/posts/${p.id}`}
+                      className="text-base font-black text-slate-900 transition-colors hover:text-amber-600 dark:text-white dark:hover:text-amber-400 leading-snug"
                     >
-                      {/* COLUNA 1: MINIATURA DA CAPA + TÍTULO */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-3.5">
-                          {/* MINIATURA DA CAPA */}
-                          <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-100 shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                            {p.cover_url ? (
-                              /* eslint-disable-next-line @next/next/no-img-element */
-                              <img
-                                src={p.cover_url}
-                                alt={p.cover_alt || p.title}
-                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center text-[0.65rem] font-bold text-slate-400 dark:text-slate-600">
-                                Sem capa
-                              </div>
-                            )}
-                          </div>
+                      {p.title}
+                    </Link>
 
-                          {/* TÍTULO E DETALHES */}
-                          <div className="flex flex-col gap-0.5 min-w-0">
-                            <Link
-                              href={`/admin/posts/${p.id}`}
-                              className="font-bold text-xs text-slate-900 transition-colors hover:text-amber-600 dark:text-white dark:hover:text-amber-400 line-clamp-1"
-                              title={p.title}
+                    {/* DATAS E TAGS */}
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                      <span>
+                        📅 Publicado: {formatarDataPainel(p.published_at)}
+                      </span>
+
+                      {p.tags && p.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {p.tags.slice(0, 4).map((t, idx) => (
+                            <span
+                              key={idx}
+                              className="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[0.65rem] text-slate-600 dark:bg-slate-800 dark:text-slate-400"
                             >
-                              {p.title}
-                            </Link>
-                            <div className="flex items-center gap-2 text-[0.7rem] text-slate-400 font-mono">
-                              <span>/blog/{p.slug}</span>
-                              <span>•</span>
-                              <span>⏱️ {p.reading_minutes} min</span>
-                            </div>
-
-                            {/* TAGS */}
-                            {p.tags && p.tags.length > 0 && (
-                              <div className="mt-0.5 flex flex-wrap gap-1">
-                                {p.tags.slice(0, 3).map((t, idx) => (
-                                  <span
-                                    key={idx}
-                                    className="rounded-full bg-slate-100 px-1.5 py-0.2 font-mono text-[0.62rem] text-slate-500 dark:bg-slate-800 dark:text-slate-400"
-                                  >
-                                    #{t}
-                                  </span>
-                                ))}
-                                {p.tags.length > 3 && (
-                                  <span className="text-[0.62rem] text-slate-400">
-                                    +{p.tags.length - 3}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </div>
+                              #{t}
+                            </span>
+                          ))}
+                          {p.tags.length > 4 && (
+                            <span className="text-[0.65rem] text-slate-400">
+                              +{p.tags.length - 4}
+                            </span>
+                          )}
                         </div>
-                      </td>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
-                      {/* COLUNA 2: STATUS */}
-                      <td className="px-4 py-3.5 whitespace-nowrap">
-                        <Etiqueta status={p.status} />
-                      </td>
+                {/* DIREITA: BARRA DE AÇÕES */}
+                <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-3 dark:border-slate-800 sm:border-t-0 sm:pt-0 shrink-0">
+                  <Link
+                    href={`/blog/${p.slug}`}
+                    target="_blank"
+                    className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm transition-all hover:border-amber-500 hover:text-amber-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:text-amber-400"
+                    title="Ver post no Blog público"
+                  >
+                    🔗 Ver no Blog
+                  </Link>
 
-                      {/* COLUNA 3: CATEGORIA */}
-                      <td className="px-4 py-3.5 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-1 rounded-xl bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                          <span>{ROTULO_CATEGORIA[p.category] ?? p.category}</span>
-                        </span>
-                      </td>
+                  <Link
+                    href={`/admin/posts/${p.id}`}
+                    className="cursor-pointer rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-bold text-amber-700 transition-all hover:bg-amber-500/20 dark:text-amber-300"
+                    title="Editar Post"
+                  >
+                    ✏️ Editar
+                  </Link>
 
-                      {/* COLUNA 4: DATAS */}
-                      <td className="px-4 py-3.5 whitespace-nowrap">
-                        <div className="flex flex-col gap-0.5 text-[0.7rem] text-slate-500 dark:text-slate-400">
-                          <span>Pub: {formatarDataPainel(p.published_at)}</span>
-                          <span className="text-slate-400 text-[0.65rem]">
-                            Att: {formatarDataPainel(p.updated_at)}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* COLUNA 5: AÇÕES DE GESTÃO */}
-                      <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-2">
-                          {/* BOTÃO VER NO BLOG */}
-                          <Link
-                            href={`/blog/${p.slug}`}
-                            target="_blank"
-                            className="rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-600 hover:border-amber-500 hover:text-amber-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:text-amber-400"
-                            title="Ver no Blog"
-                          >
-                            🔗 Ver
-                          </Link>
-
-                          {/* BOTÃO EDITAR */}
-                          <Link
-                            href={`/admin/posts/${p.id}`}
-                            className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-700 hover:bg-amber-500/20 dark:text-amber-300"
-                            title="Editar Post"
-                          >
-                            ✏️ Editar
-                          </Link>
-
-                          {/* BOTÕES PUBLICAR / EXCLUIR */}
-                          <AcoesPost id={p.id} titulo={p.title} status={p.status} />
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                  <AcoesPost id={p.id} titulo={p.title} status={p.status} />
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
