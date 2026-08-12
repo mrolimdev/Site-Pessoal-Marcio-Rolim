@@ -395,11 +395,23 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema rigoroso:
     }
 
     if (gerado.artigoFormatado?.codigoOuVerso) {
-      contentNodes.push({
-        type: 'codeBlock',
-        attrs: { language: eFe ? 'markdown' : 'typescript' },
-        content: [{ type: 'text', text: gerado.artigoFormatado.codigoOuVerso }],
-      })
+      if (eFe) {
+        contentNodes.push({
+          type: 'blockquote',
+          content: [
+            {
+              type: 'paragraph',
+              content: [{ type: 'text', text: gerado.artigoFormatado.codigoOuVerso }],
+            },
+          ],
+        })
+      } else {
+        contentNodes.push({
+          type: 'codeBlock',
+          attrs: { language: 'typescript' },
+          content: [{ type: 'text', text: gerado.artigoFormatado.codigoOuVerso }],
+        })
+      }
     }
 
     if (gerado.artigoFormatado?.conclusao) {

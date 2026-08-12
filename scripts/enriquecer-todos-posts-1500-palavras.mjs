@@ -258,13 +258,15 @@ function gerarConteudoFe(post) {
       p(`O local de trabalho é um dos principais campos de testemunho e vocação do cristão. Quando exercemos nossa profissão com excelência, honestidade e amor ao próximo, transformamos o ambiente corporativo e glorificamos a Deus.`),
       p(`Destacamos que o trabalho não é uma punição, mas uma atribuição divina dada ao homem para exercer mordomia e cultivar a criação. Da mesma forma, aqueles que exercem cargos de liderança ou gestão de pessoas encontram diretrizes bíblicas fundamentais nas Escrituras.`),
 
-      code('markdown', `> "Tudo o que fizerem, façam de todo o coração, como para o Senhor, e não para os homens, sabendo que receberão do Senhor a recompensa da herança." (Colossenses 3:23-24)
+      bq(`"Tudo o que fizerem, façam de todo o coração, como para o Senhor, e não para os homens, sabendo que receberão do Senhor a recompensa da herança." (Colossenses 3:23-24)`),
 
-* Princípios do Cristão no Trabalho e nos Projetos:
-1. Honestidade inegociável em todos os valores e relatórios.
-2. Tratamento respeitoso e justo com subordinados e pares.
-3. Dedicação e busca contínua pela excelência técnica.
-4. Testemunho vivo da graça e da paciência nas adversidades.`),
+      p(`Princípios do Cristão no Trabalho e nos Projetos:`),
+      ul(
+        'Honestidade inegociável em todos os valores, relatórios e compromissos.',
+        'Tratamento respeitoso, justo e ético com subordinados, clientes e pares.',
+        'Dedicação e busca contínua pela excelência técnica com virtude.',
+        'Testemunho vivo da graça de Deus e da paciência nas adversidades.'
+      ),
 
       p(`Ao agirmos com integridade e amor incondicional, manifestamos o Reino de Deus em ambientes frequentemente marcados pela competição predatória e pelo egoísmo.`),
       p(`A postura pacificadora do cristão em momentos de crise no trabalho abre portas para que a mensagem do Evangelho seja ouvida e respeitada.`),
