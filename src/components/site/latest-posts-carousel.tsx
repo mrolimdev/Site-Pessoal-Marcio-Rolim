@@ -4,6 +4,7 @@ import { useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 
+import { CategoriaBadge } from '@/components/blog/categoria-badge'
 import { ImagemDeCapa } from '@/components/blog/imagem-capa'
 import { ROTULO_CATEGORIA } from '@/lib/blog/constantes'
 import type { PostResumo } from '@/lib/blog/queries'
@@ -124,9 +125,7 @@ export function LatestPostsCarousel({ posts }: Props) {
 
                 {/* METADADOS SUPERIORES */}
                 <div className="flex items-center justify-between gap-2 text-xs">
-                  <span className="rounded-full bg-stone-100 px-3 py-1 font-mono text-[0.7rem] font-bold text-stone-700 dark:bg-slate-800 dark:text-slate-300">
-                    {ROTULO_CATEGORIA[post.categoria] ?? post.categoria}
-                  </span>
+                  <CategoriaBadge categoria={post.categoria} />
 
                   <span className="font-mono text-[0.7rem] font-semibold text-stone-400 dark:text-slate-500">
                     ⏱️ {post.minutosDeLeitura} min
