@@ -3,6 +3,8 @@ import { dirname } from 'path'
 import { fileURLToPath } from 'url'
 
 const config: NextConfig = {
+  // TEMPORÁRIO — verificação isolada.
+  ...(process.env.DIST_DIR ? { distDir: process.env.DIST_DIR } : {}),
   // Fixa a raiz: sem isso o Turbopack sobe a árvore procurando lockfile
   // e escolhe um diretório de fora do projeto.
   turbopack: { root: dirname(fileURLToPath(import.meta.url)) },
