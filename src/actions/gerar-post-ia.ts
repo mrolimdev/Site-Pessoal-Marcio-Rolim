@@ -1036,82 +1036,54 @@ async function gerarImagemDeCapaRobusta({
 }): Promise<string> {
   const promptFormatado = `${promptVisual}. High resolution professional editorial photography, 16:9 aspect ratio, 8k, warm cinematic lighting, no text, no letters, no logos`
 
-  // 1. Se houver API Key, tenta a API do Imagen 3 (Endpoint generateImages ou predict)
+  // 1. Se houver API Key, tenta os modelos nativos de imagem do Gemini (gemini-2.5-flash-image, gemini-3.1-flash-image)
   if (apiKey) {
-    // Tenta API REST Google Studio (:generateImages)
-    try {
-      const resGen = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${modeloImagemId}:generateImages?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            prompt: promptFormatado,
-            number_of_images: 1,
-            output_mime_type: 'image/jpeg',
-            aspect_ratio: '16:9',
-          }),
-        }
-      )
+    const modelosGeminiImagem = ['gemini-2.5-flash-image', 'gemini-3.1-flash-image', modeloImagemId]
 
-      if (resGen.ok) {
-        const dataGen = await resGen.json()
-        const base64 = dataGen.generatedImages?.[0]?.image?.imageBytes || dataGen.generatedImages?.[0]?.imageBytes
-        if (base64) {
-          const buffer = Buffer.from(base64, 'base64')
-          const filename = `capa-ia-${slug}-${Date.now()}.jpg`
-          const { error: uploadErr } = await supabase.storage
-            .from('capas')
-            .upload(filename, buffer, { contentType: 'image/jpeg', upsert: true })
-
-          if (!uploadErr) {
-            const { data: publicData } = supabase.storage.from('capas').getPublicUrl(filename)
-            if (publicData?.publicUrl) return publicData.publicUrl
+    for (const mod of modelosGeminiImagem) {
+      if (!mod) continue
+      try {
+        const resFlashImg = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    {
+                      text: `Generate a realistic high-quality 16:9 editorial photograph: ${promptFormatado}`,
+                    },
+                  ],
+                },
+              ],
+            }),
           }
-          return `data:image/jpeg;base64,${base64}`
-        }
-      }
-    } catch (e) {
-      console.warn('[Imagen :generateImages] Falhou:', e)
-    }
+        )
 
-    // Tenta Endpoint Vertex AI (:predict)
-    try {
-      const resPred = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${modeloImagemId}:predict?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            instances: [{ prompt: promptFormatado }],
-            parameters: {
-              sampleCount: 1,
-              aspectRatio: '16:9',
-              outputOptions: { mimeType: 'image/jpeg' },
-            },
-          }),
-        }
-      )
+        if (resFlashImg.ok) {
+          const dataFlash = await resFlashImg.json()
+          const inlineData = dataFlash.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData)?.inlineData
+          if (inlineData?.data) {
+            const mimeType = inlineData.mimeType || 'image/png'
+            const ext = mimeType.includes('png') ? 'png' : 'jpg'
+            const buffer = Buffer.from(inlineData.data, 'base64')
+            const filename = `capa-ia-${slug}-${Date.now()}.${ext}`
+            const { error: uploadErr } = await supabase.storage
+              .from('capas')
+              .upload(filename, buffer, { contentType: mimeType, upsert: true })
 
-      if (resPred.ok) {
-        const dataPred = await resPred.json()
-        const base64 = dataPred.predictions?.[0]?.bytesBase64Encoded || dataPred.predictions?.[0]?.bytes
-        if (base64) {
-          const buffer = Buffer.from(base64, 'base64')
-          const filename = `capa-ia-${slug}-${Date.now()}.jpg`
-          const { error: uploadErr } = await supabase.storage
-            .from('capas')
-            .upload(filename, buffer, { contentType: 'image/jpeg', upsert: true })
-
-          if (!uploadErr) {
-            const { data: publicData } = supabase.storage.from('capas').getPublicUrl(filename)
-            if (publicData?.publicUrl) return publicData.publicUrl
+            if (!uploadErr) {
+              const { data: publicData } = supabase.storage.from('capas').getPublicUrl(filename)
+              if (publicData?.publicUrl) return publicData.publicUrl
+            }
+            return `data:${mimeType};base64,${inlineData.data}`
           }
-          return `data:image/jpeg;base64,${base64}`
         }
+      } catch (e) {
+        console.warn(`[Gemini ${mod} :generateContent] Falhou:`, e)
       }
-    } catch (e) {
-      console.warn('[Imagen :predict] Falhou:', e)
     }
   }
 
