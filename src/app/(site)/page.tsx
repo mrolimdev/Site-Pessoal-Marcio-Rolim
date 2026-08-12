@@ -447,7 +447,8 @@ export default async function HomePage() {
                       alt={MEDIA_ALT.footerLogo}
                       width={32}
                       height={32}
-                      className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-700"
+                      style={{ width: '32px', height: '32px' }}
+                      className="rounded-full object-cover ring-2 ring-slate-700"
                     />
                   </div>
                   <span className="tracking-tight">

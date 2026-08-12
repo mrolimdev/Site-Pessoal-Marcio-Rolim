@@ -596,84 +596,16 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
       .replace(/^-+|-+$/g, '')
 
     // Geração de imagem de capa por IA (Imagen 3 com fallback dinâmico de IA por tema)
-    let capaUrl = ''
     const promptVisual = gerado.promptVisualCapa || `Professional editorial photograph about ${titulo}, 16:9 aspect ratio, warm cinematic lighting`
-
-    try {
-      const resImagen = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${modeloImagemId}:predict?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            instances: [{ prompt: `${promptVisual}. High resolution, 8k, warm lighting, no text, no letters, no logos` }],
-            parameters: {
-              sampleCount: 1,
-              aspectRatio: '16:9',
-              outputOptions: { mimeType: 'image/jpeg' },
-            },
-          }),
-        }
-      )
-
-      if (resImagen.ok) {
-        const dataImagen = await resImagen.json()
-        const base64Img = dataImagen.predictions?.[0]?.bytesBase64Encoded
-        if (base64Img) {
-          const buffer = Buffer.from(base64Img, 'base64')
-          const filename = `capa-ia-${slug}-${Date.now()}.jpg`
-          const { error: uploadErr } = await supabase.storage
-            .from('capas')
-            .upload(filename, buffer, { contentType: 'image/jpeg', upsert: true })
-
-          if (!uploadErr) {
-            const { data: publicData } = supabase.storage.from('capas').getPublicUrl(filename)
-            if (publicData?.publicUrl) {
-              capaUrl = publicData.publicUrl
-            }
-          } else {
-            capaUrl = `data:image/jpeg;base64,${base64Img}`
-          }
-        }
-      } else {
-        console.warn(`[Imagen 3 API] Retornou HTTP ${resImagen.status}. Gerando capa temática por IA...`)
-      }
-    } catch (errImagen) {
-      console.warn('Aviso: Geração do Imagen 3 usou fallback:', errImagen)
-    }
-
-    // Se o Imagen 3 não gerou a capa (ex: sem quota na API Key), gera uma capa fotográfica realista temática via IA e faz upload ao Supabase
-    if (!capaUrl) {
-      try {
-        const promptCodificado = encodeURIComponent(`${promptVisual} professional editorial photography 16:9 warm lighting no text`)
-        const urlIaImg = `https://image.pollinations.ai/prompt/${promptCodificado}?width=1200&height=675&nologo=true`
-
-        const resIaImg = await fetch(urlIaImg)
-        if (resIaImg.ok) {
-          const arrayBuffer = await resIaImg.arrayBuffer()
-          const buffer = Buffer.from(arrayBuffer)
-          const filename = `capa-ia-${slug}-${Date.now()}.jpg`
-          const { error: uploadErr } = await supabase.storage
-            .from('capas')
-            .upload(filename, buffer, { contentType: 'image/jpeg', upsert: true })
-
-          if (!uploadErr) {
-            const { data: publicData } = supabase.storage.from('capas').getPublicUrl(filename)
-            if (publicData?.publicUrl) {
-              capaUrl = publicData.publicUrl
-            }
-          } else {
-            capaUrl = urlIaImg
-          }
-        }
-      } catch (errFallback) {
-        console.warn('Erro ao gerar capa de fallback por IA:', errFallback)
-      }
-    }
-
-    if (!capaUrl) {
-      capaUrl = `https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1200&auto=format&fit=crop`
-    }
+    const capaUrl = await gerarImagemDeCapaRobusta({
+      titulo,
+      slug,
+      categoria: (gerado.categoria as Categoria) || 'tecnologia',
+      promptVisual,
+      apiKey,
+      modeloImagemId,
+      supabase,
+    })
 
     // Garante entre 5 e 10 tags
     let tagsFinais: string[] = Array.isArray(gerado.tags)
@@ -1053,6 +985,170 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
   }
 }
 
+const BANCO_FOTOS_FALLBACK: Record<string, string[]> = {
+  fe: [
+    'https://images.unsplash.com/photo-1507499739999-097706ad8914?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1490730141103-6cac27aaab94?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1519817650390-64a93db51149?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?q=80&w=1200&auto=format&fit=crop',
+  ],
+  tecnologia: [
+    'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1200&auto=format&fit=crop',
+  ],
+  ia: [
+    'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1677442136019-21780efad99a?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1589254065878-42c9da997008?q=80&w=1200&auto=format&fit=crop',
+  ],
+  automacao: [
+    'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200&auto=format&fit=crop',
+  ],
+  negocios: [
+    'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=1200&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=1200&auto=format&fit=crop',
+  ],
+}
+
+async function gerarImagemDeCapaRobusta({
+  titulo,
+  slug,
+  categoria,
+  promptVisual,
+  apiKey,
+  modeloImagemId = 'imagen-3.0-generate-002',
+  supabase,
+}: {
+  titulo: string
+  slug: string
+  categoria: Categoria
+  promptVisual: string
+  apiKey?: string
+  modeloImagemId?: string
+  supabase: any
+}): Promise<string> {
+  const promptFormatado = `${promptVisual}. High resolution professional editorial photography, 16:9 aspect ratio, 8k, warm cinematic lighting, no text, no letters, no logos`
+
+  // 1. Se houver API Key, tenta a API do Imagen 3 (Endpoint generateImages ou predict)
+  if (apiKey) {
+    // Tenta API REST Google Studio (:generateImages)
+    try {
+      const resGen = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modeloImagemId}:generateImages?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: promptFormatado,
+            number_of_images: 1,
+            output_mime_type: 'image/jpeg',
+            aspect_ratio: '16:9',
+          }),
+        }
+      )
+
+      if (resGen.ok) {
+        const dataGen = await resGen.json()
+        const base64 = dataGen.generatedImages?.[0]?.image?.imageBytes || dataGen.generatedImages?.[0]?.imageBytes
+        if (base64) {
+          const buffer = Buffer.from(base64, 'base64')
+          const filename = `capa-ia-${slug}-${Date.now()}.jpg`
+          const { error: uploadErr } = await supabase.storage
+            .from('capas')
+            .upload(filename, buffer, { contentType: 'image/jpeg', upsert: true })
+
+          if (!uploadErr) {
+            const { data: publicData } = supabase.storage.from('capas').getPublicUrl(filename)
+            if (publicData?.publicUrl) return publicData.publicUrl
+          }
+          return `data:image/jpeg;base64,${base64}`
+        }
+      }
+    } catch (e) {
+      console.warn('[Imagen :generateImages] Falhou:', e)
+    }
+
+    // Tenta Endpoint Vertex AI (:predict)
+    try {
+      const resPred = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modeloImagemId}:predict?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            instances: [{ prompt: promptFormatado }],
+            parameters: {
+              sampleCount: 1,
+              aspectRatio: '16:9',
+              outputOptions: { mimeType: 'image/jpeg' },
+            },
+          }),
+        }
+      )
+
+      if (resPred.ok) {
+        const dataPred = await resPred.json()
+        const base64 = dataPred.predictions?.[0]?.bytesBase64Encoded || dataPred.predictions?.[0]?.bytes
+        if (base64) {
+          const buffer = Buffer.from(base64, 'base64')
+          const filename = `capa-ia-${slug}-${Date.now()}.jpg`
+          const { error: uploadErr } = await supabase.storage
+            .from('capas')
+            .upload(filename, buffer, { contentType: 'image/jpeg', upsert: true })
+
+          if (!uploadErr) {
+            const { data: publicData } = supabase.storage.from('capas').getPublicUrl(filename)
+            if (publicData?.publicUrl) return publicData.publicUrl
+          }
+          return `data:image/jpeg;base64,${base64}`
+        }
+      }
+    } catch (e) {
+      console.warn('[Imagen :predict] Falhou:', e)
+    }
+  }
+
+  // 2. Fallback: Pollinations AI (com seed dinâmico para gerar uma imagem nova a cada clique)
+  try {
+    const seed = Math.floor(Math.random() * 1_000_000_000)
+    const promptCodificado = encodeURIComponent(`${promptVisual} professional editorial photography 16:9 warm lighting no text`)
+    const urlIaImg = `https://image.pollinations.ai/prompt/${promptCodificado}?width=1200&height=675&seed=${seed}&nologo=true`
+
+    const resIaImg = await fetch(urlIaImg, { signal: AbortSignal.timeout(8000) })
+    if (resIaImg.ok) {
+      const contentType = resIaImg.headers.get('content-type') || ''
+      if (contentType.includes('image/')) {
+        const arrayBuffer = await resIaImg.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
+        const filename = `capa-ia-${slug}-${Date.now()}.jpg`
+        const { error: uploadErr } = await supabase.storage
+          .from('capas')
+          .upload(filename, buffer, { contentType: 'image/jpeg', upsert: true })
+
+        if (!uploadErr) {
+          const { data: publicData } = supabase.storage.from('capas').getPublicUrl(filename)
+          if (publicData?.publicUrl) return publicData.publicUrl
+        }
+        return urlIaImg
+      }
+    }
+  } catch (e) {
+    console.warn('[Pollinations AI] Fallback indisponível:', e)
+  }
+
+  // 3. Fallback final: Fotos temáticas dinâmicas do Unsplash (seleciona uma imagem diferente a cada chamada)
+  const fotosCategoria = BANCO_FOTOS_FALLBACK[categoria] || BANCO_FOTOS_FALLBACK.tecnologia
+  const indiceSorteado = Math.floor(Math.random() * fotosCategoria.length)
+  return fotosCategoria[indiceSorteado]
+}
+
 /**
  * Action para gerar uma nova imagem de capa por IA a qualquer momento no editor de posts.
  */
@@ -1087,82 +1183,15 @@ export async function gerarNovaImagemCapaIaAction({
     const promptVisual = promptPersonalizado?.trim() ||
       `Professional editorial photograph about ${titulo || (eFe ? 'Christian faith and spiritual growth' : 'technology and artificial intelligence')}, 16:9 aspect ratio, warm cinematic lighting`
 
-    let capaUrl = ''
-
-    // 1. Tenta Imagen 3 API
-    try {
-      const resImagen = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${modeloImagemId}:predict?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            instances: [{ prompt: `${promptVisual}. High resolution, 8k, warm lighting, no text, no letters, no logos` }],
-            parameters: {
-              sampleCount: 1,
-              aspectRatio: '16:9',
-              outputOptions: { mimeType: 'image/jpeg' },
-            },
-          }),
-        }
-      )
-
-      if (resImagen.ok) {
-        const dataImagen = await resImagen.json()
-        const base64Img = dataImagen.predictions?.[0]?.bytesBase64Encoded
-        if (base64Img) {
-          const buffer = Buffer.from(base64Img, 'base64')
-          const filename = `capa-ia-${slugLimpo}-${Date.now()}.jpg`
-          const { error: uploadErr } = await supabase.storage
-            .from('capas')
-            .upload(filename, buffer, { contentType: 'image/jpeg', upsert: true })
-
-          if (!uploadErr) {
-            const { data: publicData } = supabase.storage.from('capas').getPublicUrl(filename)
-            if (publicData?.publicUrl) {
-              capaUrl = publicData.publicUrl
-            }
-          } else {
-            capaUrl = `data:image/jpeg;base64,${base64Img}`
-          }
-        }
-      }
-    } catch (errImagen) {
-      console.warn('Aviso: Geração do Imagen 3 usou fallback:', errImagen)
-    }
-
-    // 2. Fallback por IA com upload automático para Supabase Storage
-    if (!capaUrl) {
-      try {
-        const promptCodificado = encodeURIComponent(`${promptVisual} professional editorial photography 16:9 warm lighting no text`)
-        const urlIaImg = `https://image.pollinations.ai/prompt/${promptCodificado}?width=1200&height=675&seed=${Date.now()}&nologo=true`
-
-        const resIaImg = await fetch(urlIaImg)
-        if (resIaImg.ok) {
-          const arrayBuffer = await resIaImg.arrayBuffer()
-          const buffer = Buffer.from(arrayBuffer)
-          const filename = `capa-ia-${slugLimpo}-${Date.now()}.jpg`
-          const { error: uploadErr } = await supabase.storage
-            .from('capas')
-            .upload(filename, buffer, { contentType: 'image/jpeg', upsert: true })
-
-          if (!uploadErr) {
-            const { data: publicData } = supabase.storage.from('capas').getPublicUrl(filename)
-            if (publicData?.publicUrl) {
-              capaUrl = publicData.publicUrl
-            }
-          } else {
-            capaUrl = urlIaImg
-          }
-        }
-      } catch (errFallback) {
-        console.warn('Erro ao gerar capa de fallback por IA:', errFallback)
-      }
-    }
-
-    if (!capaUrl) {
-      capaUrl = `https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1200&auto=format&fit=crop`
-    }
+    const capaUrl = await gerarImagemDeCapaRobusta({
+      titulo,
+      slug: slugLimpo,
+      categoria,
+      promptVisual,
+      apiKey,
+      modeloImagemId,
+      supabase,
+    })
 
     const capaAlt = `Imagem de capa fotográfica para o post ${titulo || 'artigo'}`
 
