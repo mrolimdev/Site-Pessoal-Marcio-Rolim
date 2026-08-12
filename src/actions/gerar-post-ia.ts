@@ -709,13 +709,17 @@ export type OpcaoNoticiaQuente = {
 }
 
 /**
- * ⚡ Obter 5 Opções de Notícias Quentes e Inéditas de Tecnologia
+ * ⚡ Obter 5 Opções de Notícias/Assuntos Quentes e Inéditos (Tecnologia ou Fé Cristã)
  */
 export async function obter5OpcoesNoticiasQuentesAction({
+  categoria = 'tecnologia',
+  assuntoOpcional = '',
   apiKeyInformada,
   apifyTokenInformado,
   modeloId = 'gemini-2.0-flash',
 }: {
+  categoria?: Categoria
+  assuntoOpcional?: string
   apiKeyInformada?: string
   apifyTokenInformado?: string
   modeloId?: string
@@ -737,6 +741,13 @@ export async function obter5OpcoesNoticiasQuentesAction({
     let contextoNoticias = ''
     const apifyToken = (apifyTokenInformado || process.env.APIFY_API_TOKEN || '').trim()
 
+    const eFe = categoria === 'fe'
+    const termoBusca = assuntoOpcional.trim()
+      ? assuntoOpcional.trim()
+      : eFe
+      ? 'Vida crista fe devocional espiritualidade biblia rotina'
+      : 'Inteligencia Artificial novidades tendencias tecnologia automacao'
+
     if (apifyToken) {
       try {
         const resApify = await fetch(
@@ -745,7 +756,7 @@ export async function obter5OpcoesNoticiasQuentesAction({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              queries: 'Inteligencia Artificial novidades tendencias tecnologia',
+              queries: termoBusca,
               maxPagesPerQuery: 1,
               resultsPerPage: 10,
               type: 'NEWS',
@@ -761,7 +772,7 @@ export async function obter5OpcoesNoticiasQuentesAction({
               .map((it: any) => `- ${it.title || it.headline}: ${it.description || it.snippet || ''}`)
               .join('\n')
             if (manchetes) {
-              contextoNoticias = `NOTÍCIAS EXTRAÍDAS DA WEB VIA APIFY:\n${manchetes}`
+              contextoNoticias = `NOTÍCIAS/TENDÊNCIAS EXTRAÍDAS DA WEB:\n${manchetes}`
             }
           }
         }
@@ -770,9 +781,38 @@ export async function obter5OpcoesNoticiasQuentesAction({
       }
     }
 
-    // 3. Prompt do Gemini para gerar 5 opções de notícias quentes e inéditas
-    const prompt5Opcoes = `Você é um curador de conteúdo e jornalista de tecnologia para o blog de Márcio Rolim.
-Sua missão: Identifique exatamente 5 NOTÍCIAS OU TENDÊNCIAS RECENTES, inovadoras e quentes sobre Tecnologia, Inteligência Artificial e Automação.
+    // 3. Prompt do Gemini para gerar 5 opções de notícias/assuntos quentes e inéditos
+    const prompt5Opcoes = eFe
+      ? `Você é um pastor e autor cristão curando conteúdo para o blog de Márcio Rolim (Área: Vida Cristã & Fé).
+Sua missão: Identifique exatamente 5 ASSUNTOS OU DEVOCIONAIS PRÁTICOS, profundos e atuais sobre Fé Cristã, espiritualidade no cotidiano e vida bíblica${
+          assuntoOpcional.trim() ? ` focados no tema "${assuntoOpcional.trim()}"` : ''
+        }.
+
+REGRA CRÍTICA DE ANTI-DUPLICAÇÃO:
+Nenhuma das 5 opções pode ser igual ou semelhante a qualquer um dos seguintes posts que JÁ EXISTEM no banco de dados:
+${titulosExistentes.map((t: string) => `- "${t}"`).join('\n')}
+
+${contextoNoticias ? contextoNoticias : 'Busque 5 assuntos devocionais relevantes para o cristão moderno (ex: oração na rotina agitada, fé no ambiente de trabalho, sabedoria em tempos incertos, família, propósito de vida).'}
+
+Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
+{
+  "opcoes": [
+    {
+      "id": 1,
+      "titulo": "Título inspirador e inédito sobre fé cristã",
+      "resumo": "Resumo conciso em 1 a 2 frases do artigo devocional",
+      "porQueEQuente": "Relevância bíblica e espiritual para os dias de hoje"
+    },
+    { "id": 2, "titulo": "...", "resumo": "...", "porQueEQuente": "..." },
+    { "id": 3, "titulo": "...", "resumo": "...", "porQueEQuente": "..." },
+    { "id": 4, "titulo": "...", "resumo": "...", "porQueEQuente": "..." },
+    { "id": 5, "titulo": "...", "resumo": "...", "porQueEQuente": "..." }
+  ]
+}`
+      : `Você é um curador de conteúdo e jornalista de tecnologia para o blog de Márcio Rolim (Área: Tecnologia & IA).
+Sua missão: Identifique exatamente 5 NOTÍCIAS OU TENDÊNCIAS RECENTES, inovadoras e quentes sobre Tecnologia, Inteligência Artificial e Automação${
+          assuntoOpcional.trim() ? ` focados no tema "${assuntoOpcional.trim()}"` : ''
+        }.
 
 REGRA CRÍTICA DE ANTI-DUPLICAÇÃO:
 Nenhuma das 5 opções pode ser igual ou semelhante a qualquer um dos seguintes posts que JÁ EXISTEM no banco de dados:
@@ -789,30 +829,10 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
       "resumo": "Resumo conciso em 1 a 2 frases da notícia",
       "porQueEQuente": "Por que este tema é uma grande tendência agora"
     },
-    {
-      "id": 2,
-      "titulo": "Segundo título de notícia recente",
-      "resumo": "Resumo...",
-      "porQueEQuente": "Por que e quente..."
-    },
-    {
-      "id": 3,
-      "titulo": "Terceiro título...",
-      "resumo": "Resumo...",
-      "porQueEQuente": "Por que..."
-    },
-    {
-      "id": 4,
-      "titulo": "Quarto título...",
-      "resumo": "Resumo...",
-      "porQueEQuente": "Por que..."
-    },
-    {
-      "id": 5,
-      "titulo": "Quinto título...",
-      "resumo": "Resumo...",
-      "porQueEQuente": "Por que..."
-    }
+    { "id": 2, "titulo": "...", "resumo": "...", "porQueEQuente": "..." },
+    { "id": 3, "titulo": "...", "resumo": "...", "porQueEQuente": "..." },
+    { "id": 4, "titulo": "...", "resumo": "...", "porQueEQuente": "..." },
+    { "id": 5, "titulo": "...", "resumo": "...", "porQueEQuente": "..." }
   ]
 }`
 
@@ -842,7 +862,7 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
       titulo: op.titulo,
       resumo: op.resumo,
       porQueEQuente: op.porQueEQuente,
-      categoria: 'tecnologia',
+      categoria,
     }))
 
     return { ok: true, opcoes: opcoesList }

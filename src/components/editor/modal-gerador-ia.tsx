@@ -38,6 +38,8 @@ export function ModalGeradorIa({
   const [erro, setErro] = useState<string | null>(null)
 
   // 5 Opções Quentes em 1 Clique
+  const [categoriaUmClique, setCategoriaUmClique] = useState<Categoria>(categoriaAtual)
+  const [assuntoUmClique, setAssuntoUmClique] = useState('')
   const [opcoes5, setOpcoes5] = useState<OpcaoNoticiaQuente[]>([])
   const [opcoesSelecionadas, setOpcoesSelecionadas] = useState<number[]>([])
 
@@ -62,9 +64,11 @@ export function ModalGeradorIa({
     const apifyToken = typeof window !== 'undefined' ? localStorage.getItem('apify_admin_token') || undefined : undefined
     setErro(null)
     setCarregando(true)
-    setStatusMensagem('⚡ Pesquisando as 5 principais notícias e tendências no Apify/Google...')
+    setStatusMensagem(`⚡ Pesquisando as 5 principais tendências em ${categoriaUmClique === 'fe' ? 'Vida Cristã & Fé' : 'Tecnologia & IA'}...`)
 
     const resp = await obter5OpcoesNoticiasQuentesAction({
+      categoria: categoriaUmClique,
+      assuntoOpcional: assuntoUmClique,
       apiKeyInformada: apiKey,
       apifyTokenInformado: apifyToken,
       modeloId,
@@ -73,7 +77,7 @@ export function ModalGeradorIa({
     setCarregando(false)
 
     if (!resp.ok || !resp.opcoes || resp.opcoes.length === 0) {
-      setErro(resp.erro || 'Não foi possível buscar as 5 opções de notícias quentes.')
+      setErro(resp.erro || 'Não foi possível buscar as 5 opções de notícias/assuntos quentes.')
       return
     }
 
@@ -122,7 +126,7 @@ export function ModalGeradorIa({
       const resp = await gerarPostCompletoComIaAction({
         titulo: item.titulo,
         tema: item.resumo,
-        categoria: 'tecnologia',
+        categoria: item.categoria || categoriaUmClique,
         apiKeyInformada: apiKey,
         modeloId,
       })
@@ -254,16 +258,62 @@ export function ModalGeradorIa({
 
         {/* BOTÃO ATALHO RÁPIDO DE 1 CLIQUE */}
         {passo === 'formulario' && (
-          <div className="mt-4 rounded-2xl border border-sky-500/30 bg-gradient-to-r from-sky-500/10 via-amber-500/10 to-orange-500/10 p-4">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h4 className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
-                  <span>⚡ Criação Automática com 1 Clique</span>
-                </h4>
-                <p className="text-[0.75rem] text-slate-600 dark:text-slate-400">
-                  Busca 5 notícias quentes no Apify/Google e permite escolher 1 ou mais posts para criar.
-                </p>
-              </div>
+          <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-sky-500/30 bg-gradient-to-r from-sky-500/10 via-amber-500/10 to-orange-500/10 p-4">
+            <div>
+              <h4 className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <span>⚡ Criação Automática com 1 Clique (5 Opções)</span>
+              </h4>
+              <p className="text-[0.75rem] text-slate-600 dark:text-slate-400 mt-0.5">
+                Escolha a categoria e (opcionalmente) digite um assunto de foco. O assistente pesquisará a web e trará 5 opções para você escolher.
+              </p>
+            </div>
+
+            {/* Seleção de Categoria 1-Clique */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setCategoriaUmClique('tecnologia')}
+                className={`cursor-pointer rounded-xl border p-2.5 text-center text-xs font-bold transition-all ${
+                  categoriaUmClique !== 'fe'
+                    ? 'border-sky-500 bg-sky-500/20 text-sky-900 dark:text-sky-300'
+                    : 'border-slate-200 bg-white/60 text-slate-600 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-400'
+                }`}
+              >
+                💻 Tecnologia & IA
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCategoriaUmClique('fe')}
+                className={`cursor-pointer rounded-xl border p-2.5 text-center text-xs font-bold transition-all ${
+                  categoriaUmClique === 'fe'
+                    ? 'border-amber-500 bg-amber-500/20 text-amber-900 dark:text-amber-300'
+                    : 'border-slate-200 bg-white/60 text-slate-600 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-400'
+                }`}
+              >
+                ✝️ Vida Cristã & Fé
+              </button>
+            </div>
+
+            {/* Campo Opcional de Foco / Assunto */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <input
+                type="text"
+                value={assuntoUmClique}
+                onChange={(e) => setAssuntoUmClique(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleBuscar5OpcoesUmClique()
+                  }
+                }}
+                placeholder={
+                  categoriaUmClique === 'fe'
+                    ? 'Foco opcional (ex: Oração na rotina, Provérbios... ou em branco para tendências)'
+                    : 'Foco opcional (ex: DeepSeek R1, Agentic AI, No-Code... ou em branco para notícias quentes)'
+                }
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 outline-none transition-all focus:border-amber-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+              />
 
               <button
                 type="button"
@@ -271,7 +321,7 @@ export function ModalGeradorIa({
                 disabled={carregando}
                 className="cursor-pointer whitespace-nowrap rounded-xl bg-gradient-to-r from-sky-600 via-amber-600 to-orange-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-md transition-all hover:scale-[1.02] disabled:opacity-50"
               >
-                {carregando ? '🔍 Buscando 5 opções...' : '⚡ Buscar 5 Opções Quentes'}
+                {carregando ? '🔍 Buscando...' : '⚡ Buscar 5 Opções'}
               </button>
             </div>
           </div>
