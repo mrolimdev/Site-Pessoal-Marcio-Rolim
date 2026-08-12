@@ -5,9 +5,12 @@ import { fileURLToPath } from 'url'
 const config: NextConfig = {
   // Fixa a raiz: sem isso o Turbopack sobe a árvore procurando lockfile
   // e escolhe um diretório de fora do projeto.
-  turbopack: { root: dirname(fileURLToPath(import.meta.url)) },
-  // cacheComponents fica DESLIGADO na v1. Ligar quebra `export const dynamic|revalidate`,
-  // e transforma Date.now()/Math.random() durante prerender em erro de build.
+  // Limite de payload para Server Actions (ex: formulários de posts com imagens)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
+  },
   images: {
     remotePatterns: [
       // Foto de perfil e mídia hospedadas no servidor próprio ou restaure.online
