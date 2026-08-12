@@ -188,7 +188,7 @@ export function CardNuvemDeTags({ tags }: { tags: TagComContagem[] }) {
             <Link
               key={t.nome}
               href={`/blog/tag/${encodeURIComponent(t.nome)}`}
-              className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm focus-visible:ring-2 focus-visible:outline-none ${origem.chip} ${degrauDe(t.count)}`}
+              className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 transition-all duration-200 sm:px-2.5 sm:py-1.5 hover:-translate-y-0.5 hover:shadow-sm focus-visible:ring-2 focus-visible:outline-none ${origem.chip} ${degrauDe(t.count)}`}
               title={`${t.count} ${t.count === 1 ? 'post' : 'posts'} · ${origem.rotulo}`}
             >
               <span className="leading-none">
@@ -385,7 +385,7 @@ export function CardArvoreDeCategorias({
                             onClick={() =>
                               onSelecionarCategoria?.(selecionado ? null : sub.chave)
                             }
-                            className={`group/linha relative my-0.5 flex w-full items-center justify-between gap-2 overflow-hidden rounded-lg px-2.5 py-1.5 text-left transition-colors focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none ${
+                            className={`group/linha relative my-0.5 flex w-full items-center justify-between gap-2 overflow-hidden rounded-lg px-2.5 py-2.5 text-left transition-colors sm:py-1.5 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none ${
                               vazio
                                 ? 'cursor-not-allowed opacity-40'
                                 : selecionado

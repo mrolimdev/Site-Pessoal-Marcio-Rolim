@@ -18,29 +18,38 @@ import { SITE } from '@/content/site'
  */
 export function CascaBlog({
   voltar,
+  semBarraFlutuante = false,
   children,
 }: {
   voltar?: { href: string; rotulo: string }
+  /**
+   * O índice do blog traz a própria barra `sticky`, com voltar, abas e tema
+   * juntos. Manter a pílula flutuante por cima dela seria navegação duplicada —
+   * e, no celular, duas coisas disputando o mesmo canto da tela.
+   */
+  semBarraFlutuante?: boolean
   children: React.ReactNode
 }) {
   return (
     <div className="min-h-screen bg-stone-50 text-slate-800 transition-colors duration-500 dark:bg-slate-950 dark:text-slate-100">
-      <div className="pointer-events-none fixed inset-x-4 top-4 z-50 mx-auto flex max-w-7xl items-center justify-between">
-        <div>
-          {voltar && (
-            <Link
-              href={voltar.href}
-              className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-4 py-2.5 text-slate-600 shadow-xl backdrop-blur-xl transition-all hover:border-slate-400 hover:text-slate-900 dark:border-slate-700/50 dark:bg-slate-800/90 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white"
-            >
-              <ArrowLeftIcon className="h-4 w-4" />
-              <span className="text-sm font-medium">{voltar.rotulo}</span>
-            </Link>
-          )}
+      {!semBarraFlutuante && (
+        <div className="pointer-events-none fixed inset-x-4 top-4 z-50 mx-auto flex max-w-7xl items-center justify-between">
+          <div>
+            {voltar && (
+              <Link
+                href={voltar.href}
+                className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-4 py-2.5 text-slate-600 shadow-xl backdrop-blur-xl transition-all hover:border-slate-400 hover:text-slate-900 dark:border-slate-700/50 dark:bg-slate-800/90 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white"
+              >
+                <ArrowLeftIcon className="h-4 w-4" />
+                <span className="text-sm font-medium">{voltar.rotulo}</span>
+              </Link>
+            )}
+          </div>
+          <div className="pointer-events-auto">
+            <ThemeToggle />
+          </div>
         </div>
-        <div className="pointer-events-auto">
-          <ThemeToggle />
-        </div>
-      </div>
+      )}
 
       {children}
 
@@ -73,7 +82,18 @@ export function CascaBlog({
 }
 
 /** Cabeçalho com o mesmo gradiente e as mesmas manchas de luz de /privacidade. */
-export function CabecalhoBlog({ children }: { children: React.ReactNode }) {
+export function CabecalhoBlog({
+  compacto = false,
+  children,
+}: {
+  /**
+   * O `pt-28` do padrão existe para o conteúdo não nascer embaixo da pílula
+   * flutuante. Quem já tem a barra `sticky` no fluxo não precisa dele, e no
+   * celular esses 112px eram um oitavo da tela gastos em nada.
+   */
+  compacto?: boolean
+  children: React.ReactNode
+}) {
   return (
     <header className="relative overflow-hidden border-b border-slate-200 dark:border-slate-800">
       <div className="absolute inset-0 bg-gradient-to-br from-white via-stone-50 to-amber-50 transition-colors duration-500 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950" />
@@ -86,7 +106,11 @@ export function CabecalhoBlog({ children }: { children: React.ReactNode }) {
         className="absolute -bottom-24 -left-10 h-72 w-72 rounded-full bg-emerald-300/15 blur-3xl dark:bg-emerald-500/10"
       />
 
-      <div className="animate-fade-in-up relative mx-auto flex max-w-7xl flex-col gap-5 px-6 pt-28 pb-14 md:pt-32 md:pb-16">
+      <div
+        className={`animate-fade-in-up relative mx-auto flex max-w-7xl flex-col gap-5 px-6 ${
+          compacto ? 'pt-8 pb-8 md:pt-12 md:pb-12' : 'pt-28 pb-14 md:pt-32 md:pb-16'
+        }`}
+      >
         {children}
       </div>
     </header>

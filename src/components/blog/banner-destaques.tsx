@@ -104,7 +104,7 @@ export function BannerDestaques({
                 type="button"
                 onClick={() => andar(-1)}
                 aria-label="Destaque anterior"
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:border-amber-500/50 hover:text-amber-600 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-amber-400/50 dark:hover:text-amber-400"
+                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 sm:h-9 sm:w-9 transition-colors hover:border-amber-500/50 hover:text-amber-600 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-amber-400/50 dark:hover:text-amber-400"
               >
                 <ChevronRightIcon className="h-4 w-4 rotate-180" />
               </button>
@@ -112,7 +112,7 @@ export function BannerDestaques({
                 type="button"
                 onClick={() => andar(1)}
                 aria-label="Próximo destaque"
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:border-amber-500/50 hover:text-amber-600 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-amber-400/50 dark:hover:text-amber-400"
+                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 sm:h-9 sm:w-9 transition-colors hover:border-amber-500/50 hover:text-amber-600 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-amber-400/50 dark:hover:text-amber-400"
               >
                 <ChevronRightIcon className="h-4 w-4" />
               </button>

@@ -1,10 +1,40 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
 
 import { PostCard } from '@/components/blog/post-card'
 import { ChevronRightIcon } from '@/components/icons'
 import type { PostResumo } from '@/lib/blog/queries'
+
+/**
+ * Aparelho sem cursor — celular e tablet.
+ *
+ * A esteira só para quando o ponteiro entra nela, e no toque esse evento não
+ * existe: no celular ela andava para sempre, com os cartões cortados no meio e
+ * impossíveis de ler. Onde não há cursor, o avanço automático é desligado e
+ * entra encaixe de rolagem no lugar — o dedo empurra e o cartão para inteiro na
+ * tela, que é o gesto que a pessoa já espera de uma fileira assim.
+ *
+ * Lido por `useSyncExternalStore`, como o seletor de tema faz: é a forma certa
+ * de ler estado de fora do React sem `setState` dentro de efeito, e resolve a
+ * hidratação com um valor de servidor explícito.
+ */
+const SEM_CURSOR = '(hover: none)'
+
+function assinarPonteiro(aoMudar: () => void) {
+  const consulta = window.matchMedia(SEM_CURSOR)
+  consulta.addEventListener('change', aoMudar)
+  return () => consulta.removeEventListener('change', aoMudar)
+}
+
+function lerPonteiro() {
+  return window.matchMedia(SEM_CURSOR).matches
+}
+
+/** O servidor não sabe o aparelho: assume cursor e o cliente corrige. */
+function lerPonteiroNoServidor() {
+  return false
+}
 
 /**
  * Esteira infinita dos últimos posts.
@@ -71,7 +101,10 @@ export function CarrosselPosts({
   /** Pausa por tempo, usada depois das setas. Guarda um `performance.now()`. */
   const pausaAte = useRef(0)
   const arrasto = useRef({ ativo: false, xInicial: 0, scrollInicial: 0, moveu: false })
+  /** No toque, a rolagem nativa pode encostar no zero e travar o laço. */
+  const jaRolou = useRef(false)
 
+  const semCursor = useSyncExternalStore(assinarPonteiro, lerPonteiro, lerPonteiroNoServidor)
   const temEsteira = posts.length >= MINIMO_PARA_ESTEIRA
 
   useEffect(() => {
@@ -114,7 +147,7 @@ export function CarrosselPosts({
         el.scrollLeft -= periodo.current
       }
 
-      if (reduzirMovimento.matches || pausado.current || agora < pausaAte.current) {
+      if (semCursor || reduzirMovimento.matches || pausado.current || agora < pausaAte.current) {
         resto = 0
         return
       }
@@ -133,7 +166,22 @@ export function CarrosselPosts({
       cancelAnimationFrame(quadro)
       observador.disconnect()
     }
-  }, [temEsteira, posts])
+  }, [temEsteira, posts, semCursor])
+
+  // No toque não há `pointermove` nosso para consertar o laço para trás: quem
+  // rola é o navegador, e ao encostar no zero ele trava. Assim que a rolagem
+  // para lá, adianta uma volta — visualmente idêntico, e o laço segue fechado.
+  const aoRolar = () => {
+    const el = pista.current
+    if (!semCursor || !el || periodo.current <= 0) return
+
+    if (el.scrollLeft > 4) {
+      jaRolou.current = true
+      return
+    }
+
+    if (jaRolou.current) el.scrollLeft = periodo.current
+  }
 
   const deslizar = (direcao: 1 | -1) => {
     const el = pista.current
@@ -221,7 +269,10 @@ export function CarrosselPosts({
     posts.map((post) => (
       <li
         key={`${chave}-${post.slug}`}
-        className="w-[15.5rem] shrink-0 sm:w-[16.5rem]"
+        // No celular o cartão ocupa quase a tela toda, com uma fresta do
+        // próximo à direita que diz "tem mais para o lado". Cartão estreito
+        // demais aqui deixava dois pela metade e nenhum inteiro.
+        className={`w-[78vw] max-w-[19rem] shrink-0 sm:w-[16.5rem] ${semCursor ? 'snap-start' : ''}`}
         // A segunda volta é só pixel: fora da árvore de acessibilidade e fora
         // da ordem de tabulação, senão cada post apareceria duas vezes.
         aria-hidden={duplicata || undefined}
@@ -250,7 +301,7 @@ export function CarrosselPosts({
               type="button"
               onClick={() => deslizar(-1)}
               aria-label="Ver posts anteriores"
-              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:border-amber-500/50 hover:text-amber-600 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-amber-400/50 dark:hover:text-amber-400"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 sm:h-9 sm:w-9 transition-colors hover:border-amber-500/50 hover:text-amber-600 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-amber-400/50 dark:hover:text-amber-400"
             >
               <ChevronRightIcon className="h-4 w-4 rotate-180" />
             </button>
@@ -258,7 +309,7 @@ export function CarrosselPosts({
               type="button"
               onClick={() => deslizar(1)}
               aria-label="Ver próximos posts"
-              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:border-amber-500/50 hover:text-amber-600 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-amber-400/50 dark:hover:text-amber-400"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 sm:h-9 sm:w-9 transition-colors hover:border-amber-500/50 hover:text-amber-600 focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-amber-400/50 dark:hover:text-amber-400"
             >
               <ChevronRightIcon className="h-4 w-4" />
             </button>
@@ -287,6 +338,7 @@ export function CarrosselPosts({
           onPointerCancel={aoSoltar}
           onWheel={aoGirarRoda}
           onClickCapture={aoClicar}
+          onScroll={aoRolar}
           // `overflow-x` liga o eixo vertical junto; `overflow-y-hidden` mata a
           // barra que apareceria, e o `py-4` dá o espaço que o cartão precisa
           // para subir no hover sem ser cortado.
@@ -300,7 +352,12 @@ export function CarrosselPosts({
           // cai toda na sangria: parado no começo, o primeiro cartão aparece
           // nítido, e o desbotado só age em quem está de saída. `scroll-px-6`
           // faz o mesmo pelo teclado, com o cartão que recebe o foco.
-          className="-mx-6 cursor-grab scroll-px-6 overflow-x-auto overflow-y-hidden py-4 [mask-image:linear-gradient(to_right,transparent,#000_1.5rem,#000_calc(100%-1.5rem),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,#000_1.5rem,#000_calc(100%-1.5rem),transparent)] scrollbar-hide active:cursor-grabbing"
+          className={`scrollbar-hide -mx-6 scroll-px-6 overflow-x-auto overflow-y-hidden py-4 [mask-image:linear-gradient(to_right,transparent,#000_1.5rem,#000_calc(100%-1.5rem),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,#000_1.5rem,#000_calc(100%-1.5rem),transparent)] ${
+            // Encaixe e esteira não convivem: o encaixe puxaria de volta cada
+            // pixel que o avanço automático empurra. Um vale no toque, o outro
+            // onde há cursor.
+            semCursor ? 'snap-x snap-mandatory' : 'cursor-grab active:cursor-grabbing'
+          }`}
         >
           <ul ref={trilha} className="flex w-max items-stretch gap-6 px-6">
             {cartoes('a', false)}
