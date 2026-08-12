@@ -1175,7 +1175,7 @@ export async function gerarNovaImagemCapaIaAction({
 }): Promise<{ ok: boolean; capaUrl?: string; capaAlt?: string; erro?: string }> {
   try {
     await requireAdmin()
-    const apiKey = obterApiKey(apiKeyInformada)
+    const apiKey = apiKeyInformada?.trim() || process.env.GEMINI_API_KEY?.trim() || undefined
     const supabase = await createClient()
 
     const slugLimpo = (slug || titulo)
