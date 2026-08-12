@@ -363,6 +363,93 @@ export function ModalGeradorIa({
           </div>
         )}
 
+        {/* PASSO: 5 OPÇÕES EM 1-CLIQUE */}
+        {passo === 'opcoes_5' && (
+          <div className="mt-5 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                  🔥 5 Tendências / Notícias Encontradas em {categoria === 'fe' ? 'Fé & Vida Cristã' : 'Tecnologia & IA'}:
+                </h4>
+                <p className="text-[0.72rem] text-slate-500 dark:text-slate-400">
+                  Marque 1 ou mais sugestões para gerar o(s) post(s) completo(s):
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setPasso('formulario')}
+                className="text-xs font-bold text-amber-600 hover:underline dark:text-amber-400"
+              >
+                ← Voltar
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-2.5 max-h-[320px] overflow-y-auto pr-1">
+              {opcoes5.map((item) => {
+                const marcada = opcoesSelecionadas.includes(item.id)
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => toggleOpcao(item.id)}
+                    className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3.5 transition-all ${
+                      marcada
+                        ? 'border-amber-500 bg-amber-500/10 shadow-sm dark:bg-amber-500/15 ring-2 ring-amber-500/20'
+                        : 'border-slate-200 bg-slate-50/60 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950/60'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={marcada}
+                      onChange={() => {}}
+                      className="mt-1 h-4 w-4 accent-amber-500 cursor-pointer"
+                    />
+
+                    <div className="flex flex-1 flex-col gap-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[0.7rem] font-bold text-amber-600 dark:text-amber-400">
+                          Opção #{item.id}
+                        </span>
+                        {item.porQueEQuente && (
+                          <span className="rounded-full bg-slate-200/60 px-2 py-0.5 font-mono text-[0.65rem] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            🔥 {item.porQueEQuente}
+                          </span>
+                        )}
+                      </div>
+                      <h5 className="text-xs font-extrabold text-slate-900 dark:text-white leading-snug">
+                        {item.titulo}
+                      </h5>
+                      <p className="text-[0.72rem] text-slate-500 dark:text-slate-400 leading-tight">
+                        {item.resumo}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* BARRA DE AÇÃO INFERIOR */}
+            <div className="mt-2 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={toggleSelecionarTodas}
+                className="text-xs font-bold text-slate-600 hover:underline dark:text-slate-300"
+              >
+                {opcoesSelecionadas.length === opcoes5.length ? 'Desmarcar todas' : 'Selecionar todas'}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleGerarPostsSelecionados}
+                disabled={carregando || opcoesSelecionadas.length === 0}
+                className="cursor-pointer inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-2.5 text-xs font-extrabold text-white shadow-lg transition-all hover:scale-105 disabled:opacity-50"
+              >
+                🚀 Gerar {opcoesSelecionadas.length} Post(s) Selecionado(s)
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* PASSO 2: SELEÇÃO DE TÍTULOS SUGERIDOS */}
         {passo === 'titulos' && (
           <div className="mt-5 flex flex-col gap-4">
