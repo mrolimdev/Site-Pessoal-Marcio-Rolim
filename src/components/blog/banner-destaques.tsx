@@ -36,6 +36,8 @@ export function BannerDestaques({
   const [listaVista, setListaVista] = useState(destaques)
   /** Mouse em cima ou foco dentro: alguém está lendo, o slide espera. */
   const pausado = useRef(false)
+  /** Onde o dedo encostou, para medir o deslize no solte. */
+  const toque = useRef({ x: 0, y: 0 })
 
   // Trocar de aba ou filtrar troca a lista, e o slide tem de voltar ao começo —
   // senão a pessoa cai no terceiro destaque de um conjunto que acabou de mudar.
@@ -69,6 +71,29 @@ export function BannerDestaques({
 
   const irPara = (destino: number) => setIndice(destino)
   const andar = (passo: number) => setIndice((i) => i + passo)
+
+  // Deslizar com o dedo. A trilha anda por `translateX`, não por rolagem, então
+  // o gesto que qualquer pessoa tenta primeiro num banner assim não existiria
+  // de graça — sem isto, no celular o banner parece travado.
+  //
+  // A origem do gesto vive num ref, e não numa variável do corpo: o giro
+  // automático pode disparar entre o toque e o solte, e uma variável comum
+  // nasceria zerada no render seguinte, dando um deslize gigante e falso.
+  const aoTocar = (e: React.TouchEvent) => {
+    toque.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    pausado.current = true
+  }
+
+  const aoSoltarToque = (e: React.TouchEvent) => {
+    pausado.current = false
+    const dx = e.changedTouches[0].clientX - toque.current.x
+    const dy = e.changedTouches[0].clientY - toque.current.y
+
+    // Só conta como deslize horizontal se andou o bastante e mais na horizontal
+    // que na vertical — senão rolar a página trocaria o slide sem querer.
+    if (Math.abs(dx) < 50 || Math.abs(dx) <= Math.abs(dy)) return
+    andar(dx < 0 ? 1 : -1)
+  }
 
   return (
     <section className="animate-fade-in flex flex-col gap-5">
@@ -134,6 +159,8 @@ export function BannerDestaques({
         onBlurCapture={() => {
           pausado.current = false
         }}
+        onTouchStart={aoTocar}
+        onTouchEnd={aoSoltarToque}
         // A trilha tem 400% da largura e *precisa* de contenção de verdade:
         // `clip-path` só corta a pintura, o layout continua largo e a página
         // inteira ganha barra de rolagem horizontal.

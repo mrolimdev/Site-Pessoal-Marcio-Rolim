@@ -4,7 +4,16 @@ import { useEffect, useRef, useSyncExternalStore } from 'react'
 
 import { PostCard } from '@/components/blog/post-card'
 import { ChevronRightIcon } from '@/components/icons'
+import type { IconProps } from '@/components/icons'
 import type { PostResumo } from '@/lib/blog/queries'
+
+/** Cores do selo de área no cabeçalho da fileira. */
+type Acento = 'ceu' | 'ambar'
+
+const ACENTOS: Record<Acento, string> = {
+  ceu: 'bg-sky-500/10 text-sky-600 dark:bg-sky-400/15 dark:text-sky-400',
+  ambar: 'bg-amber-500/10 text-amber-600 dark:bg-amber-400/15 dark:text-amber-400',
+}
 
 /**
  * Aparelho sem cursor — celular e tablet.
@@ -83,6 +92,9 @@ export function CarrosselPosts({
   posts,
   titulo,
   descricao,
+  manual = false,
+  Icone,
+  acento,
 }: {
   /**
    * Precisa ser estável entre renders (`useMemo` no pai): a esteira volta ao
@@ -91,6 +103,17 @@ export function CarrosselPosts({
   posts: PostResumo[]
   titulo: string
   descricao: string
+  /**
+   * Rotativo manual: o laço infinito continua, mas quem o move é a pessoa —
+   * setas, arrasto, roda ou dedo. Só o avanço sozinho sai.
+   *
+   * Uma página com três fileiras andando ao mesmo tempo não se lê: o olho não
+   * tem onde pousar. A de cima anda, as de área esperam ser puxadas.
+   */
+  manual?: boolean
+  /** Selo de área no cabeçalho, quando a fileira é de uma área só. */
+  Icone?: (props: IconProps) => React.JSX.Element
+  acento?: Acento
 }) {
   const pista = useRef<HTMLDivElement>(null)
   const trilha = useRef<HTMLUListElement>(null)
@@ -147,7 +170,13 @@ export function CarrosselPosts({
         el.scrollLeft -= periodo.current
       }
 
-      if (semCursor || reduzirMovimento.matches || pausado.current || agora < pausaAte.current) {
+      if (
+        manual ||
+        semCursor ||
+        reduzirMovimento.matches ||
+        pausado.current ||
+        agora < pausaAte.current
+      ) {
         resto = 0
         return
       }
@@ -166,7 +195,7 @@ export function CarrosselPosts({
       cancelAnimationFrame(quadro)
       observador.disconnect()
     }
-  }, [temEsteira, posts, semCursor])
+  }, [temEsteira, posts, semCursor, manual])
 
   // No toque não há `pointermove` nosso para consertar o laço para trás: quem
   // rola é o navegador, e ao encostar no zero ele trava. Assim que a rolagem
@@ -285,18 +314,31 @@ export function CarrosselPosts({
   return (
     <section className="flex flex-col gap-5">
       <header className="flex items-end justify-between gap-4 border-b border-slate-200 pb-4 dark:border-slate-800">
-        <div className="min-w-0">
-          <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-            {titulo}
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-              {posts.length}
+        <div className="flex min-w-0 items-center gap-3">
+          {Icone && acento && (
+            <span
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${ACENTOS[acento]}`}
+            >
+              <Icone className="h-5 w-5" />
             </span>
-          </h2>
-          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{descricao}</p>
+          )}
+
+          <div className="min-w-0">
+            <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+              {titulo}
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                {posts.length}
+              </span>
+            </h2>
+            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{descricao}</p>
+          </div>
         </div>
 
+        {/* No toque as setas somem: o dedo desliza a fileira, e com encaixe de
+            rolagem o cartão para inteiro sozinho. Guardá-las ali só espremia o
+            texto do cabeçalho numa coluna estreita. */}
         {temEsteira && (
-          <div className="flex shrink-0 gap-1.5">
+          <div className="hidden shrink-0 gap-1.5 sm:flex">
             <button
               type="button"
               onClick={() => deslizar(-1)}

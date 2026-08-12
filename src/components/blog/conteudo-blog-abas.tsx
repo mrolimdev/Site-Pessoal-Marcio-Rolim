@@ -8,7 +8,7 @@ import { CarrosselPosts } from '@/components/blog/carrossel-posts'
 import { FiltrosBlog, NavegacaoBlog } from '@/components/blog/navegacao-blog'
 import type { Aba } from '@/components/blog/navegacao-blog'
 import { CardArvoreDeCategorias, CardNuvemDeTags } from '@/components/blog/widgets-blog'
-import { SearchIcon } from '@/components/icons'
+import { CodeIcon, CrossIcon, SearchIcon } from '@/components/icons'
 import type { DadosWidgets, PostResumo, TagComContagem } from '@/lib/blog/queries'
 
 /** Quantos slides o banner de destaques chega a ter. */
@@ -193,6 +193,37 @@ export function ConteudoBlogAbas({
     return ordenarPorData(base.filter((p) => !noBanner.has(p.slug)))
   }, [abaAtiva, techFiltrados, feFiltrados, destaques])
 
+  // ─── SEÇÕES POR ÁREA: uma fileira manual para cada ───
+  //
+  // Só na aba "Todas". Numa aba de área, "Últimos posts" já é exatamente esta
+  // lista, e a página mostraria a mesma fileira duas vezes seguidas.
+  //
+  // Diferente da esteira, aqui não se descontam os destaques: a seção é a
+  // vitrine completa da área, e o post em destaque é justamente o que alguém
+  // esperaria encontrar no começo dela.
+  const secoesPorArea = useMemo(() => {
+    if (abaAtiva !== 'todas') return []
+
+    return [
+      {
+        chave: 'tecnologia' as const,
+        titulo: 'Tecnologia',
+        descricao: 'Engenharia de software, IA, agentes e automação de processos',
+        Icone: CodeIcon,
+        acento: 'ceu' as const,
+        posts: ordenarPorData(techFiltrados),
+      },
+      {
+        chave: 'fe' as const,
+        titulo: 'Vida Cristã',
+        descricao: 'Fé, propósito, sabedoria e vida com Deus no mundo hiperconectado',
+        Icone: CrossIcon,
+        acento: 'ambar' as const,
+        posts: ordenarPorData(feFiltrados),
+      },
+    ].filter((secao) => secao.posts.length > 0)
+  }, [abaAtiva, techFiltrados, feFiltrados])
+
   // ─── TAGS DINÂMICAS POR ABA E POR ORIGEM ───
   const tagsFiltradas = useMemo<TagComContagem[]>(() => {
     const mapaTech = new Map<string, number>()
@@ -288,11 +319,27 @@ export function ConteudoBlogAbas({
                 </button>
               </div>
             ) : (
-              <CarrosselPosts
-                posts={rotativos}
-                titulo="Últimos posts"
-                descricao={COPIA[abaAtiva].esteira}
-              />
+              <div className="flex flex-col gap-12">
+                <CarrosselPosts
+                  posts={rotativos}
+                  titulo="Últimos posts"
+                  descricao={COPIA[abaAtiva].esteira}
+                />
+
+                {/* Uma fileira por área, manual: a de cima já anda sozinha, e
+                    três esteiras em movimento na mesma tela não se leem. */}
+                {secoesPorArea.map((secao) => (
+                  <CarrosselPosts
+                    key={secao.chave}
+                    posts={secao.posts}
+                    titulo={secao.titulo}
+                    descricao={secao.descricao}
+                    Icone={secao.Icone}
+                    acento={secao.acento}
+                    manual
+                  />
+                ))}
+              </div>
             )}
           </div>
 

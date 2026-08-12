@@ -105,13 +105,16 @@ export function NavegacaoBlog({
                   type="button"
                   onClick={() => onTrocarAba(chave)}
                   aria-pressed={selecionada}
-                  className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none sm:px-4 ${
+                  className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-2 text-xs font-bold transition-all focus-visible:ring-2 focus-visible:ring-amber-500/40 focus-visible:outline-none sm:px-4 ${
                     selecionada
                       ? ativa
                       : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <Icone className="h-3.5 w-3.5 shrink-0" />
+                  {/* O ícone sai no celular: com ele as três abas passavam da
+                      largura da tela e a terceira ficava cortada. O rótulo já
+                      diz o que o ícone diria. */}
+                  <Icone className="hidden h-3.5 w-3.5 shrink-0 sm:block" />
                   <span className="sm:hidden">{curto}</span>
                   <span className="hidden sm:inline">{longo}</span>
                   <span
@@ -197,8 +200,11 @@ export function FiltrosBlog({
       </div>
 
       {/* Sangria negativa para a fileira rolar de ponta a ponta da tela no
-          celular, sem que o último chip pareça encostar na margem. */}
-      <div className="scrollbar-hide -mx-6 flex gap-2 overflow-x-auto px-6 pb-0.5 sm:mx-0 sm:flex-wrap sm:px-0">
+          celular, sem que o último chip pareça encostar na margem. A máscara
+          desbota a ponta direita, que é o que avisa que há mais para o lado —
+          um chip cortado na régua parece defeito, desbotado parece convite.
+          No desktop os chips quebram em linhas e nada disso se aplica. */}
+      <div className="scrollbar-hide -mx-6 flex gap-2 overflow-x-auto px-6 pb-0.5 [mask-image:linear-gradient(to_right,#000_calc(100%-2.5rem),transparent)] [-webkit-mask-image:linear-gradient(to_right,#000_calc(100%-2.5rem),transparent)] sm:mx-0 sm:flex-wrap sm:px-0 sm:[mask-image:none] sm:[-webkit-mask-image:none]">
         <ChipCategoria
           rotulo="Todas"
           contagem={totalDaAba}
