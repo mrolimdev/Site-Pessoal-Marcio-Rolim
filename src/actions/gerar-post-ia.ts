@@ -564,6 +564,21 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
       })
     }
 
+    if (contentNodes.length === 0) {
+      const textoFallback = typeof gerado.artigoFormatado === 'string'
+        ? gerado.artigoFormatado
+        : gerado.resumo || `Artigo completo sobre ${titulo}`
+
+      textoFallback.split('\n\n').forEach((pStr: string) => {
+        if (pStr.trim()) {
+          contentNodes.push({
+            type: 'paragraph',
+            content: [{ type: 'text', text: pStr.trim() }],
+          })
+        }
+      })
+    }
+
     const contentJson = {
       type: 'doc',
       content: contentNodes,
@@ -576,9 +591,9 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
 
-    // Geração de imagem via Gemini Imagen 3 API
-    let capaUrl = `https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1200&auto=format&fit=crop`
-    const promptVisual = gerado.promptVisualCapa || `Professional editorial photograph of ${titulo}, 16:9 aspect ratio, warm cinematic lighting`
+    // Geração de imagem de capa por IA (Imagen 3 com fallback dinâmico de IA por tema)
+    let capaUrl = ''
+    const promptVisual = gerado.promptVisualCapa || `Professional editorial photograph about ${titulo}, 16:9 aspect ratio, warm cinematic lighting`
 
     try {
       const resImagen = await fetch(
@@ -616,9 +631,44 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
             capaUrl = `data:image/jpeg;base64,${base64Img}`
           }
         }
+      } else {
+        console.warn(`[Imagen 3 API] Retornou HTTP ${resImagen.status}. Gerando capa temática por IA...`)
       }
     } catch (errImagen) {
       console.warn('Aviso: Geração do Imagen 3 usou fallback:', errImagen)
+    }
+
+    // Se o Imagen 3 não gerou a capa (ex: sem quota na API Key), gera uma capa fotográfica realista temática via IA e faz upload ao Supabase
+    if (!capaUrl) {
+      try {
+        const promptCodificado = encodeURIComponent(`${promptVisual} professional editorial photography 16:9 warm lighting no text`)
+        const urlIaImg = `https://image.pollinations.ai/prompt/${promptCodificado}?width=1200&height=675&nologo=true`
+
+        const resIaImg = await fetch(urlIaImg)
+        if (resIaImg.ok) {
+          const arrayBuffer = await resIaImg.arrayBuffer()
+          const buffer = Buffer.from(arrayBuffer)
+          const filename = `capa-ia-${slug}-${Date.now()}.jpg`
+          const { error: uploadErr } = await supabase.storage
+            .from('capas')
+            .upload(filename, buffer, { contentType: 'image/jpeg', upsert: true })
+
+          if (!uploadErr) {
+            const { data: publicData } = supabase.storage.from('capas').getPublicUrl(filename)
+            if (publicData?.publicUrl) {
+              capaUrl = publicData.publicUrl
+            }
+          } else {
+            capaUrl = urlIaImg
+          }
+        }
+      } catch (errFallback) {
+        console.warn('Erro ao gerar capa de fallback por IA:', errFallback)
+      }
+    }
+
+    if (!capaUrl) {
+      capaUrl = `https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1200&auto=format&fit=crop`
     }
 
     // Garante entre 5 e 10 tags

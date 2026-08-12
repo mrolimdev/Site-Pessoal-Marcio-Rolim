@@ -147,6 +147,8 @@ export function PostForm({ post }: Props) {
   const [conteudoInicial, setConteudoInicial] = useState<JSONContent | null>(post?.conteudo ?? null)
 
   const aoAplicarPostIa = (resultado: ResultadoPostIa) => {
+    const jsonStr = JSON.stringify(resultado.contentJson)
+
     setTitulo(resultado.titulo)
     setSlug(resultado.slug)
     setSlugManual(true)
@@ -161,7 +163,7 @@ export function PostForm({ post }: Props) {
     setConteudoInicial(resultado.contentJson)
 
     if (refConteudo.current) {
-      refConteudo.current.value = JSON.stringify(resultado.contentJson)
+      refConteudo.current.value = jsonStr
     }
 
     setKeyEditor((k) => k + 1)
@@ -198,8 +200,18 @@ export function PostForm({ post }: Props) {
    * re-renderiza nada e o FormData continua levando o valor mais recente.
    */
   const aoAtualizarConteudo = useCallback((documento: JSONContent) => {
-    if (refConteudo.current) refConteudo.current.value = JSON.stringify(documento)
-    // React descarta o set quando o valor já é o mesmo, então repetir é barato.
+    // Evita que o evento de montagem do Tiptap limpe refConteudo quando já existe conteúdo válido preenchido pela IA
+    const temTexto = Boolean(
+      documento?.content?.some(
+        (n: any) => n.content?.length > 0 || n.type === 'heading' || n.type === 'bulletList' || n.type === 'blockquote'
+      )
+    )
+
+    if (refConteudo.current) {
+      if (temTexto || !refConteudo.current.value || refConteudo.current.value === JSON.stringify(DOC_VAZIO)) {
+        refConteudo.current.value = JSON.stringify(documento)
+      }
+    }
     setSujo(true)
   }, [])
 
