@@ -38,8 +38,6 @@ export function ModalGeradorIa({
   const [erro, setErro] = useState<string | null>(null)
 
   // 5 Opções Quentes em 1 Clique
-  const [categoriaUmClique, setCategoriaUmClique] = useState<Categoria>(categoriaAtual)
-  const [assuntoUmClique, setAssuntoUmClique] = useState('')
   const [opcoes5, setOpcoes5] = useState<OpcaoNoticiaQuente[]>([])
   const [opcoesSelecionadas, setOpcoesSelecionadas] = useState<number[]>([])
 
@@ -64,11 +62,11 @@ export function ModalGeradorIa({
     const apifyToken = typeof window !== 'undefined' ? localStorage.getItem('apify_admin_token') || undefined : undefined
     setErro(null)
     setCarregando(true)
-    setStatusMensagem(`⚡ Pesquisando as 5 principais tendências em ${categoriaUmClique === 'fe' ? 'Vida Cristã & Fé' : 'Tecnologia & IA'}...`)
+    setStatusMensagem(`⚡ Pesquisando as 5 principais tendências em ${categoria === 'fe' ? 'Vida Cristã & Fé' : 'Tecnologia & IA'}...`)
 
     const resp = await obter5OpcoesNoticiasQuentesAction({
-      categoria: categoriaUmClique,
-      assuntoOpcional: assuntoUmClique,
+      categoria,
+      assuntoOpcional: tema,
       apiKeyInformada: apiKey,
       apifyTokenInformado: apifyToken,
       modeloId,
@@ -126,7 +124,7 @@ export function ModalGeradorIa({
       const resp = await gerarPostCompletoComIaAction({
         titulo: item.titulo,
         tema: item.resumo,
-        categoria: item.categoria || categoriaUmClique,
+        categoria: item.categoria || categoria,
         apiKeyInformada: apiKey,
         modeloId,
       })
@@ -256,192 +254,13 @@ export function ModalGeradorIa({
           </div>
         )}
 
-        {/* BOTÃO ATALHO RÁPIDO DE 1 CLIQUE */}
+        {/* FORMULÁRIO UNIFICADO */}
         {passo === 'formulario' && (
-          <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-sky-500/30 bg-gradient-to-r from-sky-500/10 via-amber-500/10 to-orange-500/10 p-4">
-            <div>
-              <h4 className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <span>⚡ Criação Automática com 1 Clique (5 Opções)</span>
-              </h4>
-              <p className="text-[0.75rem] text-slate-600 dark:text-slate-400 mt-0.5">
-                Escolha a categoria e (opcionalmente) digite um assunto de foco. O assistente pesquisará a web e trará 5 opções para você escolher.
-              </p>
-            </div>
-
-            {/* Seleção de Categoria 1-Clique */}
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setCategoriaUmClique('tecnologia')}
-                className={`cursor-pointer rounded-xl border p-2.5 text-center text-xs font-bold transition-all ${
-                  categoriaUmClique !== 'fe'
-                    ? 'border-sky-500 bg-sky-500/20 text-sky-900 dark:text-sky-300'
-                    : 'border-slate-200 bg-white/60 text-slate-600 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-400'
-                }`}
-              >
-                💻 Tecnologia & IA
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setCategoriaUmClique('fe')}
-                className={`cursor-pointer rounded-xl border p-2.5 text-center text-xs font-bold transition-all ${
-                  categoriaUmClique === 'fe'
-                    ? 'border-amber-500 bg-amber-500/20 text-amber-900 dark:text-amber-300'
-                    : 'border-slate-200 bg-white/60 text-slate-600 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-400'
-                }`}
-              >
-                ✝️ Vida Cristã & Fé
-              </button>
-            </div>
-
-            {/* Campo Opcional de Foco / Assunto */}
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <input
-                type="text"
-                value={assuntoUmClique}
-                onChange={(e) => setAssuntoUmClique(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    handleBuscar5OpcoesUmClique()
-                  }
-                }}
-                placeholder={
-                  categoriaUmClique === 'fe'
-                    ? 'Foco opcional (ex: Oração na rotina, Provérbios... ou em branco para tendências)'
-                    : 'Foco opcional (ex: DeepSeek R1, Agentic AI, No-Code... ou em branco para notícias quentes)'
-                }
-                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 outline-none transition-all focus:border-amber-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-              />
-
-              <button
-                type="button"
-                onClick={handleBuscar5OpcoesUmClique}
-                disabled={carregando}
-                className="cursor-pointer whitespace-nowrap rounded-xl bg-gradient-to-r from-sky-600 via-amber-600 to-orange-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-md transition-all hover:scale-[1.02] disabled:opacity-50"
-              >
-                {carregando ? '🔍 Buscando...' : '⚡ Buscar 5 Opções'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* PASSO 5 OPÇÕES EM 1 CLIQUE (MULTI-SELEÇÃO) */}
-        {passo === 'opcoes_5' && (
-          <div className="mt-5 flex flex-col gap-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
-              <div>
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Selecione 1 ou mais notícias para criar ({opcoesSelecionadas.length} selecionada{opcoesSelecionadas.length !== 1 ? 's' : ''}):
-                </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Notícias e tendências em alta filtradas sem duplicações do banco.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={toggleSelecionarTodas}
-                className="text-xs font-bold text-sky-600 hover:underline dark:text-sky-400"
-              >
-                {opcoesSelecionadas.length === opcoes5.length ? 'Desmarcar todas' : 'Selecionar todas'}
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-3 max-h-[340px] overflow-y-auto pr-1">
-              {opcoes5.map((item) => {
-                const selecionada = opcoesSelecionadas.includes(item.id)
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() => toggleOpcao(item.id)}
-                    className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-all ${
-                      selecionada
-                        ? 'border-sky-500 bg-sky-500/10 dark:border-sky-400 dark:bg-sky-500/15'
-                        : 'border-slate-200 bg-slate-50/80 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950/60'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selecionada}
-                      onChange={() => toggleOpcao(item.id)}
-                      className="mt-1 h-4 w-4 rounded border-slate-300 accent-sky-600 dark:border-slate-700"
-                    />
-
-                    <div className="flex flex-1 flex-col gap-1">
-                      <div className="flex items-center justify-between">
-                        <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[0.65rem] font-bold text-sky-700 dark:text-sky-300">
-                          🔥 Notícia em Alta #{item.id}
-                        </span>
-                        <span className="text-[0.7rem] font-semibold text-slate-400">
-                          {selecionada ? '✓ Selecionado' : 'Clique para selecionar'}
-                        </span>
-                      </div>
-
-                      <h5 className="text-sm font-extrabold text-slate-900 dark:text-white leading-snug">
-                        {item.titulo}
-                      </h5>
-
-                      <p className="text-xs text-slate-600 dark:text-slate-300">
-                        {item.resumo}
-                      </p>
-
-                      <p className="text-[0.7rem] font-medium text-amber-600 dark:text-amber-400 mt-0.5">
-                        💡 Tendência: {item.porQueEQuente}
-                      </p>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            <div className="flex items-center justify-between border-t border-slate-100 pt-4 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setPasso('formulario')}
-                className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-              >
-                ← Voltar
-              </button>
-
-              <button
-                type="button"
-                onClick={handleGerarPostsSelecionados}
-                disabled={carregando || opcoesSelecionadas.length === 0}
-                className="cursor-pointer inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-sky-600 via-amber-600 to-orange-600 px-6 py-3 text-xs font-extrabold text-white shadow-lg transition-all hover:scale-105 disabled:opacity-50"
-              >
-                🚀 Criar {opcoesSelecionadas.length} Post{opcoesSelecionadas.length !== 1 ? 's' : ''} Selecionado{opcoesSelecionadas.length !== 1 ? 's' : ''}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* CONTEÚDO DINÂMICO DOS PASSOS */}
-        {passo === 'formulario' && (
-          <div className="mt-5 flex flex-col gap-4">
+          <div className="mt-5 flex flex-col gap-5">
+            {/* 1. SELETOR DE CATEGORIA ÚNICO */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                🎯 Tema ou Assunto do Post (Ou use o botão acima)
-              </label>
-              <input
-                type="text"
-                value={tema}
-                onChange={(e) => setTema(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    handleGerarTitulos(e)
-                  }
-                }}
-                placeholder="Ex: RAG com Supabase Vector, ou Devocional na Rotina Intensa..."
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-all focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                📂 Área / Categoria Principal
+                📂 1. Área / Categoria do Post
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -449,7 +268,7 @@ export function ModalGeradorIa({
                   onClick={() => setCategoria('tecnologia')}
                   className={`cursor-pointer rounded-2xl border p-3.5 text-left text-xs font-bold transition-all ${
                     categoria !== 'fe'
-                      ? 'border-sky-500 bg-sky-500/15 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300'
+                      ? 'border-sky-500 bg-sky-500/15 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300 ring-2 ring-sky-500/30'
                       : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
                   }`}
                 >
@@ -461,7 +280,7 @@ export function ModalGeradorIa({
                   onClick={() => setCategoria('fe')}
                   className={`cursor-pointer rounded-2xl border p-3.5 text-left text-xs font-bold transition-all ${
                     categoria === 'fe'
-                      ? 'border-amber-500 bg-amber-500/15 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
+                      ? 'border-amber-500 bg-amber-500/15 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 ring-2 ring-amber-500/30'
                       : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400'
                   }`}
                 >
@@ -470,11 +289,43 @@ export function ModalGeradorIa({
               </div>
             </div>
 
-            <div className="mt-2 flex justify-end gap-3">
+            {/* 2. CAMPO DE TEMA / ASSUNTO ÚNICO */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                🎯 2. Tema ou Assunto (Opcional no 1-Clique / Obrigatório no Modo Manual)
+              </label>
+              <input
+                type="text"
+                value={tema}
+                onChange={(e) => setTema(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    if (tema.trim()) {
+                      handleGerarTitulos(e)
+                    } else {
+                      handleBuscar5OpcoesUmClique()
+                    }
+                  }
+                }}
+                placeholder={
+                  categoria === 'fe'
+                    ? 'Ex: Oração na rotina agitada, Provérbios... ou deixe em branco para tendências'
+                    : 'Ex: DeepSeek R1, Agentic AI, No-Code... ou deixe em branco para notícias quentes'
+                }
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-all focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+              />
+              <p className="mt-1 text-[0.7rem] text-slate-500 dark:text-slate-400">
+                Se deixar em branco no modo 1-Clique, pesquisaremos as notícias em alta no Apify/Google.
+              </p>
+            </div>
+
+            {/* 3. BOTÕES DE AÇÃO LIMPOS E CLAROS */}
+            <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
               <button
                 type="button"
                 onClick={onFechar}
-                className="cursor-pointer rounded-2xl px-5 py-3 text-xs font-bold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="cursor-pointer rounded-2xl px-4 py-3 text-xs font-bold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 Cancelar
               </button>
@@ -483,15 +334,24 @@ export function ModalGeradorIa({
                 type="button"
                 onClick={handleGerarTitulos}
                 disabled={carregando || !tema.trim()}
-                className="cursor-pointer inline-flex items-center gap-2 rounded-2xl bg-amber-600 px-6 py-3 text-xs font-bold text-white shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-500 disabled:opacity-50"
+                className="cursor-pointer inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-3 text-xs font-bold text-amber-800 hover:bg-amber-500/20 disabled:opacity-50 dark:text-amber-300"
+              >
+                🔍 Gerar Sugestões de Título
+              </button>
+
+              <button
+                type="button"
+                onClick={handleBuscar5OpcoesUmClique}
+                disabled={carregando}
+                className="cursor-pointer inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-600 via-amber-600 to-orange-600 px-6 py-3 text-xs font-extrabold text-white shadow-lg transition-all hover:scale-[1.02] disabled:opacity-50"
               >
                 {carregando ? (
                   <>
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Analisando com {modeloId}...
+                    Pesquisando...
                   </>
                 ) : (
-                  <>🔍 Buscar Tendências & Gerar Títulos</>
+                  <>⚡ Criar em 1 Clique (5 Opções)</>
                 )}
               </button>
             </div>
