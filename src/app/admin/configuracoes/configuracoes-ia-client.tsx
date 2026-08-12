@@ -41,11 +41,6 @@ export function ConfiguracoesIaClient() {
       const modImgSalvo = localStorage.getItem('gemini_admin_image_model_id')
       const apifySalvo = localStorage.getItem('apify_admin_token')
 
-      if (keySalva) {
-        setApiKey(keySalva)
-        handleValidarEListarModelos(keySalva)
-      }
-
       if (modSalvo) {
         setModeloSelecionado(modSalvo)
       }
@@ -54,12 +49,33 @@ export function ConfiguracoesIaClient() {
         setModeloImagemSelecionado(modImgSalvo)
       }
 
+      if (keySalva) {
+        setApiKey(keySalva)
+        handleValidarEListarModelos(keySalva)
+      }
+
       if (apifySalvo) {
         setApifyToken(apifySalvo)
         handleValidarApify(apifySalvo)
       }
     }
   }, [])
+
+  // Handler para trocar modelo de texto e salvar imediatamente
+  const handleSelecionarModeloTexto = (id: string) => {
+    setModeloSelecionado(id)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('gemini_admin_model_id', id)
+    }
+  }
+
+  // Handler para trocar modelo de imagem e salvar imediatamente
+  const handleSelecionarModeloImagem = (id: string) => {
+    setModeloImagemSelecionado(id)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('gemini_admin_image_model_id', id)
+    }
+  }
 
   // Passo 1: Validar Chave e Buscar Modelos Gemini
   const handleValidarEListarModelos = async (chaveUsar?: string) => {
@@ -84,10 +100,22 @@ export function ConfiguracoesIaClient() {
 
     setModelos(resp.modelos)
 
-    const existe = resp.modelos.some((m) => m.id === modeloSelecionado)
-    if (!existe && resp.modelos.length > 0) {
+    // Respeita estritamente o modelo salvo no localStorage ou estado atual
+    const salvoNoStorage = typeof window !== 'undefined' ? localStorage.getItem('gemini_admin_model_id') : null
+    const modeloAlvo = salvoNoStorage || modeloSelecionado
+
+    const existe = resp.modelos.some((m) => m.id === modeloAlvo)
+    if (existe) {
+      setModeloSelecionado(modeloAlvo)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('gemini_admin_model_id', modeloAlvo)
+      }
+    } else if (resp.modelos.length > 0) {
       const recomendado = resp.modelos.find((m) => m.eRecomendado) || resp.modelos[0]
       setModeloSelecionado(recomendado.id)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('gemini_admin_model_id', recomendado.id)
+      }
     }
 
     setMensagemSucesso(`Chave do Gemini válida! ${resp.modelos.length} modelos Gemini disponíveis na sua conta.`)
@@ -305,7 +333,7 @@ export function ConfiguracoesIaClient() {
                 return (
                   <label
                     key={mod.id}
-                    onClick={() => setModeloSelecionado(mod.id)}
+                    onClick={() => handleSelecionarModeloTexto(mod.id)}
                     className={`flex cursor-pointer items-center justify-between gap-4 rounded-2xl border p-3.5 transition-all ${
                       selecionado
                         ? 'border-amber-500 bg-amber-500/10 shadow-sm dark:bg-amber-500/15'
@@ -317,7 +345,7 @@ export function ConfiguracoesIaClient() {
                         type="radio"
                         name="modelo_ia"
                         checked={selecionado}
-                        onChange={() => setModeloSelecionado(mod.id)}
+                        onChange={() => handleSelecionarModeloTexto(mod.id)}
                         className="h-4 w-4 accent-amber-500"
                       />
                       <div className="flex flex-col min-w-0">
@@ -368,7 +396,7 @@ export function ConfiguracoesIaClient() {
               return (
                 <div
                   key={imgMod.id}
-                  onClick={() => setModeloImagemSelecionado(imgMod.id)}
+                  onClick={() => handleSelecionarModeloImagem(imgMod.id)}
                   className={`flex cursor-pointer flex-col justify-between gap-2 rounded-2xl border p-4 transition-all ${
                     selecionado
                       ? 'border-amber-500 bg-amber-500/10 shadow-sm dark:bg-amber-500/15 ring-2 ring-amber-500/30'
@@ -380,7 +408,7 @@ export function ConfiguracoesIaClient() {
                       type="radio"
                       name="modelo_imagem_ia"
                       checked={selecionado}
-                      onChange={() => setModeloImagemSelecionado(imgMod.id)}
+                      onChange={() => handleSelecionarModeloImagem(imgMod.id)}
                       className="h-4 w-4 accent-amber-500"
                     />
                     <span className="text-xs font-bold text-slate-900 dark:text-white">
