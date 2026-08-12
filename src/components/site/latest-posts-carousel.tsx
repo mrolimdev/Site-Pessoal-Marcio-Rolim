@@ -1,12 +1,10 @@
 'use client'
 
-import { useRef } from 'react'
-import Image from 'next/image'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 
 import { CategoriaBadge } from '@/components/blog/categoria-badge'
 import { ImagemDeCapa } from '@/components/blog/imagem-capa'
-import { ROTULO_CATEGORIA } from '@/lib/blog/constantes'
 import type { PostResumo } from '@/lib/blog/queries'
 
 type Props = {
@@ -27,21 +25,52 @@ function formatarDataCurta(iso: string) {
 
 export function LatestPostsCarousel({ posts }: Props) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
-
-  if (!posts || posts.length === 0) {
-    return null
-  }
+  const [isPaused, setIsPaused] = useState(false)
 
   const scrollLeft = () => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -360, behavior: 'smooth' })
+      const container = scrollContainerRef.current
+      if (container.scrollLeft <= 10) {
+        container.scrollTo({ left: container.scrollWidth, behavior: 'smooth' })
+      } else {
+        container.scrollBy({ left: -360, behavior: 'smooth' })
+      }
     }
   }
 
   const scrollRight = () => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 360, behavior: 'smooth' })
+      const container = scrollContainerRef.current
+      const maxScroll = container.scrollWidth - container.clientWidth
+      if (container.scrollLeft >= maxScroll - 10) {
+        container.scrollTo({ left: 0, behavior: 'smooth' })
+      } else {
+        container.scrollBy({ left: 360, behavior: 'smooth' })
+      }
     }
+  }
+
+  // Rotação automática a cada 3.5 segundos
+  useEffect(() => {
+    if (!posts || posts.length <= 1 || isPaused) return
+
+    const timer = setInterval(() => {
+      if (scrollContainerRef.current) {
+        const container = scrollContainerRef.current
+        const maxScroll = container.scrollWidth - container.clientWidth
+        if (container.scrollLeft >= maxScroll - 10) {
+          container.scrollTo({ left: 0, behavior: 'smooth' })
+        } else {
+          container.scrollBy({ left: 360, behavior: 'smooth' })
+        }
+      }
+    }, 3500)
+
+    return () => clearInterval(timer)
+  }, [posts, isPaused])
+
+  if (!posts || posts.length === 0) {
+    return null
   }
 
   return (
@@ -93,9 +122,13 @@ export function LatestPostsCarousel({ posts }: Props) {
           </div>
         </div>
 
-        {/* CARROSSEL HORIZONTAL ESPAÇOSO E DISCRETO */}
+        {/* CARROSSEL HORIZONTAL COM ROTAÇÃO AUTOMÁTICA */}
         <div
           ref={scrollContainerRef}
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setIsPaused(false)}
           className="flex items-stretch gap-6 overflow-x-auto pb-4 scrollbar-none snap-x snap-mandatory"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
