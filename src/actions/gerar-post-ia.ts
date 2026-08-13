@@ -2,10 +2,23 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/auth/require-admin'
-import { Categoria } from '@/lib/blog/constantes'
+import { Categoria, VALORES_CATEGORIA } from '@/lib/blog/constantes'
 import { derivarConteudo } from '@/lib/blog/derivar'
+import { buscarPaginaExterna, validarDestinoExterno } from '@/lib/seguranca/url-externa'
 import { createClient } from '@/lib/supabase/server'
 import { uploadParaR2Buffer } from '@/lib/storage-r2'
+
+/**
+ * A categoria chega do cliente e vai direto para uma coluna do banco. O CHECK
+ * estático de `posts.category` foi removido na migration de categorias
+ * hierárquicas, então esta função passou a ser a única barreira — e o caminho
+ * da IA não passava por nenhum zod.
+ */
+function categoriaSegura(valor: unknown): Categoria {
+  return (VALORES_CATEGORIA as readonly string[]).includes(valor as string)
+    ? (valor as Categoria)
+    : 'tecnologia'
+}
 
 export type SugestaoTitulo = {
   titulo: string
@@ -53,14 +66,33 @@ const LINKS_FE_REAIS = [
   { rotulo: 'Ansiedade e a Paz de Deus no Mundo Acelerado', href: '/blog/ansiedade-e-paz-de-deus-no-mundo-acelerado' },
 ]
 
-function obterApiKey(apiKeyInformada?: string): string {
-  const key = apiKeyInformada?.trim() || process.env.GEMINI_API_KEY?.trim()
+/**
+ * As chaves NUNCA vêm do cliente.
+ *
+ * Antes elas viajavam como parâmetro da action, e o painel as guardava em
+ * `localStorage` — o que significa que qualquer XSS no admin, ou uma extensão
+ * comprometida do navegador, lia as duas em texto puro. Segredo de servidor mora
+ * no ambiente do servidor: `.env.local` em desenvolvimento, Environment
+ * Variables na Vercel. O painel só informa se estão configuradas.
+ */
+function obterApiKey(): string {
+  const key = process.env.GEMINI_API_KEY?.trim()
   if (!key) {
     throw new Error(
-      'Nenhuma chave de API do Gemini foi configurada. Configure a sua chave na aba "Configurações IA" do Painel Admin.'
+      'GEMINI_API_KEY não está configurada no ambiente. Defina-a em .env.local (local) ou em Project Settings > Environment Variables na Vercel, e faça um novo deploy.'
     )
   }
   return key
+}
+
+/**
+ * Erro do provedor: o texto bruto vai para o LOG, e só uma frase genérica volta
+ * para o browser. O corpo de erro de uma API externa costuma repetir a
+ * requisição inteira — inclusive a chave, quando ela viaja na URL.
+ */
+function falhaDoProvedor(nome: string, status: number, corpo: string): Error {
+  console.error(`[${nome}] HTTP ${status}:`, corpo.slice(0, 2000))
+  return new Error(`O serviço ${nome} recusou a requisição (HTTP ${status}). Verifique o log do servidor.`)
 }
 
 const MODELOS_FALLBACK = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash']
@@ -69,6 +101,22 @@ const MODELOS_FALLBACK = ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1
  * Chamada resiliente à API do Gemini com retries exponenciais e comutação para modelos de reserva.
  * Trata erros 503 (serviço indisponível / alta demanda), 429 (rate limit), 404 (modelo indisponível) e 5xx.
  */
+/**
+ * A chave vai no HEADER `x-goog-api-key`, nunca em `?key=`.
+ *
+ * Query string é a parte da URL que todo mundo registra: log de proxy, log de
+ * acesso, header `Referer`, e o corpo de erro que a própria API devolve. Header
+ * de autenticação não entra em nenhum desses.
+ */
+function cabecalhosGemini(apiKey: string): Record<string, string> {
+  return { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey }
+}
+
+/** Só nomes de modelo plausíveis entram na URL — o valor vem do cliente. */
+function modeloSeguro(id: string | undefined, padrao: string): string {
+  return id && /^[a-zA-Z0-9._-]{1,64}$/.test(id) ? id : padrao
+}
+
 async function chamarGeminiComRetryEFallback({
   apiKey,
   modeloId = 'gemini-2.0-flash',
@@ -80,7 +128,9 @@ async function chamarGeminiComRetryEFallback({
   contents: any[]
   generationConfig?: any
 }): Promise<any> {
-  const modelosParaTestar = Array.from(new Set([modeloId, ...MODELOS_FALLBACK]))
+  const modelosParaTestar = Array.from(
+    new Set([modeloSeguro(modeloId, 'gemini-2.0-flash'), ...MODELOS_FALLBACK]),
+  )
 
   let ultimoErro: Error | null = null
 
@@ -88,10 +138,10 @@ async function chamarGeminiComRetryEFallback({
     for (let tentativa = 1; tentativa <= 2; tentativa++) {
       try {
         const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${mod}:generateContent`,
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: cabecalhosGemini(apiKey),
             body: JSON.stringify({
               contents,
               generationConfig,
@@ -125,7 +175,7 @@ async function chamarGeminiComRetryEFallback({
           continue
         }
 
-        throw new Error(`Erro na API do Gemini (${status}): ${errText}`)
+        throw falhaDoProvedor('Gemini', status, errText)
       } catch (err: any) {
         ultimoErro = err
         if (err.message?.includes('400') || err.message?.includes('API key')) {
@@ -147,24 +197,21 @@ async function chamarGeminiComRetryEFallback({
 /**
  * Valida a chave da API do Gemini e lista todos os modelos disponíveis.
  */
-export async function validarEListarModelosGeminiAction(apiKeyInformada: string): Promise<{
+export async function validarEListarModelosGeminiAction(): Promise<{
   ok: boolean
   modelos?: ModeloGemini[]
   erro?: string
 }> {
   try {
     await requireAdmin()
-    const key = apiKeyInformada.trim()
-    if (!key) {
-      throw new Error('Por favor, digite a chave de API do Gemini para validar.')
-    }
+    const key = obterApiKey()
 
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`)
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
+      headers: { 'x-goog-api-key': key },
+    })
 
     if (!res.ok) {
-      const errJson = await res.json().catch(() => ({}))
-      const msg = errJson.error?.message || `Chave inválida ou acesso não autorizado (HTTP ${res.status}).`
-      throw new Error(msg)
+      throw falhaDoProvedor('Gemini', res.status, await res.text())
     }
 
     const data = await res.json()
@@ -197,26 +244,26 @@ export async function validarEListarModelosGeminiAction(apiKeyInformada: string)
  * Executa um teste real com a chave, modelo de texto e modelo de imagem selecionados.
  */
 export async function testarConfiguracaoModeloAction({
-  apiKeyInformada,
   modeloId,
   modeloImagemId = 'imagen-3.0-generate-002',
 }: {
-  apiKeyInformada: string
   modeloId: string
   modeloImagemId?: string
 }): Promise<{ ok: boolean; mensagem?: string; erro?: string }> {
   try {
     await requireAdmin()
-    const key = apiKeyInformada.trim()
-    if (!key) throw new Error('Chave de API não fornecida.')
+    const key = obterApiKey()
     if (!modeloId) throw new Error('Modelo de texto não selecionado.')
+
+    const modeloTexto = modeloSeguro(modeloId, 'gemini-2.0-flash')
+    const modeloImagem = modeloSeguro(modeloImagemId, 'imagen-3.0-generate-002')
 
     // 1. Teste do Modelo de Texto
     const resTexto = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modeloId}:generateContent?key=${key}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${modeloTexto}:generateContent`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: cabecalhosGemini(key),
         body: JSON.stringify({
           contents: [{ parts: [{ text: 'Responda apenas a palavra: OK_TEXTO' }] }],
         }),
@@ -224,16 +271,15 @@ export async function testarConfiguracaoModeloAction({
     )
 
     if (!resTexto.ok) {
-      const errText = await resTexto.text()
-      throw new Error(`Falha no modelo de texto "${modeloId}" (${resTexto.status}): ${errText}`)
+      throw falhaDoProvedor(`Gemini (${modeloTexto})`, resTexto.status, await resTexto.text())
     }
 
     // 2. Teste do Modelo de Imagem (Imagen 3)
     const resImagem = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modeloImagemId}:predict?key=${key}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${modeloImagem}:predict`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: cabecalhosGemini(key),
         body: JSON.stringify({
           instances: [{ prompt: 'A minimalist abstract shape, warm lighting, high quality' }],
           parameters: { sampleCount: 1, aspectRatio: '16:9' },
@@ -247,13 +293,13 @@ export async function testarConfiguracaoModeloAction({
       console.warn(`[Aviso Imagen 3] Teste de imagem retornou ${resImagem.status}: ${errImg}`)
       return {
         ok: true,
-        mensagem: `Modelo de texto "${modeloId}" testado com sucesso! (Nota: O teste do Imagen 3 retornou status ${resImagem.status}, mas a geração de texto funcionará normalmente).`,
+        mensagem: `Modelo de texto "${modeloTexto}" testado com sucesso! (Nota: O teste do Imagen 3 retornou status ${resImagem.status}, mas a geração de texto funcionará normalmente).`,
       }
     }
 
     return {
       ok: true,
-      mensagem: `Teste de conexão concluído com sucesso! Modelo de Texto ("${modeloId}") e Modelo de Imagem ("${modeloImagemId}") testados e operacionais.`,
+      mensagem: `Teste de conexão concluído com sucesso! Modelo de Texto ("${modeloTexto}") e Modelo de Imagem ("${modeloImagem}") testados e operacionais.`,
     }
   } catch (error: any) {
     return { ok: false, erro: error.message || 'Falha ao testar configuração.' }
@@ -263,7 +309,7 @@ export async function testarConfiguracaoModeloAction({
 /**
  * Valida o Token de API do Apify consultando a conta do usuário
  */
-export async function testarChaveApifyAction(apifyTokenInformado?: string): Promise<{
+export async function testarChaveApifyAction(): Promise<{
   ok: boolean
   usuario?: string
   plano?: string
@@ -271,20 +317,22 @@ export async function testarChaveApifyAction(apifyTokenInformado?: string): Prom
 }> {
   try {
     await requireAdmin()
-    const token = (apifyTokenInformado || process.env.APIFY_API_TOKEN || '').trim()
+    const token = obterApifyToken()
 
     if (!token) {
-      return { ok: false, erro: 'Informe um Token de API do Apify válido (ex: apify_api_...).' }
-    }
-
-    const res = await fetch(`https://api.apify.com/v2/users/me?token=${token}`)
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}))
       return {
         ok: false,
-        erro: errData.error?.message || `Token do Apify inválido ou recusado (Status HTTP ${res.status}).`,
+        erro: 'APIFY_API_TOKEN não está configurada no ambiente. O scraping por URL fica indisponível até você defini-la.',
       }
+    }
+
+    const res = await fetch('https://api.apify.com/v2/users/me', {
+      headers: cabecalhosApify(token),
+    })
+
+    if (!res.ok) {
+      console.error('[Apify] /users/me HTTP', res.status, (await res.text()).slice(0, 1000))
+      return { ok: false, erro: `Token do Apify recusado (HTTP ${res.status}).` }
     }
 
     const data = await res.json()
@@ -307,20 +355,19 @@ export async function testarChaveApifyAction(apifyTokenInformado?: string): Prom
 export async function obterSugestoesDeTitulosAction({
   tema,
   categoria,
-  apiKeyInformada,
   modeloId = 'gemini-2.0-flash',
 }: {
   tema: string
   categoria: Categoria
-  apiKeyInformada?: string
   modeloId?: string
 }): Promise<{ ok: boolean; sugestoes?: SugestaoTitulo[]; erro?: string }> {
   try {
     await requireAdmin()
-    const apiKey = obterApiKey(apiKeyInformada)
+    const apiKey = obterApiKey()
+    const cat = categoriaSegura(categoria)
 
     const promptSystem = `Você é um especialista renomado em SEO, Copywriting e Estratégia de Conteúdo Digital.
-O usuário quer escrever um artigo de blog no segmento de "${categoria === 'fe' ? 'Vida Cristã, Fé e Espiritualidade' : 'Tecnologia, Inteligência Artificial e Engenharia de Software'}".
+O usuário quer escrever um artigo de blog no segmento de "${cat === 'fe' ? 'Vida Cristã, Fé e Espiritualidade' : 'Tecnologia, Inteligência Artificial e Engenharia de Software'}".
 
 Tema sugerido pelo usuário: "${tema}".
 
@@ -367,7 +414,6 @@ export async function gerarPostCompletoComIaAction({
   titulo,
   tema,
   categoria,
-  apiKeyInformada,
   modeloId = 'gemini-2.0-flash',
   modeloImagemId = 'imagen-3.0-generate-002',
   publicarDireto = true,
@@ -375,14 +421,14 @@ export async function gerarPostCompletoComIaAction({
   titulo: string
   tema: string
   categoria: Categoria
-  apiKeyInformada?: string
   modeloId?: string
   modeloImagemId?: string
   publicarDireto?: boolean
 }): Promise<{ ok: boolean; post?: ResultadoPostIa; postCriadoId?: string; publicado?: boolean; erro?: string }> {
   try {
     await requireAdmin()
-    const apiKey = obterApiKey(apiKeyInformada)
+    const apiKey = obterApiKey()
+    categoria = categoriaSegura(categoria)
 
     const eFe = categoria === 'fe'
     const linksReais = eFe ? LINKS_FE_REAIS : LINKS_TECH_REAIS
@@ -601,7 +647,7 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
     const capaUrl = await gerarImagemDeCapaRobusta({
       titulo,
       slug,
-      categoria: (gerado.categoria as Categoria) || 'tecnologia',
+      categoria: categoriaSegura(gerado.categoria),
       promptVisual,
       apiKey,
       modeloImagemId,
@@ -701,17 +747,13 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
  * 4. Redige o post completo de ~1500 palavras em formato TipTap JSON com SEO, tags e imagem de capa.
  */
 export async function gerarPostAutomaticoUmCliqueAction({
-  apiKeyInformada,
-  apifyTokenInformado,
   modeloId = 'gemini-2.0-flash',
 }: {
-  apiKeyInformada?: string
-  apifyTokenInformado?: string
   modeloId?: string
 }): Promise<{ ok: boolean; post?: ResultadoPostIa; noticiaUsada?: string; erro?: string }> {
   try {
     await requireAdmin()
-    const apiKey = obterApiKey(apiKeyInformada)
+    const apiKey = obterApiKey()
     const supabase = await createClient()
 
     // 1. Busca os posts existentes no banco para checar duplicações
@@ -724,15 +766,15 @@ export async function gerarPostAutomaticoUmCliqueAction({
 
     // 2. Busca notícias reais se houver token do Apify
     let contextoNoticias = ''
-    const apifyToken = (apifyTokenInformado || process.env.APIFY_API_TOKEN || '').trim()
+    const apifyToken = obterApifyToken()
 
     if (apifyToken) {
       try {
         const resApify = await fetch(
-          `https://api.apify.com/v2/acts/apify~google-search-scraper/run-sync-get-dataset-items?token=${apifyToken}`,
+          'https://api.apify.com/v2/acts/apify~google-search-scraper/run-sync-get-dataset-items',
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: cabecalhosApify(apifyToken),
             body: JSON.stringify({
               queries: 'Inteligencia Artificial novidades tendencias tecnologia',
               maxPagesPerQuery: 1,
@@ -777,10 +819,10 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
 }`
 
     const resGeminiNoticia = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modeloId}:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${modeloSeguro(modeloId, 'gemini-2.0-flash')}:generateContent`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: cabecalhosGemini(apiKey),
         body: JSON.stringify({
           contents: [{ parts: [{ text: promptNoticiaInedita }] }],
           generationConfig: { responseMimeType: 'application/json', temperature: 0.7 },
@@ -789,7 +831,7 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
     )
 
     if (!resGeminiNoticia.ok) {
-      throw new Error(`Erro na API ao selecionar notícia inédita (${resGeminiNoticia.status}).`)
+      throw falhaDoProvedor('Gemini', resGeminiNoticia.status, await resGeminiNoticia.text())
     }
 
     const dataNoticia = await resGeminiNoticia.json()
@@ -805,7 +847,6 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
       titulo: tituloFinal,
       tema: temaFinal,
       categoria: 'tecnologia',
-      apiKeyInformada,
       modeloId,
     })
 
@@ -838,19 +879,16 @@ export type OpcaoNoticiaQuente = {
 export async function obter5OpcoesNoticiasQuentesAction({
   categoria = 'tecnologia',
   assuntoOpcional = '',
-  apiKeyInformada,
-  apifyTokenInformado,
   modeloId = 'gemini-2.0-flash',
 }: {
   categoria?: Categoria
   assuntoOpcional?: string
-  apiKeyInformada?: string
-  apifyTokenInformado?: string
   modeloId?: string
 }): Promise<{ ok: boolean; opcoes?: OpcaoNoticiaQuente[]; erro?: string }> {
   try {
     await requireAdmin()
-    const apiKey = obterApiKey(apiKeyInformada)
+    const apiKey = obterApiKey()
+    categoria = categoriaSegura(categoria)
     const supabase = await createClient()
 
     // 1. Busca posts existentes no banco para anti-duplicação
@@ -863,22 +901,25 @@ export async function obter5OpcoesNoticiasQuentesAction({
 
     // 2. Busca notícias com Apify
     let contextoNoticias = ''
-    const apifyToken = (apifyTokenInformado || process.env.APIFY_API_TOKEN || '').trim()
+    const apifyToken = obterApifyToken()
 
     const eFe = categoria === 'fe'
-    const termoBusca = assuntoOpcional.trim()
-      ? assuntoOpcional.trim()
-      : eFe
-      ? 'Vida crista fe devocional espiritualidade biblia rotina'
-      : 'Inteligencia Artificial novidades tendencias tecnologia automacao'
+    // O assunto vem de um campo livre do painel e vai para uma busca externa:
+    // um teto de tamanho evita mandar um payload absurdo para o Apify.
+    const termoBusca = (
+      assuntoOpcional.trim() ||
+      (eFe
+        ? 'Vida crista fe devocional espiritualidade biblia rotina'
+        : 'Inteligencia Artificial novidades tendencias tecnologia automacao')
+    ).slice(0, 200)
 
     if (apifyToken) {
       try {
         const resApify = await fetch(
-          `https://api.apify.com/v2/acts/apify~google-search-scraper/run-sync-get-dataset-items?token=${apifyToken}`,
+          'https://api.apify.com/v2/acts/apify~google-search-scraper/run-sync-get-dataset-items',
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: cabecalhosApify(apifyToken),
             body: JSON.stringify({
               queries: termoBusca,
               maxPagesPerQuery: 1,
@@ -1158,19 +1199,18 @@ export async function gerarNovaImagemCapaIaAction({
   slug,
   categoria = 'tecnologia',
   promptPersonalizado,
-  apiKeyInformada,
   modeloImagemId = 'imagen-3.0-generate-002',
 }: {
   titulo: string
   slug?: string
   categoria?: Categoria
   promptPersonalizado?: string
-  apiKeyInformada?: string
   modeloImagemId?: string
 }): Promise<{ ok: boolean; capaUrl?: string; capaAlt?: string; erro?: string }> {
   try {
     await requireAdmin()
-    const apiKey = apiKeyInformada?.trim() || process.env.GEMINI_API_KEY?.trim() || undefined
+    const apiKey = process.env.GEMINI_API_KEY?.trim() || undefined
+    categoria = categoriaSegura(categoria)
     const supabase = await createClient()
 
     const slugLimpo = (slug || titulo)
@@ -1203,13 +1243,14 @@ export async function gerarNovaImagemCapaIaAction({
   }
 }
 
-function obterApifyToken(apifyTokenInformado?: string): string | undefined {
-  return (
-    apifyTokenInformado?.trim() ||
-    process.env.APIFY_API_TOKEN?.trim() ||
-    process.env.APIFY_TOKEN?.trim() ||
-    undefined
-  )
+/** Mesma regra da chave do Gemini: ambiente do servidor, nunca o cliente. */
+function obterApifyToken(): string | undefined {
+  return process.env.APIFY_API_TOKEN?.trim() || process.env.APIFY_TOKEN?.trim() || undefined
+}
+
+/** Bearer no header, e não `?token=` — pelo mesmo motivo do Gemini. */
+function cabecalhosApify(token: string): Record<string, string> {
+  return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
 }
 
 
@@ -1228,13 +1269,21 @@ function extrairTextoLimpoDeHtml(html: string): string {
 
 /**
  * 🕸️ Extrair Conteúdo de URL usando Apify (com detecção de Redes Sociais e busca por links externos)
+ *
+ * NÃO EXPORTADA — e isso é uma decisão de segurança, não de organização. Todo
+ * export `async` de um módulo `'use server'` pode virar um endpoint POST público
+ * com id estável assim que um Client Component o importar. Esta função recebe
+ * uma URL e devolve o corpo da resposta: exposta sem `requireAdmin()`, ela é um
+ * leitor por procuração da rede interna. Quem chama de fora é
+ * `gerarOpcoesApartirDeUrlAction`, que autoriza antes.
+ *
+ * Todo `fetch` daqui passa por `buscarPaginaExterna`, que valida o destino
+ * (protocolo, IP público, cada salto de redirect) e limita tamanho e tempo.
  */
-export async function extrairConteudoDeUrlViaApify({
+async function extrairConteudoDeUrlViaApify({
   url,
-  apifyToken,
 }: {
   url: string
-  apifyToken?: string
 }): Promise<{
   ok: boolean
   tituloFonte?: string
@@ -1250,6 +1299,15 @@ export async function extrairConteudoDeUrlViaApify({
       urlLimpa = `https://${urlLimpa}`
     }
 
+    // Valida ANTES de qualquer coisa — inclusive antes de mandar a URL para o
+    // Apify. Sem isto, a conta do Apify vira proxy pago para o que o chamador
+    // quiser, e o host interno aparece no log de um terceiro.
+    const destino = await validarDestinoExterno(urlLimpa)
+    if (!destino.ok) {
+      return { ok: false, urlFonte: urlLimpa, ehRedeSocial: false, erro: destino.motivo }
+    }
+    urlLimpa = destino.url.toString()
+
     const ehRedeSocial = Boolean(
       urlLimpa.match(
         /(instagram\.com|twitter\.com|x\.com|linkedin\.com|threads\.net|youtube\.com|youtu\.be|facebook\.com|tiktok\.com)/i
@@ -1260,16 +1318,16 @@ export async function extrairConteudoDeUrlViaApify({
     let tituloFonte = ''
     let urlExternaLegenda: string | undefined
 
-    const token = obterApifyToken(apifyToken)
+    const token = obterApifyToken()
 
     // Se houver token da Apify, tenta o scraper da Apify primeiro
     if (token) {
       try {
         const apifyRunRes = await fetch(
-          `https://api.apify.com/v2/acts/apify~cheerio-scraper/run-sync-get-dataset-items?token=${token}&timeout=25`,
+          'https://api.apify.com/v2/acts/apify~cheerio-scraper/run-sync-get-dataset-items?timeout=25',
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: cabecalhosApify(token),
             body: JSON.stringify({
               startUrls: [{ url: urlLimpa }],
               maxPagesPerCrawl: 1,
@@ -1295,20 +1353,19 @@ export async function extrairConteudoDeUrlViaApify({
       }
     }
 
-    // Fallback via fetch direto com headers de navegador
+    // Fallback via busca direta, com o porteiro de destino aplicado a cada salto
     if (!textoResultado || textoResultado.length < 100) {
-      const resFetch = await fetch(urlLimpa, {
+      const resFetch = await buscarPaginaExterna(urlLimpa, {
         headers: {
           'User-Agent':
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
         },
-        signal: AbortSignal.timeout(12000),
       })
 
       if (resFetch.ok) {
-        const html = await resFetch.text()
+        const html = resFetch.corpo
         const matchTitle = html.match(/<title[^>]*>([^<]+)<\/title>/i) || html.match(/<h1[^>]*>([^<]+)<\/h1>/i)
         if (matchTitle && matchTitle[1]) {
           tituloFonte = matchTitle[1].trim()
@@ -1340,20 +1397,22 @@ export async function extrairConteudoDeUrlViaApify({
       }
     })
 
+    // ATENÇÃO ao mexer aqui: este endereço NÃO foi digitado por quem chamou a
+    // action — ele foi lido do texto da página raspada, ou seja, quem escolhe é
+    // o site de destino. É o salto mais perigoso do fluxo: uma página hostil
+    // planta `http://169.254.169.254/...` no corpo e o servidor busca por ela.
+    // Por isso passa pelo mesmo porteiro, sem exceção.
     if (linkExternoValido) {
       urlExternaLegenda = linkExternoValido
-      try {
-        console.log(`[Extração URL] Link externo encontrado (${linkExternoValido}). Raspando artigo de origem...`)
-        const resArtigo = await fetch(linkExternoValido, { signal: AbortSignal.timeout(12000) })
-        if (resArtigo.ok) {
-          const htmlArtigo = await resArtigo.text()
-          const textoArtigo = extrairTextoLimpoDeHtml(htmlArtigo)
-          if (textoArtigo.length > 200) {
-            textoResultado = `--- CONTEÚDO DA REDE SOCIAL ---\n${textoResultado}\n\n--- ARTIGO COMPLETO DA LEGENDA (${linkExternoValido}) ---\n${textoArtigo}`
-          }
+      console.log(`[Extração URL] Link externo encontrado (${linkExternoValido}). Raspando artigo de origem...`)
+      const resArtigo = await buscarPaginaExterna(linkExternoValido)
+      if (resArtigo.ok) {
+        const textoArtigo = extrairTextoLimpoDeHtml(resArtigo.corpo)
+        if (textoArtigo.length > 200) {
+          textoResultado = `--- CONTEÚDO DA REDE SOCIAL ---\n${textoResultado}\n\n--- ARTIGO COMPLETO DA LEGENDA (${linkExternoValido}) ---\n${textoArtigo}`
         }
-      } catch (errArtigo) {
-        console.warn('[Extração Link Externo] Aviso ao buscar artigo:', errArtigo)
+      } else {
+        console.warn('[Extração Link Externo] Recusado ou indisponível:', resArtigo.motivo)
       }
     }
 
@@ -1376,21 +1435,18 @@ export async function extrairConteudoDeUrlViaApify({
 export async function gerarOpcoesApartirDeUrlAction({
   url,
   categoria = 'tecnologia',
-  apiKeyInformada,
-  apifyTokenInformado,
   modeloId = 'gemini-2.0-flash',
 }: {
   url: string
   categoria?: Categoria
-  apiKeyInformada?: string
-  apifyTokenInformado?: string
   modeloId?: string
 }): Promise<{ ok: boolean; opcoes?: OpcaoNoticiaQuente[]; tituloFonte?: string; urlFonte?: string; erro?: string }> {
   try {
     await requireAdmin()
-    const apiKey = obterApiKey(apiKeyInformada)
+    const apiKey = obterApiKey()
+    categoria = categoriaSegura(categoria)
 
-    const extracao = await extrairConteudoDeUrlViaApify({ url, apifyToken: apifyTokenInformado })
+    const extracao = await extrairConteudoDeUrlViaApify({ url })
     if (!extracao.ok || !extracao.textoExtraido) {
       return { ok: false, erro: extracao.erro || 'Não foi possível extrair o conteúdo do link fornecido.' }
     }

@@ -10,169 +10,110 @@ import {
 } from '@/actions/gerar-post-ia'
 import { MODELOS_IMAGEM_DISPONIVEIS } from '@/lib/blog/constantes'
 
-export function ConfiguracoesIaClient() {
-  const [apiKey, setApiKey] = useState('')
-  const [mostrarApiKey, setMostrarApiKey] = useState(false)
+/**
+ * Configuração da IA.
+ *
+ * O QUE MUDOU E POR QUÊ. Esta tela guardava a chave do Gemini e o token do
+ * Apify em `localStorage`, e os mandava de volta ao servidor em cada action.
+ * Segredo em `localStorage` é legível por qualquer JavaScript que rode na
+ * página — um XSS no painel, ou uma extensão comprometida do navegador, levava
+ * as duas chaves inteiras.
+ *
+ * Agora as chaves vivem só no ambiente do servidor (`GEMINI_API_KEY` e
+ * `APIFY_API_TOKEN`). Esta tela nunca as vê: recebe do Server Component apenas
+ * um booleano dizendo se estão presentes, e as actions leem o valor direto do
+ * ambiente.
+ *
+ * O que CONTINUA no `localStorage` é a escolha de modelo — que não é segredo,
+ * é preferência, e serve para o modal do editor abrir já no modelo certo.
+ */
 
-  const [apifyToken, setApifyToken] = useState('')
-  const [mostrarApifyToken, setMostrarApifyToken] = useState(false)
-  const [validandoApify, setValidandoApify] = useState(false)
-  const [apifyStatus, setApifyStatus] = useState<{
-    ok: boolean
-    usuario?: string
-    plano?: string
-  } | null>(null)
+const CHAVE_MODELO_TEXTO = 'gemini_admin_model_id'
+const CHAVE_MODELO_IMAGEM = 'gemini_admin_image_model_id'
 
+type Props = {
+  geminiConfigurada: boolean
+  apifyConfigurado: boolean
+}
+
+export function ConfiguracoesIaClient({ geminiConfigurada, apifyConfigurado }: Props) {
   const [modelos, setModelos] = useState<ModeloGemini[]>([])
   const [modeloSelecionado, setModeloSelecionado] = useState<string>('gemini-2.0-flash')
-  const [modeloImagemSelecionado, setModeloImagemSelecionado] = useState<string>('imagen-3.0-generate-002')
+  const [modeloImagemSelecionado, setModeloImagemSelecionado] = useState<string>(
+    'imagen-3.0-generate-002',
+  )
+
+  const [apifyStatus, setApifyStatus] = useState<{ usuario?: string; plano?: string } | null>(null)
 
   const [validando, setValidando] = useState(false)
+  const [validandoApify, setValidandoApify] = useState(false)
   const [testando, setTestando] = useState(false)
 
   const [erro, setErro] = useState<string | null>(null)
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null)
 
-  // Carrega chaves e modelos salvos do localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const keySalva = localStorage.getItem('gemini_admin_api_key')
-      const modSalvo = localStorage.getItem('gemini_admin_model_id')
-      const modImgSalvo = localStorage.getItem('gemini_admin_image_model_id')
-      const apifySalvo = localStorage.getItem('apify_admin_token')
-
-      if (modSalvo) {
-        setModeloSelecionado(modSalvo)
-      }
-
-      if (modImgSalvo) {
-        setModeloImagemSelecionado(modImgSalvo)
-      }
-
-      if (keySalva) {
-        setApiKey(keySalva)
-        handleValidarEListarModelos(keySalva)
-      }
-
-      if (apifySalvo) {
-        setApifyToken(apifySalvo)
-        handleValidarApify(apifySalvo)
-      }
-    }
-  }, [])
-
-  // Handler para trocar modelo de texto e salvar imediatamente
   const handleSelecionarModeloTexto = (id: string) => {
     setModeloSelecionado(id)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('gemini_admin_model_id', id)
-    }
+    localStorage.setItem(CHAVE_MODELO_TEXTO, id)
   }
 
-  // Handler para trocar modelo de imagem e salvar imediatamente
   const handleSelecionarModeloImagem = (id: string) => {
     setModeloImagemSelecionado(id)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('gemini_admin_image_model_id', id)
-    }
+    localStorage.setItem(CHAVE_MODELO_IMAGEM, id)
   }
 
-  // Passo 1: Validar Chave e Buscar Modelos Gemini
-  const handleValidarEListarModelos = async (chaveUsar?: string) => {
-    const key = chaveUsar ?? apiKey
-    if (!key.trim()) {
-      setErro('Por favor, insira a sua chave de API do Gemini (API Key).')
-      return
-    }
-
+  const handleListarModelos = async () => {
     setErro(null)
     setMensagemSucesso(null)
     setValidando(true)
 
-    const resp = await validarEListarModelosGeminiAction(key)
+    const resp = await validarEListarModelosGeminiAction()
     setValidando(false)
 
     if (!resp.ok || !resp.modelos) {
-      setErro(resp.erro || 'Falha ao validar chave de API.')
+      setErro(resp.erro || 'Falha ao consultar os modelos do Gemini.')
       setModelos([])
       return
     }
 
     setModelos(resp.modelos)
 
-    // Respeita estritamente o modelo salvo no localStorage ou estado atual
-    const salvoNoStorage = typeof window !== 'undefined' ? localStorage.getItem('gemini_admin_model_id') : null
-    const modeloAlvo = salvoNoStorage || modeloSelecionado
+    const salvo = localStorage.getItem(CHAVE_MODELO_TEXTO) || modeloSelecionado
+    const alvo = resp.modelos.some((m) => m.id === salvo)
+      ? salvo
+      : (resp.modelos.find((m) => m.eRecomendado) ?? resp.modelos[0])?.id
 
-    const existe = resp.modelos.some((m) => m.id === modeloAlvo)
-    if (existe) {
-      setModeloSelecionado(modeloAlvo)
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('gemini_admin_model_id', modeloAlvo)
-      }
-    } else if (resp.modelos.length > 0) {
-      const recomendado = resp.modelos.find((m) => m.eRecomendado) || resp.modelos[0]
-      setModeloSelecionado(recomendado.id)
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('gemini_admin_model_id', recomendado.id)
-      }
-    }
+    if (alvo) handleSelecionarModeloTexto(alvo)
 
-    setMensagemSucesso(`Chave do Gemini válida! ${resp.modelos.length} modelos Gemini disponíveis na sua conta.`)
+    setMensagemSucesso(
+      `Chave do Gemini válida! ${resp.modelos.length} modelos disponíveis na sua conta.`,
+    )
   }
 
-  // Passo 2: Validar Chave do Apify
-  const handleValidarApify = async (tokenUsar?: string) => {
-    const token = tokenUsar ?? apifyToken
-    if (!token.trim()) {
-      setErro('Por favor, insira um Token de API do Apify.')
-      return
-    }
-
+  const handleValidarApify = async () => {
     setErro(null)
     setValidandoApify(true)
 
-    const resp = await testarChaveApifyAction(token)
+    const resp = await testarChaveApifyAction()
     setValidandoApify(false)
 
     if (!resp.ok) {
       setApifyStatus(null)
-      setErro(resp.erro || 'Falha ao validar token do Apify.')
+      setErro(resp.erro || 'Falha ao validar o token do Apify.')
       return
     }
 
-    setApifyStatus({
-      ok: true,
-      usuario: resp.usuario,
-      plano: resp.plano,
-    })
-
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('apify_admin_token', token.trim())
-    }
-
-    setMensagemSucesso(`✅ Token do Apify validado com sucesso! Conta ativa: ${resp.usuario} (${resp.plano})`)
+    setApifyStatus({ usuario: resp.usuario, plano: resp.plano })
   }
 
-  // Passo 3: Salvar e Testar Configuração Geral
-  const handleSalvarETestar = async (e: React.FormEvent) => {
+  const handleTestar = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!apiKey.trim()) {
-      setErro('Informe uma chave de API válida para o Gemini.')
-      return
-    }
-
-    if (!modeloSelecionado) {
-      setErro('Selecione um modelo de IA na lista.')
-      return
-    }
 
     setErro(null)
     setMensagemSucesso(null)
     setTestando(true)
 
     const resp = await testarConfiguracaoModeloAction({
-      apiKeyInformada: apiKey,
       modeloId: modeloSelecionado,
       modeloImagemId: modeloImagemSelecionado,
     })
@@ -180,28 +121,37 @@ export function ConfiguracoesIaClient() {
     setTestando(false)
 
     if (!resp.ok) {
-      setErro(resp.erro || 'Falha ao realizar o teste de comunicação com o modelo selecionado.')
+      setErro(resp.erro || 'Falha no teste de comunicação com o modelo selecionado.')
       return
     }
 
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('gemini_admin_api_key', apiKey.trim())
-      localStorage.setItem('gemini_admin_model_id', modeloSelecionado)
-      localStorage.setItem('gemini_admin_image_model_id', modeloImagemSelecionado)
-
-      if (apifyToken.trim()) {
-        localStorage.setItem('apify_admin_token', apifyToken.trim())
-      }
-    }
-
-    setMensagemSucesso(
-      `🎉 ${resp.mensagem} Configurações salvas com sucesso!`
-    )
+    setMensagemSucesso(`🎉 ${resp.mensagem} Preferências de modelo salvas neste navegador.`)
   }
+
+  // Depois dos handlers, de propósito: o efeito chama dois deles, e declarar o
+  // efeito antes deixaria a leitura dependendo de hoisting.
+  useEffect(() => {
+    const modSalvo = localStorage.getItem(CHAVE_MODELO_TEXTO)
+    const modImgSalvo = localStorage.getItem(CHAVE_MODELO_IMAGEM)
+
+    if (modSalvo) setModeloSelecionado(modSalvo)
+    if (modImgSalvo) setModeloImagemSelecionado(modImgSalvo)
+
+    // Migração silenciosa. A chave do Gemini e o token do Apify ficavam aqui em
+    // versões anteriores desta tela — remover é PARTE da correção: enquanto o
+    // valor antigo continuar no navegador, o segredo segue exposto mesmo com a
+    // tela nova no ar.
+    localStorage.removeItem('gemini_admin_api_key')
+    localStorage.removeItem('apify_admin_token')
+
+    if (geminiConfigurada) void handleListarModelos()
+    if (apifyConfigurado) void handleValidarApify()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="flex flex-col gap-6">
-      {/* CABEÇALHO DA PÁGINA */}
+      {/* CABEÇALHO */}
       <div className="flex flex-col gap-2 rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-sm backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-900/80">
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 text-2xl text-amber-600 dark:text-amber-400">
@@ -209,16 +159,17 @@ export function ConfiguracoesIaClient() {
           </span>
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-              Configurações de IA & Web Scraping (Gemini + Apify)
+              Configurações de IA &amp; Web Scraping
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Gerencie suas chaves de API, escolha os modelos de texto e imagem e conecte o Apify para busca de tendências em tempo real.
+              As chaves ficam no ambiente do servidor. Aqui você confere o status e escolhe os
+              modelos de texto e imagem.
             </p>
           </div>
         </div>
       </div>
 
-      {/* ALERTAS DE SUCESSO E ERRO */}
+      {/* ALERTAS */}
       {mensagemSucesso && (
         <div className="animate-fade-in flex items-center gap-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm font-semibold text-emerald-800 dark:border-emerald-500/50 dark:bg-emerald-500/15 dark:text-emerald-300">
           <span className="text-xl">✅</span>
@@ -233,102 +184,62 @@ export function ConfiguracoesIaClient() {
         </div>
       )}
 
-      <form onSubmit={handleSalvarETestar} className="flex flex-col gap-6">
-        {/* CARD 1: CHAVE DA API GEMINI */}
+      <form onSubmit={handleTestar} className="flex flex-col gap-6">
+        {/* CARD 1: STATUS DAS CREDENCIAIS */}
         <div className="flex flex-col gap-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <span>🤖 1. Chave da API Gemini (Google AI)</span>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+              🔐 1. Credenciais (variáveis de ambiente)
             </h2>
-            <button
-              type="button"
-              onClick={() => setMostrarApiKey(!mostrarApiKey)}
-              className="cursor-pointer text-xs font-bold text-amber-600 hover:underline dark:text-amber-400"
-            >
-              {mostrarApiKey ? '👁️ Ocultar' : '👁️ Mostrar'}
-            </button>
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <input
-              type={mostrarApiKey ? 'text' : 'password'}
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              autoComplete="new-password"
-              placeholder="Digite sua Gemini API Key (ex: AIzaSy...)"
-              className="w-full flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-              required
-            />
-            <button
-              type="button"
-              onClick={() => handleValidarEListarModelos()}
-              disabled={validando || !apiKey.trim()}
-              className="cursor-pointer whitespace-nowrap rounded-2xl border border-amber-500/40 bg-amber-500/10 px-5 py-2.5 text-xs font-bold text-amber-700 hover:bg-amber-500/20 disabled:opacity-50 dark:text-amber-300"
-            >
-              {validando ? 'Validando...' : '🔍 Validar Chave & Listar Modelos'}
-            </button>
-          </div>
-        </div>
-
-        {/* CARD 2: CHAVE DA API DO APIFY */}
-        <div className="flex flex-col gap-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <span>🌐 2. Token da API do Apify (Web Scraping de Notícias)</span>
-              </h2>
-              {apifyStatus?.ok && (
-                <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 font-mono text-[0.65rem] font-bold text-emerald-700 dark:text-emerald-300">
-                  ✅ CONECTADO ({apifyStatus.usuario})
-                </span>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => setMostrarApifyToken(!mostrarApifyToken)}
-              className="cursor-pointer text-xs font-bold text-amber-600 hover:underline dark:text-amber-400"
-            >
-              {mostrarApifyToken ? '👁️ Ocultar' : '👁️ Mostrar'}
-            </button>
-          </div>
-
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Permite extrair notícias atuais e artigos em tempo real da web para alimentar a criação de posts no blog. Obtenha seu token gratuito em <a href="https://apify.com" target="_blank" rel="noreferrer" className="text-amber-600 underline font-bold dark:text-amber-400">apify.com</a>.
+          <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+            As chaves nunca chegam ao navegador. Defina-as em <code>.env.local</code> para
+            desenvolvimento e em <strong>Project Settings › Environment Variables</strong> na
+            Vercel para produção — e faça um novo deploy, porque variáveis novas não valem para
+            builds já executados.
           </p>
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <input
-              type={mostrarApifyToken ? 'text' : 'password'}
-              value={apifyToken}
-              onChange={(e) => setApifyToken(e.target.value)}
-              autoComplete="new-password"
-              placeholder="Digite seu Token do Apify (ex: apify_api_...)"
-              className="w-full flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs text-slate-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <LinhaCredencial
+              nome="GEMINI_API_KEY"
+              rotulo="Google Gemini (redação e imagem)"
+              configurada={geminiConfigurada}
+              detalhe={modelos.length > 0 ? `${modelos.length} modelos ativos` : undefined}
+              acao={{
+                rotulo: validando ? 'Validando...' : '🔍 Validar & listar modelos',
+                onClick: handleListarModelos,
+                desabilitada: !geminiConfigurada || validando,
+              }}
             />
-            <button
-              type="button"
-              onClick={() => handleValidarApify()}
-              disabled={validandoApify || !apifyToken.trim()}
-              className="cursor-pointer whitespace-nowrap rounded-2xl border border-sky-500/40 bg-sky-500/10 px-5 py-2.5 text-xs font-bold text-sky-700 hover:bg-sky-500/20 disabled:opacity-50 dark:text-sky-300"
-            >
-              {validandoApify ? 'Validando...' : '⚡ Validar Token Apify'}
-            </button>
+
+            <LinhaCredencial
+              nome="APIFY_API_TOKEN"
+              rotulo="Apify (scraping de notícias e URLs)"
+              configurada={apifyConfigurado}
+              detalhe={apifyStatus ? `${apifyStatus.usuario} · ${apifyStatus.plano}` : undefined}
+              acao={{
+                rotulo: validandoApify ? 'Validando...' : '⚡ Validar token',
+                onClick: handleValidarApify,
+                desabilitada: !apifyConfigurado || validandoApify,
+              }}
+            />
           </div>
         </div>
 
-        {/* CARD 3: MODELOS DE REDAÇÃO DE TEXTO */}
+        {/* CARD 2: MODELOS DE TEXTO */}
         {modelos.length > 0 && (
           <div className="animate-fade-in flex flex-col gap-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
               <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-                📝 3. Modelo Padrão para Redação de Texto (Gemini):
+                📝 2. Modelo padrão para redação de texto
               </h2>
-              <span className="text-xs text-slate-400 font-mono">
+              <span className="font-mono text-xs text-slate-400">
                 {modelos.length} modelos ativos
               </span>
             </div>
 
-            <div className="flex flex-col gap-2.5 max-h-[300px] overflow-y-auto pr-1">
+            <div className="flex max-h-[300px] flex-col gap-2.5 overflow-y-auto pr-1">
               {modelos.map((mod) => {
                 const selecionado = modeloSelecionado === mod.id
 
@@ -342,7 +253,7 @@ export function ConfiguracoesIaClient() {
                         : 'border-slate-200 bg-slate-50/50 hover:border-slate-300 dark:border-slate-800/80 dark:bg-slate-950/40 dark:hover:border-slate-700'
                     }`}
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex min-w-0 items-center gap-3">
                       <input
                         type="radio"
                         name="modelo_ia"
@@ -350,21 +261,19 @@ export function ConfiguracoesIaClient() {
                         onChange={() => handleSelecionarModeloTexto(mod.id)}
                         className="h-4 w-4 accent-amber-500"
                       />
-                      <div className="flex flex-col min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex min-w-0 flex-col">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="text-xs font-bold text-slate-900 dark:text-white">
                             {mod.nome}
                           </span>
-                          <span className="font-mono text-[0.7rem] text-slate-400">
-                            ({mod.id})
-                          </span>
+                          <span className="font-mono text-[0.7rem] text-slate-400">({mod.id})</span>
                           {mod.eRecomendado && (
                             <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 font-mono text-[0.65rem] font-extrabold text-amber-700 dark:text-amber-300">
                               ⭐ RECOMENDADO
                             </span>
                           )}
                         </div>
-                        <p className="truncate text-[0.75rem] text-slate-500 dark:text-slate-400 mt-0.5">
+                        <p className="mt-0.5 truncate text-[0.75rem] text-slate-500 dark:text-slate-400">
                           {mod.descricao}
                         </p>
                       </div>
@@ -381,15 +290,13 @@ export function ConfiguracoesIaClient() {
           </div>
         )}
 
-        {/* CARD 4: MODELO DE GERAÇÃO DE IMAGEM (IMAGEN 3) */}
+        {/* CARD 3: MODELO DE IMAGEM */}
         <div className="flex flex-col gap-4 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
             <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-              🖼️ 4. Modelo Padrão para Geração de Imagem (Imagen 3):
+              🖼️ 3. Modelo padrão para geração de imagem
             </h2>
-            <span className="text-xs text-slate-400 font-mono">
-              Google Imagen 3
-            </span>
+            <span className="font-mono text-xs text-slate-400">Google Imagen 3</span>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -401,7 +308,7 @@ export function ConfiguracoesIaClient() {
                   onClick={() => handleSelecionarModeloImagem(imgMod.id)}
                   className={`flex cursor-pointer flex-col justify-between gap-2 rounded-2xl border p-4 transition-all ${
                     selecionado
-                      ? 'border-amber-500 bg-amber-500/10 shadow-sm dark:bg-amber-500/15 ring-2 ring-amber-500/30'
+                      ? 'border-amber-500 bg-amber-500/10 shadow-sm ring-2 ring-amber-500/30 dark:bg-amber-500/15'
                       : 'border-slate-200 bg-slate-50/50 hover:border-slate-300 dark:border-slate-800/80 dark:bg-slate-950/40'
                   }`}
                 >
@@ -426,20 +333,20 @@ export function ConfiguracoesIaClient() {
           </div>
         </div>
 
-        {/* BOTÃO SALVAR E TESTAR */}
+        {/* TESTAR */}
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={testando || !apiKey.trim() || !modeloSelecionado}
-            className="cursor-pointer inline-flex items-center gap-2 rounded-2xl bg-amber-600 px-7 py-3.5 font-mono text-xs font-bold text-white shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-500 disabled:opacity-50"
+            disabled={testando || !geminiConfigurada || !modeloSelecionado}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-amber-600 px-7 py-3.5 font-mono text-xs font-bold text-white shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-500 disabled:opacity-50"
           >
             {testando ? (
               <>
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                Testando Conexão com os Modelos...
+                Testando conexão com os modelos...
               </>
             ) : (
-              <>💾 Salvar & Testar Configurações</>
+              <>💾 Salvar preferências &amp; testar conexão</>
             )}
           </button>
         </div>
@@ -448,3 +355,49 @@ export function ConfiguracoesIaClient() {
   )
 }
 
+function LinhaCredencial({
+  nome,
+  rotulo,
+  configurada,
+  detalhe,
+  acao,
+}: {
+  nome: string
+  rotulo: string
+  configurada: boolean
+  detalhe?: string
+  acao: { rotulo: string; onClick: () => void; desabilitada: boolean }
+}) {
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-950/40">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <code className="font-mono text-xs font-bold text-slate-900 dark:text-white">{nome}</code>
+          <p className="mt-0.5 text-[0.72rem] text-slate-500 dark:text-slate-400">{rotulo}</p>
+        </div>
+        <span
+          className={`shrink-0 rounded-full px-2.5 py-0.5 font-mono text-[0.65rem] font-bold ${
+            configurada
+              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+              : 'bg-slate-300/40 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+          }`}
+        >
+          {configurada ? '✅ DEFINIDA' : '— AUSENTE'}
+        </span>
+      </div>
+
+      {detalhe && (
+        <p className="font-mono text-[0.68rem] text-emerald-700 dark:text-emerald-300">{detalhe}</p>
+      )}
+
+      <button
+        type="button"
+        onClick={acao.onClick}
+        disabled={acao.desabilitada}
+        className="cursor-pointer self-start rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-xs font-bold text-amber-700 transition-colors hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-40 dark:text-amber-300"
+      >
+        {acao.rotulo}
+      </button>
+    </div>
+  )
+}

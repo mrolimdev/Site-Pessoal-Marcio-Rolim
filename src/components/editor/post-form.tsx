@@ -140,14 +140,14 @@ export function PostForm({ post }: Props) {
     setGerandoCapaIa(true)
     setErroCapaIa(null)
 
-    const salvaKey = typeof window !== 'undefined' ? localStorage.getItem('gemini_admin_api_key') || undefined : undefined
+    // A chave do Gemini não vem mais daqui: ela vive no ambiente do servidor e
+    // a action a lê de lá. Só a preferência de modelo continua no navegador.
     const salvaImgMod = typeof window !== 'undefined' ? localStorage.getItem('gemini_admin_image_model_id') || undefined : undefined
 
     const resp = await gerarNovaImagemCapaIaAction({
       titulo: titulo || 'Artigo do Blog',
       slug,
       categoria,
-      apiKeyInformada: salvaKey,
       modeloImagemId: salvaImgMod,
     })
 

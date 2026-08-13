@@ -42,7 +42,6 @@ export function ModalGeradorIa({
 }: Props) {
   const router = useRouter()
 
-  const [apiKey, setApiKey] = useState('')
   const [modeloId, setModeloId] = useState('gemini-2.0-flash')
   const [modeloImagemId, setModeloImagemId] = useState('imagen-3.0-generate-002')
 
@@ -52,7 +51,6 @@ export function ModalGeradorIa({
   // Modo de geração: por Tema/Tendências ou por URL (Apify)
   const [modoGeracao, setModoGeracao] = useState<'tema' | 'url'>('tema')
   const [urlFonte, setUrlFonte] = useState('')
-  const [apifyToken, setApifyToken] = useState('')
 
   const [passo, setPasso] = useState<
     'formulario' | 'opcoes' | 'gerando_post' | 'concluido'
@@ -70,19 +68,17 @@ export function ModalGeradorIa({
   const [postsConcluidos, setPostsConcluidos] = useState<PostCriadoResumo[]>([])
   const [tempoRestante, setTempoRestante] = useState(5)
 
-  // Carrega a chave e os modelos selecionados no localStorage
+  // Só a PREFERÊNCIA de modelo vem do localStorage. A chave do Gemini e o token
+  // do Apify ficavam aqui também — foram para o ambiente do servidor, e as
+  // actions os leem de lá. Nenhum segredo passa mais pelo navegador.
   useEffect(() => {
-    if (typeof window !== 'undefined' && aberto) {
-      const salvaKey = localStorage.getItem('gemini_admin_api_key')
-      const salvaMod = localStorage.getItem('gemini_admin_model_id')
-      const salvaImgMod = localStorage.getItem('gemini_admin_image_model_id')
-      const salvaApify = localStorage.getItem('apify_admin_token')
+    if (!aberto) return
 
-      if (salvaKey) setApiKey(salvaKey)
-      if (salvaMod) setModeloId(salvaMod)
-      if (salvaImgMod) setModeloImagemId(salvaImgMod)
-      if (salvaApify) setApifyToken(salvaApify)
-    }
+    const salvaMod = localStorage.getItem('gemini_admin_model_id')
+    const salvaImgMod = localStorage.getItem('gemini_admin_image_model_id')
+
+    if (salvaMod) setModeloId(salvaMod)
+    if (salvaImgMod) setModeloImagemId(salvaImgMod)
   }, [aberto])
 
   // Timer de contagem regressiva de 5 segundos ao concluir a publicação
@@ -134,8 +130,6 @@ export function ModalGeradorIa({
       const resp = await gerarOpcoesApartirDeUrlAction({
         url: urlFonte.trim(),
         categoria,
-        apiKeyInformada: apiKey,
-        apifyTokenInformado: apifyToken,
         modeloId,
       })
 
@@ -165,7 +159,6 @@ export function ModalGeradorIa({
       const resp = await obterSugestoesDeTitulosAction({
         tema,
         categoria,
-        apiKeyInformada: apiKey,
         modeloId,
       })
 
@@ -188,8 +181,6 @@ export function ModalGeradorIa({
       setPasso('opcoes')
     } else {
       // Se em branco: busca as 5 principais notícias/tendências quentes no Apify/Google
-      const salvaApify =
-        typeof window !== 'undefined' ? localStorage.getItem('apify_admin_token') || undefined : undefined
       setStatusMensagem(
         `⚡ Pesquisando as 5 principais tendências em ${
           categoria === 'fe' ? 'Vida Cristã & Fé' : 'Tecnologia & IA'
@@ -199,8 +190,6 @@ export function ModalGeradorIa({
       const resp = await obter5OpcoesNoticiasQuentesAction({
         categoria,
         assuntoOpcional: '',
-        apiKeyInformada: apiKey,
-        apifyTokenInformado: apifyToken || salvaApify,
         modeloId,
       })
 
@@ -265,7 +254,6 @@ export function ModalGeradorIa({
         titulo: item.titulo,
         tema: item.resumo,
         categoria,
-        apiKeyInformada: apiKey,
         modeloId,
         modeloImagemId,
         publicarDireto: true,

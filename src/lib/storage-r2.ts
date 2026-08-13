@@ -1,22 +1,22 @@
-import fs from 'fs'
-import path from 'path'
+import 'server-only'
+
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
+/**
+ * `import 'server-only'` no topo faz o BUILD FALHAR se qualquer módulo com
+ * 'use client' importar este arquivo, direta ou indiretamente. Este é o único
+ * arquivo do projeto que manipula segredo e estava sem essa trava — a mesma que
+ * `lib/supabase/admin.ts`, `lib/blog/derivar.ts` e `lib/blog/queries.ts` já
+ * tinham. Sem ela, um import acidental levaria `R2_SECRET_ACCESS_KEY` para o
+ * bundle do browser e nada avisaria.
+ *
+ * A leitura anterior caía para ler `.env.local` do disco com `fs` quando a
+ * variável não estava em `process.env`. Isso foi removido: em desenvolvimento o
+ * Next já carrega o `.env.local` sozinho, e na Vercel o arquivo simplesmente
+ * não existe — então o fallback nunca ajudou e ainda engolia erro em silêncio.
+ */
 function obterVarEnv(key: string): string | undefined {
-  if (process.env[key]) return process.env[key]
-  try {
-    const envPath = path.join(process.cwd(), '.env.local')
-    if (fs.existsSync(envPath)) {
-      const content = fs.readFileSync(envPath, 'utf8')
-      const lines = content.split('\n')
-      for (const line of lines) {
-        if (line.startsWith(key + '=')) {
-          return line.substring(key.length + 1).trim().replace(/^['"]|['"]$/g, '')
-        }
-      }
-    }
-  } catch {}
-  return undefined
+  return process.env[key]
 }
 
 /**

@@ -196,19 +196,32 @@ export async function salvarCategoriaAction({
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9_-]+/g, '-')
 
-    if (!slugLimpo) {
-      return { ok: false, erro: 'Informe um identificador/slug válido para a categoria.' }
+    // O mesmo formato que o CHECK `posts_category_slug` exige do banco: validar
+    // aqui devolve mensagem útil em vez de um 23514 cru vindo do Postgres.
+    if (!/^[a-z0-9]+([_-][a-z0-9]+)*$/.test(slugLimpo) || slugLimpo.length > 40) {
+      return { ok: false, erro: 'Informe um identificador/slug válido (letras, números, hífen).' }
     }
 
     if (!nome.trim()) {
       return { ok: false, erro: 'Informe um nome legível para a categoria.' }
     }
 
+    const pai = isParent ? null : parentId?.trim().toLowerCase() || null
+
+    // A FK `parent_id -> categories(id)` aceita a linha apontar para si mesma,
+    // e o `on delete cascade` transforma isso numa categoria que se apaga
+    // sozinha. A árvore da UI também entraria em laço ao montar os ramos.
+    if (pai !== null && pai === slugLimpo) {
+      return { ok: false, erro: 'Uma categoria não pode ser pai dela mesma.' }
+    }
+
+    // Campos livres do painel vão direto para colunas `text` sem limite no
+    // banco. O teto evita que um valor absurdo entre por engano ou por script.
     const payload = {
       id: slugLimpo,
-      name: nome.trim(),
-      description: descricao.trim(),
-      parent_id: isParent ? null : parentId || null,
+      name: nome.trim().slice(0, 120),
+      description: descricao.trim().slice(0, 500),
+      parent_id: pai,
       updated_at: new Date().toISOString(),
     }
 
@@ -229,8 +242,19 @@ export async function salvarCategoriaAction({
   }
 }
 
+/** Para onde vão os posts quando a categoria deles é excluída. */
+const CATEGORIA_PADRAO = 'tecnologia'
+
 /**
- * Exclui uma subcategoria ou categoria pai.
+ * Exclui uma subcategoria.
+ *
+ * NÃO exclui categoria pai que ainda tenha subcategorias — e isso é uma decisão,
+ * não uma limitação. `categories.parent_id` tem `on delete cascade`: apagar um
+ * pai levaria junto todas as filhas num único statement, e a realocação abaixo
+ * só olha o id que chegou. O resultado seria quatro categorias somem de uma vez
+ * e os posts delas ficam apontando para ids que não existem mais — sem erro,
+ * sem aviso. A UI hoje só oferece o botão em subcategoria, mas esta action é um
+ * endpoint POST e aceita qualquer id.
  */
 export async function excluirCategoriaAction({
   id,
@@ -241,10 +265,58 @@ export async function excluirCategoriaAction({
     await requireAdmin()
     const supabase = await createClient()
 
-    // Realoca posts vinculados a esta subcategoria para a categoria 'tecnologia' padrão
-    await supabase.from('posts').update({ category: 'tecnologia' }).eq('category', id)
+    // O id vem do cliente e alimenta um UPDATE em massa sobre posts. Um valor
+    // fora do formato de slug não corresponde a categoria nenhuma — recusar
+    // aqui evita disparar a varredura à toa.
+    const alvo = id.trim().toLowerCase()
+    if (!/^[a-z0-9]+([_-][a-z0-9]+)*$/.test(alvo)) {
+      return { ok: false, erro: 'Identificador de categoria inválido.' }
+    }
 
-    const { error } = await supabase.from('categories').delete().eq('id', id)
+    // Excluir o próprio destino da realocação mandaria os posts para uma
+    // categoria que esta mesma operação está apagando.
+    if (alvo === CATEGORIA_PADRAO) {
+      return {
+        ok: false,
+        erro: `"${CATEGORIA_PADRAO}" é a categoria para onde os posts órfãos são movidos e não pode ser excluída.`,
+      }
+    }
+
+    const { data: filhas, error: erroFilhas } = await supabase
+      .from('categories')
+      .select('id, name')
+      .eq('parent_id', alvo)
+
+    if (erroFilhas) {
+      console.error('[excluirCategoriaAction] Falha ao checar subcategorias:', erroFilhas)
+      return { ok: false, erro: `Não foi possível verificar as subcategorias: ${erroFilhas.message}` }
+    }
+
+    if (filhas && filhas.length > 0) {
+      const nomes = filhas.map((f) => f.name || f.id).join(', ')
+      return {
+        ok: false,
+        erro: `Esta é uma categoria pai com ${filhas.length} subcategoria(s): ${nomes}. Exclua ou mova as subcategorias antes — excluir o pai apagaria todas de uma vez.`,
+      }
+    }
+
+    // Realoca os posts desta categoria para a categoria padrão. O erro NÃO pode
+    // ser ignorado: apagar a categoria depois de uma realocação que falhou
+    // deixa posts apontando para algo que não existe mais.
+    const { error: erroRealocacao } = await supabase
+      .from('posts')
+      .update({ category: CATEGORIA_PADRAO })
+      .eq('category', alvo)
+
+    if (erroRealocacao) {
+      console.error('[excluirCategoriaAction] Falha ao realocar posts:', erroRealocacao)
+      return {
+        ok: false,
+        erro: `Não foi possível mover os posts desta categoria: ${erroRealocacao.message}. Nada foi excluído.`,
+      }
+    }
+
+    const { error } = await supabase.from('categories').delete().eq('id', alvo)
 
     if (error) {
       console.error('[excluirCategoriaAction] Erro no Supabase:', error)

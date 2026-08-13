@@ -52,18 +52,42 @@ function numeroAttr(node: JSONNodeType, nome: string): number | null {
  * O schema do ProseMirror garante a FORMA do documento, não o CONTEÚDO dos
  * atributos: `href` é texto livre, e `javascript:` num href é execução de
  * script no clique. Allowlist de protocolo, e ponto.
+ *
+ * DUAS funções, e não uma. Antes `data:` estava numa lista única usada tanto
+ * para `<a href>` quanto para `<img src>` — e `data:text/html;base64,…` num
+ * href é uma página inteira controlada por quem escreveu o post. Navegador
+ * moderno bloqueia navegação de topo para `data:`, mas depender disso é apostar
+ * numa mitigação do navegador em vez de fechar o allowlist. Base64 de imagem
+ * continua valendo, no lugar certo: `srcSeguro`.
  */
-const PROTOCOLOS_PERMITIDOS = new Set(['http:', 'https:', 'mailto:', 'tel:', 'data:'])
+const PROTOCOLOS_DE_LINK = new Set(['http:', 'https:', 'mailto:', 'tel:'])
+
+/** `//host` é protocol-relative, e não caminho interno: herda o esquema e sai do site. */
+function ehCaminhoInterno(valor: string): boolean {
+  return valor.startsWith('#') || (valor.startsWith('/') && !valor.startsWith('//'))
+}
 
 function hrefSeguro(valor: string | null): string | null {
   if (!valor) return null
-
-  // Relativo ou data-URI (mesmo site/imagem base64): seguro para exibição
-  if (valor.startsWith('/') || valor.startsWith('#') || valor.startsWith('data:image/')) return valor
+  if (ehCaminhoInterno(valor)) return valor
 
   try {
     const url = new URL(valor)
-    return PROTOCOLOS_PERMITIDOS.has(url.protocol) ? url.toString() : null
+    return PROTOCOLOS_DE_LINK.has(url.protocol) ? url.toString() : null
+  } catch {
+    return null
+  }
+}
+
+/** Destino de imagem: http(s), caminho interno ou base64 de IMAGEM — nada além. */
+function srcSeguro(valor: string | null): string | null {
+  if (!valor) return null
+  if (ehCaminhoInterno(valor)) return valor
+  if (/^data:image\/(png|jpeg|jpg|gif|webp|avif);base64,/i.test(valor)) return valor
+
+  try {
+    const url = new URL(valor)
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : null
   } catch {
     return null
   }
@@ -182,7 +206,7 @@ const NOS: Record<string, (props: PropsNo) => ReactNode> = {
   hardBreak: () => <br />,
 
   image: ({ node }) => {
-    const src = hrefSeguro(textoAttr(node, 'src'))
+    const src = srcSeguro(textoAttr(node, 'src'))
     if (!src) return null
 
     const legenda = textoAttr(node, 'title')
