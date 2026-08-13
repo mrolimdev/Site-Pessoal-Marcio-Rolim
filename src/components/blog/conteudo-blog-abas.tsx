@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { BannerDestaques } from '@/components/blog/banner-destaques'
 import type { Destaque } from '@/components/blog/banner-destaques'
 import { CarrosselPosts } from '@/components/blog/carrossel-posts'
+import { ListaPostsPaginada } from '@/components/blog/lista-posts-paginada'
 import { FiltrosBlog, NavegacaoBlog } from '@/components/blog/navegacao-blog'
 import type { Aba } from '@/components/blog/navegacao-blog'
 import { CardArvoreDeCategorias, CardNuvemDeTags } from '@/components/blog/widgets-blog'
@@ -63,6 +64,20 @@ export function ConteudoBlogAbas({
   const totalTech = postsTecnologia.length
   const totalFe = postsVidaCrista.length
   const totalGeral = totalTech + totalFe
+
+  /**
+   * Alguém pediu um recorte — por busca ou por categoria.
+   *
+   * A página muda de modo aqui. Navegando, ela é uma vitrine: banner de
+   * destaques em cima, fileiras por área embaixo. Filtrando, ela é uma resposta,
+   * e vira uma lista só.
+   *
+   * Não é preferência de leiaute, é correção de um buraco: o banner comia os
+   * quatro primeiros posts do recorte, e a listagem mostrava só o que sobrasse.
+   * Categoria com quatro posts ou menos — que é a maioria delas aqui — deixava a
+   * lista literalmente vazia, e a impressão era a de que o filtro não funcionava.
+   */
+  const temFiltro = termoBusca.trim().length > 0 || categoriaSelecionada !== null
 
   // Busca e categoria ficam separadas porque as contagens dos chips precisam da
   // busca aplicada e da categoria *não* aplicada — senão escolher uma categoria
@@ -145,6 +160,11 @@ export function ConteudoBlogAbas({
   // por data: sem isso uma sequência de posts de tecnologia empurraria a fé
   // para fora do banner inteiro. O resto entra do mais novo para o mais antigo.
   const destaques = useMemo<Destaque[]>(() => {
+    // Com filtro aplicado não há destaque: os posts do recorte vão todos para a
+    // lista. Zerar aqui é o bastante — a esteira desconta desta lista, então ela
+    // passa a receber o recorte inteiro sem nenhum outro ajuste.
+    if (temFiltro) return []
+
     const escolhidos: Destaque[] = []
     const jaEscolhidos = new Set<string>()
 
@@ -174,7 +194,7 @@ export function ConteudoBlogAbas({
     for (const post of ordenarPorData(base)) adicionar(post)
 
     return escolhidos
-  }, [abaAtiva, techFiltrados, feFiltrados])
+  }, [abaAtiva, techFiltrados, feFiltrados, temFiltro])
 
   // ─── ESTEIRA: todo o resto da aba ───
   //
@@ -203,6 +223,9 @@ export function ConteudoBlogAbas({
   // esperaria encontrar no começo dela.
   const secoesPorArea = useMemo(() => {
     if (abaAtiva !== 'todas') return []
+    // Filtrando, a lista de cima já É a resposta. As fileiras por área
+    // repetiriam os mesmos posts logo abaixo dela.
+    if (temFiltro) return []
 
     return [
       {
@@ -222,7 +245,7 @@ export function ConteudoBlogAbas({
         posts: ordenarPorData(feFiltrados),
       },
     ].filter((secao) => secao.posts.length > 0)
-  }, [abaAtiva, techFiltrados, feFiltrados])
+  }, [abaAtiva, techFiltrados, feFiltrados, temFiltro])
 
   // ─── TAGS DINÂMICAS POR ABA E POR ORIGEM ───
   const tagsFiltradas = useMemo<TagComContagem[]>(() => {
@@ -320,14 +343,23 @@ export function ConteudoBlogAbas({
               </div>
             ) : (
               <div className="flex flex-col gap-12">
-                <CarrosselPosts
+                {/* Seis por vez, com "Carregar mais". Antes eram todos de uma
+                    vez numa esteira: quem filtrou por categoria ou tag quer ver
+                    o que existe e quanto falta, e isso é uma lista, não uma fita
+                    que dá a volta e não tem onde encaixar o botão. */}
+                <ListaPostsPaginada
                   posts={rotativos}
-                  titulo="Últimos posts"
-                  descricao={COPIA[abaAtiva].esteira}
+                  titulo={temFiltro ? 'Resultados' : 'Últimos posts'}
+                  descricao={
+                    temFiltro
+                      ? 'O que combina com a busca e os filtros aplicados, do mais novo para o mais antigo'
+                      : COPIA[abaAtiva].esteira
+                  }
+                  prioridadeNoPrimeiro={temFiltro}
                 />
 
-                {/* Uma fileira por área, manual: a de cima já anda sozinha, e
-                    três esteiras em movimento na mesma tela não se leem. */}
+                {/* Uma fileira por área, manual: a lista de cima é estática, e
+                    duas esteiras em movimento na mesma tela não se leem. */}
                 {secoesPorArea.map((secao) => (
                   <CarrosselPosts
                     key={secao.chave}

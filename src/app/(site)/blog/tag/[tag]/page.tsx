@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { CabecalhoBlog, CascaBlog } from '@/components/blog/casca-blog'
-import { PostCard } from '@/components/blog/post-card'
+import { ListaPostsPaginada } from '@/components/blog/lista-posts-paginada'
 import { ChevronRightIcon } from '@/components/icons'
 import { SITE, urlAbsoluta } from '@/content/site'
 import { listarPosts, listarTagsPublicadas } from '@/lib/blog/queries'
@@ -86,11 +86,17 @@ export default async function TagPage({ params }: Props) {
       </CabecalhoBlog>
 
       <main className="mx-auto flex max-w-7xl flex-col gap-10 px-6 py-12">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {posts.map((post, i) => (
-            <PostCard key={post.slug} post={post} prioridade={i === 0} />
-          ))}
-        </div>
+        {/* Seis por vez, com "Carregar mais". O corte é no cliente porque os
+            posts já vieram todos no pré-render: buscar de novo a cada clique
+            jogaria a rota para dinâmica e apagaria a página estática. */}
+        <ListaPostsPaginada
+          posts={posts}
+          titulo="Publicações"
+          // O cabeçalho da página já diz que é a tag e o que ela reúne; repetir
+          // aqui seria a mesma frase duas vezes na mesma tela.
+          descricao="Do mais recente para o mais antigo"
+          prioridadeNoPrimeiro
+        />
 
         {total > posts.length && (
           <p className="text-center text-sm text-slate-500 dark:text-slate-400">

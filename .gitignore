@@ -34,3 +34,6 @@ out
 .env.*
 .env.local
 .env.*.local
+
+# Backups locais das datas de publicação (scripts/ajustar-datas-posts.mjs)
+backup-datas-posts-*.json

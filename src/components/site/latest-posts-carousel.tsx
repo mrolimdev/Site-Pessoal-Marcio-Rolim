@@ -3,24 +3,11 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 
-import { CategoriaBadge } from '@/components/blog/categoria-badge'
-import { ImagemDeCapa } from '@/components/blog/imagem-capa'
+import { PostCardMinimalista } from '@/components/blog/post-card-minimalista'
 import type { PostResumo } from '@/lib/blog/queries'
 
 type Props = {
   posts: PostResumo[]
-}
-
-function formatarDataCurta(iso: string) {
-  try {
-    return new Date(iso).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    })
-  } catch {
-    return ''
-  }
 }
 
 export function LatestPostsCarousel({ posts }: Props) {
@@ -133,68 +120,12 @@ export function LatestPostsCarousel({ posts }: Props) {
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {posts.map((post) => (
-            <article
+            <PostCardMinimalista
               key={post.slug}
-              className="snap-start group flex w-[280px] sm:w-[340px] shrink-0 flex-col justify-between overflow-hidden rounded-3xl border border-stone-200/80 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-500/40 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900 dark:hover:border-amber-500/40"
-            >
-              <div className="flex flex-col gap-4">
-                {/* THUMBNAIL DA CAPA */}
-                <Link
-                  href={`/blog/${post.slug}`}
-                  className="relative aspect-video w-full overflow-hidden rounded-2xl border border-stone-100 bg-stone-100 dark:border-slate-800 dark:bg-slate-950"
-                >
-                  {post.capaUrl ? (
-                    <ImagemDeCapa
-                      src={post.capaUrl}
-                      alt={post.capaAlt || post.titulo}
-                      sizes="(max-width: 640px) 280px, 340px"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xs font-bold text-stone-400 dark:text-slate-600">
-                      Blog Márcio Rolim
-                    </div>
-                  )}
-                </Link>
-
-                {/* METADADOS SUPERIORES */}
-                <div className="flex items-center justify-between gap-2 text-xs">
-                  <CategoriaBadge categoria={post.categoria} />
-
-                  <span className="font-mono text-[0.7rem] font-semibold text-stone-400 dark:text-slate-500">
-                    ⏱️ {post.minutosDeLeitura} min
-                  </span>
-                </div>
-
-                {/* TÍTULO COMPLETO */}
-                <Link href={`/blog/${post.slug}`} className="group/title">
-                  <h3 className="line-clamp-2 text-base font-black text-stone-900 transition-colors group-hover/title:text-amber-600 dark:text-white dark:group-hover/title:text-amber-400 leading-snug">
-                    {post.titulo}
-                  </h3>
-                </Link>
-
-                {/* EXCERPT RESUMIDO */}
-                {post.resumo && (
-                  <p className="line-clamp-2 text-xs text-stone-500 dark:text-slate-400 leading-relaxed">
-                    {post.resumo}
-                  </p>
-                )}
-              </div>
-
-              {/* RODAPÉ DO CARD */}
-              <div className="mt-5 flex items-center justify-between border-t border-stone-100 pt-3 dark:border-slate-800/80">
-                <span className="text-[0.7rem] font-medium text-stone-400 dark:text-slate-500">
-                  {formatarDataCurta(post.publicadoEm)}
-                </span>
-
-                <Link
-                  href={`/blog/${post.slug}`}
-                  className="inline-flex items-center gap-1 text-xs font-extrabold text-amber-600 group-hover:translate-x-0.5 transition-transform dark:text-amber-400"
-                >
-                  <span>Ler artigo</span>
-                  <span>→</span>
-                </Link>
-              </div>
-            </article>
+              post={post}
+              sizes="(max-width: 640px) 280px, 340px"
+              className="w-[280px] shrink-0 snap-start sm:w-[340px]"
+            />
           ))}
         </div>
       </div>

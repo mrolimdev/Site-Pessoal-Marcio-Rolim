@@ -7,7 +7,7 @@ import { CabecalhoBlog, CascaBlog } from '@/components/blog/casca-blog'
 import { CategoriaBadge } from '@/components/blog/categoria-badge'
 import { DataPost, TempoDeLeitura } from '@/components/blog/data-post'
 import { ImagemDeCapa } from '@/components/blog/imagem-capa'
-import { PostCard } from '@/components/blog/post-card'
+import { PostCardMinimalista } from '@/components/blog/post-card-minimalista'
 import { TagsDoPost } from '@/components/blog/tags-post'
 import { ArrowLeftIcon, WhatsAppIcon } from '@/components/icons'
 import { PostBody } from '@/components/post-body'
@@ -264,7 +264,14 @@ export default async function PostPage({ params }: Props) {
 
             <div className="grid gap-6 sm:grid-cols-3">
               {postsRelacionados.map((rel) => (
-                <PostCard key={rel.slug} post={rel} />
+                <PostCardMinimalista
+                  key={rel.slug}
+                  post={rel}
+                  // Três colunas no desktop dentro da coluna de leitura; uma só
+                  // no celular.
+                  sizes="(min-width: 640px) 22rem, 92vw"
+                  className="h-full"
+                />
               ))}
             </div>
           </section>
