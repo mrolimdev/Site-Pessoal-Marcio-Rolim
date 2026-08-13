@@ -37,3 +37,4 @@ out
 
 # Backups locais das datas de publicação (scripts/ajustar-datas-posts.mjs)
 backup-datas-posts-*.json
+.vercel
