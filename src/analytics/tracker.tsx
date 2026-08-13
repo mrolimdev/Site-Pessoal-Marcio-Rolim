@@ -2,7 +2,7 @@
 
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
-import { KIND, enviar, optOut } from './client'
+import { KIND, ehRotaPrivada, enviar, optOut } from './client'
 import type { EntradaEvento } from './shared'
 
 /**
@@ -100,6 +100,22 @@ function reiniciarEngajamento(caminho: string, busca: string) {
   profundidadeMaxima = 0
   profundidadeJaEnviada = 0
   iniciarFatia()
+}
+
+/**
+ * Desliga a medição. Usado ao entrar no painel: `caminhoEngajamento = null` faz
+ * `descarregarEngajamento()` sair na primeira linha, então nem o tempo nem a
+ * rolagem do /admin viram evento — e, principalmente, não sobram no acumulador
+ * para serem creditados na próxima página pública.
+ */
+function pararEngajamento() {
+  caminhoEngajamento = null
+  buscaEngajamento = ''
+  msAcumulados = 0
+  msJaEnviados = 0
+  inicioFatiaAtiva = null
+  profundidadeMaxima = 0
+  profundidadeJaEnviada = 0
 }
 
 // ── Profundidade de rolagem ──────────────────────────────────────────────────
@@ -237,6 +253,11 @@ function rotulo(elemento: Element): string | undefined {
  * o libera para não esperar este handler antes de navegar.
  */
 function aoClicar(evento: MouseEvent) {
+  // O listener é montado uma vez, no efeito de infraestrutura, e sobrevive à
+  // navegação de SPA — então a checagem tem de ser aqui, a cada clique, e não
+  // na montagem. Sem ela, um clique dentro do painel ainda geraria evento.
+  if (ehRotaPrivada(location.pathname)) return
+
   const alvo = evento.target
   if (!(alvo instanceof Element)) return
 
@@ -334,10 +355,23 @@ export function Tracker() {
     // O guard que torna o StrictMode inofensivo.
     if (url === urlUltimoPageview) return
 
-    // A página que está saindo fecha a conta dela antes de o alvo mudar.
+    // A página que está saindo fecha a conta dela antes de o alvo mudar — vale
+    // inclusive quando o destino é o painel: o tempo na página pública anterior
+    // foi real e precisa ser registrado antes de a medição parar.
     descarregarEngajamento()
 
     urlUltimoPageview = url
+
+    // Painel e autenticação não são audiência. O servidor já descarta o que vem
+    // dessas rotas (`ehInterno` + o descarte em `analytics_ingest`); o corte
+    // aqui poupa uma requisição por navegação e, sobretudo, PARA o cronômetro.
+    // Só ignorar o pageview não bastaria: o tempo gasto no painel continuaria
+    // no acumulador e seria creditado à próxima página pública.
+    if (ehRotaPrivada(pathname)) {
+      pararEngajamento()
+      return
+    }
+
     reiniciarEngajamento(pathname, busca)
     reiniciarSentinelas()
 

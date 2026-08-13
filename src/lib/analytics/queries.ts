@@ -615,6 +615,12 @@ export async function carregarAnalytics(dias: Periodo): Promise<DadosAnalytics> 
             .gte('created_at', inicioDeHoje)
             .eq('analytics_session.is_bot', false)
             .eq('analytics_session.is_internal', false)
+            // Filtro por PATH além do filtro por sessão: `is_internal` é
+            // decidido quando a sessão nasce e nunca revisto, então uma sessão
+            // que começou pública e depois entrou no painel trazia /admin junto.
+            .not('path', 'like', '/admin%')
+          .not('path', 'like', '/auth/%')
+            .not('path', 'like', '/auth/%')
             .range(de, ate),
         'analytics_event (dia corrente)',
       ),
@@ -631,6 +637,12 @@ export async function carregarAnalytics(dias: Periodo): Promise<DadosAnalytics> 
             .or('utm_source.not.is.null,utm_campaign.not.is.null,utm_medium.not.is.null')
             .eq('analytics_session.is_bot', false)
             .eq('analytics_session.is_internal', false)
+            // Filtro por PATH além do filtro por sessão: `is_internal` é
+            // decidido quando a sessão nasce e nunca revisto, então uma sessão
+            // que começou pública e depois entrou no painel trazia /admin junto.
+            .not('path', 'like', '/admin%')
+          .not('path', 'like', '/auth/%')
+            .not('path', 'like', '/auth/%')
             .range(de, ate),
         'analytics_event (campanhas)',
         20_000,
@@ -912,6 +924,8 @@ export async function carregarResumoPainel(): Promise<ResumoPainel> {
           .gte('created_at', `${hoje}T00:00:00.000Z`)
           .eq('analytics_session.is_bot', false)
           .eq('analytics_session.is_internal', false)
+          .not('path', 'like', '/admin%')
+          .not('path', 'like', '/auth/%')
           .range(de, ate),
       'analytics_event (resumo do dia corrente)',
     ),

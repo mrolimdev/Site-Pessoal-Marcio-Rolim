@@ -8,7 +8,7 @@ import {
   validarEListarModelosGeminiAction,
   type ModeloGemini,
 } from '@/actions/gerar-post-ia'
-import { MODELOS_IMAGEM_DISPONIVEIS } from '@/lib/blog/constantes'
+import { MODELOS_IMAGEM_DISPONIVEIS, MODELO_TEXTO_PADRAO } from '@/lib/blog/constantes'
 
 /**
  * Configuração da IA.
@@ -38,9 +38,12 @@ type Props = {
 
 export function ConfiguracoesIaClient({ geminiConfigurada, apifyConfigurado }: Props) {
   const [modelos, setModelos] = useState<ModeloGemini[]>([])
-  const [modeloSelecionado, setModeloSelecionado] = useState<string>('gemini-2.0-flash')
+  // Os defaults literais que ficavam aqui ('gemini-2.0-flash' e
+  // 'imagen-3.0-generate-002') foram aposentados pelo Google e respondiam 404.
+  // Agora vêm das constantes, que são a mesma fonte usada pela action.
+  const [modeloSelecionado, setModeloSelecionado] = useState<string>(MODELO_TEXTO_PADRAO)
   const [modeloImagemSelecionado, setModeloImagemSelecionado] = useState<string>(
-    'imagen-3.0-generate-002',
+    MODELOS_IMAGEM_DISPONIVEIS[0]!.id,
   )
 
   const [apifyStatus, setApifyStatus] = useState<{ usuario?: string; plano?: string } | null>(null)

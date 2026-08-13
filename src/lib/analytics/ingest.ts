@@ -2,7 +2,7 @@ import 'server-only'
 
 import type { NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { COOKIE_OPTOUT, LIMITE_CORPO_BYTES } from '@/analytics/client'
+import { COOKIE_OPTOUT, LIMITE_CORPO_BYTES, ehRotaPrivada } from '@/analytics/client'
 import { JANELA_LIMITE_MS, LIMITE_POR_IP, type EventoCliente } from '@/analytics/shared'
 import { classificar } from './bots'
 import { analisarUa } from './ua'
@@ -125,7 +125,9 @@ export function ehInterno(request: NextRequest, path: string): boolean {
   // não existe ou é diferente de 'production', o que cai neste mesmo ramo.
   if (process.env.VERCEL_ENV !== 'production') return true
 
-  if (path.startsWith('/admin')) return true
+  // Painel e autenticação. A definição é compartilhada com o tracker do
+  // browser, para os dois lados nunca discordarem sobre o que é audiência.
+  if (ehRotaPrivada(path)) return true
 
   // Bloqueio explícito para acessos via localhost ou 127.0.0.1
   const host = hostDaRequisicao(request)

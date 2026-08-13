@@ -26,13 +26,44 @@ const CAMINHOS_BLOQUEADOS = ['/curriculum']
 // MAIS específico e só por ele: um bot que encontra seu nome aqui ignora
 // inteiramente o grupo `*`. Herdar as regras do `*` não é uma opção — omitir o
 // grupo de um bot que já existe seria afrouxar a regra, não simplificá-la.
+//
+// A lista foi ampliada porque a original cobria só os agentes de 2023-2024. Os
+// motores de resposta que hoje mandam tráfego — Perplexity, o modo de busca do
+// ChatGPT, o Copilot — usam agentes que não estavam aqui, e um bot sem grupo
+// próprio herda `*`, que já libera tudo. Ou seja: nomeá-los não muda a permissão,
+// muda a INTENÇÃO ficar explícita e auditável. O dia em que se quiser barrar um
+// deles, o grupo já existe e basta trocar uma linha.
+//
+// Distinção que importa e costuma ser confundida:
+//   · treino          GPTBot, ClaudeBot, CCBot, Google-Extended, Applebot-Extended
+//   · busca/resposta  OAI-SearchBot, Claude-SearchBot, PerplexityBot, ChatGPT-User
+// Bloquear os de treino é uma escolha de licenciamento. Bloquear os de busca é
+// desaparecer das respostas de IA — que é exatamente o oposto do objetivo aqui.
 const CRAWLERS_DE_IA = [
+  // Treino / coleta de corpus
   'GPTBot',
-  'ChatGPT-User',
-  'Google-Extended',
-  'CCBot',
-  'anthropic-ai',
   'ClaudeBot',
+  'anthropic-ai',
+  'CCBot',
+  'Google-Extended',
+  'Applebot-Extended',
+  'Amazonbot',
+  'Bytespider',
+  'Meta-ExternalAgent',
+  'meta-externalagent',
+  'cohere-ai',
+  'Diffbot',
+  'omgili',
+  'Timpibot',
+  // Busca e resposta em tempo real — estes são os que trazem citação e tráfego
+  'OAI-SearchBot',
+  'ChatGPT-User',
+  'Claude-SearchBot',
+  'Claude-User',
+  'PerplexityBot',
+  'Perplexity-User',
+  'YouBot',
+  'Applebot',
 ]
 
 export default function robots(): MetadataRoute.Robots {
@@ -41,9 +72,11 @@ export default function robots(): MetadataRoute.Robots {
       { userAgent: '*', allow: '/', disallow: CAMINHOS_BLOQUEADOS },
       ...CRAWLERS_DE_IA.map((userAgent) => ({
         userAgent,
+        allow: '/',
         disallow: CAMINHOS_BLOQUEADOS,
       })),
     ],
     sitemap: urlAbsoluta('/sitemap.xml'),
+    host: urlAbsoluta('/'),
   }
 }

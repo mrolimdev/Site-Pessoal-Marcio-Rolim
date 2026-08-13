@@ -1,6 +1,5 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 
@@ -16,6 +15,7 @@ import {
   type StatusPost,
 } from '@/lib/blog/constantes'
 import { ConteudoInvalido, derivarConteudo } from '@/lib/blog/derivar'
+import { revalidarBlog } from '@/lib/blog/revalidar'
 import { createClient } from '@/lib/supabase/server'
 
 /**
@@ -275,20 +275,6 @@ function traduzirErro(erro: ErroBanco): EstadoPost {
 }
 
 // ─── Revalidação ─────────────────────────────────────────────────────────────
-/**
- * Invalida o cache das páginas públicas afetadas.
- *
- * Recebe uma lista de slugs porque renomear o slug de um post publicado afeta
- * DUAS URLs: a nova precisa aparecer e a antiga precisa parar de servir a
- * versão em cache.
- */
-function revalidarBlog(slugs: readonly (string | null | undefined)[]): void {
-  revalidatePath('/blog')
-
-  for (const slug of new Set(slugs)) {
-    if (slug) revalidatePath(`/blog/${slug}`)
-  }
-}
 
 // ─── Revisão ─────────────────────────────────────────────────────────────────
 /**

@@ -5,13 +5,18 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import {
+  gerarCapaDoPostAction,
   gerarOpcoesApartirDeUrlAction,
   gerarPostCompletoComIaAction,
   obter5OpcoesNoticiasQuentesAction,
   obterSugestoesDeTitulosAction,
   type ResultadoPostIa,
 } from '@/actions/gerar-post-ia'
-import { Categoria } from '@/lib/blog/constantes'
+import {
+  Categoria,
+  MODELOS_IMAGEM_DISPONIVEIS,
+  MODELO_TEXTO_PADRAO,
+} from '@/lib/blog/constantes'
 
 type Props = {
   aberto: boolean
@@ -32,6 +37,12 @@ export type PostCriadoResumo = {
   slug: string
   categoria: Categoria
   publicado: boolean
+  /** Preenchido quando o texto foi gerado mas a gravação no banco falhou. */
+  erro?: string
+  /** Capa gerada no passo 2. Ausente = ficou a foto de reserva. */
+  capaUrl?: string
+  /** Passo 2 falhou. NÃO é falha do post: ele está publicado mesmo assim. */
+  avisoCapa?: string
 }
 
 export function ModalGeradorIa({
@@ -42,8 +53,11 @@ export function ModalGeradorIa({
 }: Props) {
   const router = useRouter()
 
-  const [modeloId, setModeloId] = useState('gemini-2.0-flash')
-  const [modeloImagemId, setModeloImagemId] = useState('imagen-3.0-generate-002')
+  // Os defaults antigos ('gemini-2.0-flash' / 'imagen-3.0-generate-002') foram
+  // aposentados pelo Google e respondiam 404. Um navegador sem preferência
+  // salva no localStorage caía direto na falha.
+  const [modeloId, setModeloId] = useState(MODELO_TEXTO_PADRAO)
+  const [modeloImagemId, setModeloImagemId] = useState(MODELOS_IMAGEM_DISPONIVEIS[0]!.id)
 
   const [tema, setTema] = useState('')
   const [categoria, setCategoria] = useState<Categoria>(categoriaAtual)
@@ -244,34 +258,72 @@ export function ModalGeradorIa({
 
     const geradosArray: PostCriadoResumo[] = []
 
+    // DOIS passos por post, e não um.
+    //
+    // Antes era uma chamada só: redigir (~28s) + gerar capa (~55s) = ~83s, que
+    // estourava o limite de execução da plataforma e perdia o artigo já escrito
+    // junto com a capa. Agora o passo 1 publica o post com uma foto do banco e o
+    // passo 2 troca pela capa gerada. Se o passo 2 falhar, o post continua no
+    // ar — e dá para refazer só a capa pelo botão do editor.
     for (let i = 0; i < selecionadas.length; i++) {
       const item = selecionadas[i]
-      setStatusMensagem(
-        `[${i + 1}/${selecionadas.length}] Redigindo artigo extenso (~1500 palavras), gerando capa por IA e publicando: "${item.titulo}"...`
-      )
+      const posicao = `[${i + 1}/${selecionadas.length}]`
+
+      setStatusMensagem(`${posicao} Redigindo o artigo (~1500 palavras): "${item.titulo}"...`)
 
       const resp = await gerarPostCompletoComIaAction({
         titulo: item.titulo,
         tema: item.resumo,
         categoria,
         modeloId,
-        modeloImagemId,
         publicarDireto: true,
       })
 
-      if (resp.ok && resp.post) {
+      if (!resp.ok || !resp.post) {
         geradosArray.push({
-          titulo: resp.post.titulo,
-          slug: resp.post.slug,
-          categoria: resp.post.categoria,
-          publicado: Boolean(resp.publicado),
+          titulo: item.titulo,
+          slug: '',
+          categoria,
+          publicado: false,
+          erro: resp.erro ?? 'Falha ao redigir o artigo.',
+        })
+        continue
+      }
+
+      const registro: PostCriadoResumo = {
+        titulo: resp.post.titulo,
+        slug: resp.post.slug,
+        categoria: resp.post.categoria,
+        publicado: Boolean(resp.publicado),
+        // A action devolve `erro` mesmo com ok:true quando o texto foi gerado
+        // mas o banco recusou a gravação. É o que permite a tela final dizer a
+        // verdade em vez de "✅ Publicado" para todos.
+        erro: resp.erro,
+      }
+
+      // Passo 2: só faz sentido se o post existe de fato no banco.
+      if (resp.postCriadoId) {
+        setStatusMensagem(`${posicao} Post publicado. Gerando a capa por IA: "${resp.post.titulo}"...`)
+
+        const capa = await gerarCapaDoPostAction({
+          postId: resp.postCriadoId,
+          promptVisual: resp.post.promptVisualCapa,
+          modeloImagemId,
         })
 
-        // Aplica o 1º no formulário de fundo por cortesia
-        if (i === 0) {
-          onAplicarAoFormulario(resp.post)
+        if (capa.ok && capa.capaUrl) {
+          registro.capaUrl = capa.capaUrl
+          resp.post.capaUrl = capa.capaUrl
+        } else {
+          // Não é falha do post: ele está publicado, com a capa de reserva.
+          registro.avisoCapa = capa.erro ?? 'A capa por IA não pôde ser gerada; ficou uma foto do banco.'
         }
       }
+
+      geradosArray.push(registro)
+
+      // Aplica o 1º no formulário de fundo por cortesia
+      if (i === 0) onAplicarAoFormulario(resp.post)
     }
 
     setCarregando(false)
@@ -284,6 +336,8 @@ export function ModalGeradorIa({
       setPasso('opcoes')
     }
   }
+
+  const publicadosOk = postsConcluidos.filter((p) => p.publicado).length
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md transition-opacity">
@@ -572,14 +626,24 @@ export function ModalGeradorIa({
         {passo === 'concluido' && (
           <div className="mt-5 flex flex-col gap-5">
             <div className="flex flex-col items-center text-center gap-2">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-3xl text-emerald-600 dark:text-emerald-400">
-                🎉
+              <div
+                className={`flex h-14 w-14 items-center justify-center rounded-2xl text-3xl ${
+                  publicadosOk === postsConcluidos.length
+                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                    : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                }`}
+              >
+                {publicadosOk === postsConcluidos.length ? '🎉' : '⚠️'}
               </div>
               <h4 className="text-lg font-black text-slate-900 dark:text-white">
-                {postsConcluidos.length} Post(s) Criado(s) e Publicado(s) com Sucesso!
+                {publicadosOk === postsConcluidos.length
+                  ? `${publicadosOk} Post(s) Criado(s) e Publicado(s) com Sucesso!`
+                  : `${publicadosOk} de ${postsConcluidos.length} Post(s) Publicado(s)`}
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Os artigos já estão disponíveis publicamente no seu blog e registrados no painel.
+                {publicadosOk === postsConcluidos.length
+                  ? 'Os artigos já estão disponíveis publicamente no seu blog e registrados no painel.'
+                  : 'Os que falharam estão detalhados abaixo. O texto foi gerado, mas a gravação no banco não foi concluída.'}
               </p>
             </div>
 
@@ -592,8 +656,17 @@ export function ModalGeradorIa({
                 >
                   <div className="flex flex-col gap-1 text-left">
                     <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 font-mono text-[0.65rem] font-bold text-emerald-700 dark:text-emerald-300">
-                        ✅ Publicado
+                      {/* Este badge era fixo em "✅ Publicado" e ignorava o
+                          resultado real. Com o INSERT falhando em silêncio, a
+                          tela anunciava sucesso e oferecia um link 404. */}
+                      <span
+                        className={`rounded-full px-2 py-0.5 font-mono text-[0.65rem] font-bold ${
+                          p.publicado
+                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                            : 'bg-rose-500/15 text-rose-700 dark:text-rose-300'
+                        }`}
+                      >
+                        {p.publicado ? '✅ Publicado' : '⚠️ Não publicado'}
                       </span>
                       <span className="rounded-full bg-slate-200 px-2 py-0.5 font-mono text-[0.65rem] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                         {p.categoria === 'fe' ? 'Fé' : 'Tecnologia'}
@@ -602,15 +675,28 @@ export function ModalGeradorIa({
                     <h5 className="text-xs font-bold text-slate-900 dark:text-white leading-snug">
                       {p.titulo}
                     </h5>
+                    {p.erro && (
+                      <p className="text-[0.68rem] leading-snug text-rose-600 dark:text-rose-400">
+                        {p.erro}
+                      </p>
+                    )}
+                    {p.avisoCapa && (
+                      <p className="text-[0.68rem] leading-snug text-amber-600 dark:text-amber-400">
+                        🖼️ {p.avisoCapa}
+                      </p>
+                    )}
                   </div>
 
-                  <Link
-                    href={`/blog/${p.slug}`}
-                    target="_blank"
-                    className="shrink-0 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-600 hover:bg-amber-500/20 dark:text-amber-400"
-                  >
-                    🔗 Ver no Blog
-                  </Link>
+                  {/* Link só existe se a página existir. */}
+                  {p.publicado && (
+                    <Link
+                      href={`/blog/${p.slug}`}
+                      target="_blank"
+                      className="shrink-0 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-600 hover:bg-amber-500/20 dark:text-amber-400"
+                    >
+                      🔗 Ver no Blog
+                    </Link>
+                  )}
                 </div>
               ))}
             </div>

@@ -5,6 +5,7 @@ import { CabecalhoBlog, CascaBlog } from '@/components/blog/casca-blog'
 import { ConteudoBlogAbas } from '@/components/blog/conteudo-blog-abas'
 import { MEDIA, SITE, urlAbsoluta } from '@/content/site'
 import { listarPostsAgrupadosPorSecoes, obterEstatisticasWidgets } from '@/lib/blog/queries'
+import { jsonLd, schemaListagemBlog, schemaTrilha } from '@/lib/seo/schema'
 
 export const revalidate = 60
 
@@ -39,7 +40,21 @@ export default async function BlogPage() {
   ])
 
   return (
-    <CascaBlog semBarraFlutuante>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLd(schemaListagemBlog([...postsTecnologia, ...postsVidaCrista])),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLd(schemaTrilha([{ nome: 'Início', caminho: '/' }, { nome: 'Blog', caminho: '/blog' }])),
+        }}
+      />
+
+      <CascaBlog semBarraFlutuante>
       {/*
         O cabeçalho é Server Component e entra como filho da ilha de cliente:
         assim a barra `sticky` de navegação pode ser renderizada acima dele sem
@@ -91,6 +106,7 @@ export default async function BlogPage() {
           </p>
         </CabecalhoBlog>
       </ConteudoBlogAbas>
-    </CascaBlog>
+      </CascaBlog>
+    </>
   )
 }

@@ -37,6 +37,25 @@ export const CHAVE_IGNORAR = 'mr_analytics_ignore'
 export const COOKIE_OPTOUT = 'mr_optout'
 
 /**
+ * Rotas que NÃO são audiência: o painel e a autenticação.
+ *
+ * Mora aqui, e não em `./shared`, porque os DOIS lados precisam da mesma
+ * definição — o tracker no browser, para não enviar, e `lib/analytics/ingest`
+ * no servidor, para marcar como interno — e `shared` carrega o zod, que não
+ * pode ir para o bundle do cliente. Um terceiro consumidor, `analytics_rollup`,
+ * repete os prefixos em SQL: se mudar aqui, mude lá também.
+ *
+ * Sem `/auth`, a tela de login aparecia no relatório de páginas mais vistas.
+ */
+export const PREFIXOS_PRIVADOS = ['/admin', '/auth'] as const
+
+export function ehRotaPrivada(caminho: string): boolean {
+  return PREFIXOS_PRIVADOS.some(
+    (prefixo) => caminho === prefixo || caminho.startsWith(`${prefixo}/`),
+  )
+}
+
+/**
  * Oposição (LGPD art. 18, §2º). Vale localStorage OU cookie: são dois lugares
  * porque limpar cookies não limpa localStorage, e vice-versa.
  *

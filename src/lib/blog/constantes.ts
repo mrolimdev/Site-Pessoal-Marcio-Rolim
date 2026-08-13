@@ -170,27 +170,70 @@ export function formatarDataPainel(iso: string | null | undefined): string {
   }).format(data)
 }
 
-// ─── Modelos Imagen 3 ────────────────────────────────────────────────────────
+// ─── Modelos de IA ───────────────────────────────────────────────────────────
+/**
+ * Vive AQUI, e não em `actions/gerar-post-ia.ts`, por uma regra do Next: um
+ * módulo `'use server'` só pode exportar funções async. Um `export const` ali
+ * quebra o build. E o modal do editor precisa do padrão para inicializar o
+ * estado antes de ler a preferência do localStorage.
+ *
+ * A lista é PREFERÊNCIA, não verdade absoluta: se tudo aqui responder 404 —
+ * como aconteceu quando o Google aposentou a geração 2.0 —, a action consulta o
+ * catálogo real da API e escolhe sozinha.
+ */
+export const MODELOS_TEXTO_PREFERIDOS = [
+  'gemini-2.5-flash',
+  'gemini-3-flash-preview',
+  'gemini-2.5-flash-lite',
+  'gemini-2.5-pro',
+] as const
+
+export const MODELO_TEXTO_PADRAO: string = MODELOS_TEXTO_PREFERIDOS[0]
+
 export type ModeloImagemOption = {
   id: string
   nome: string
   descricao: string
 }
 
+/**
+ * ATENÇÃO ao editar: esta lista já esteve DESATUALIZADA e ninguém percebeu.
+ *
+ * Ela oferecia `imagen-3.0-generate-002`, `imagen-3.0-fast-generate-001` e
+ * `imagen-3.0-generate-001` — os três aposentados pelo Google e respondendo 404.
+ * Como a geração de capa tem cadeia de reserva, o defeito ficava invisível: a
+ * capa saía, só que nunca pelo modelo que a tela dizia estar usando.
+ *
+ * Os `gemini-*-image` respondem em `:generateContent`; os `imagen-*` em
+ * `:predict`. `gerarImagemDeCapaRobusta` sabe distinguir pelo prefixo do id.
+ */
+/**
+ * A ORDEM importa: o primeiro é o padrão e o primeiro da fila de reserva.
+ * Medido contra a API real (agosto/2026), gerando a mesma capa 16:9:
+ *
+ *   gemini-3.1-flash-image   54,5s   817 KB   ← melhor relação tempo/tamanho
+ *   gemini-2.5-flash-image   86,8s  1611 KB
+ *   imagen-4.0-*             404 — aparecem no catálogo mas não respondem em
+ *                            :predict com esta chave (exigem faturamento ativo)
+ *
+ * Por isso os Imagen NÃO estão nesta lista: oferecer na tela um modelo que
+ * responde 404 é o defeito que esta lista já teve com a família Imagen 3. Eles
+ * continuam na cadeia de reserva interna da action, onde um 404 custa 0,4s.
+ */
 export const MODELOS_IMAGEM_DISPONIVEIS: ModeloImagemOption[] = [
   {
-    id: 'imagen-3.0-generate-002',
-    nome: 'Imagen 3 - Alta Qualidade (Recomendado)',
-    descricao: 'Modelo principal do Google para geração de fotografias realistas em 16:9.',
+    id: 'gemini-3.1-flash-image',
+    nome: 'Gemini 3.1 Flash Image (Recomendado)',
+    descricao: 'Mais rápido e mais leve nos testes: ~55s e ~800 KB por capa.',
   },
   {
-    id: 'imagen-3.0-fast-generate-001',
-    nome: 'Imagen 3 - Fast (Geração Rápida)',
-    descricao: 'Versão otimizada para geração ultrarrápida de capas de blog.',
+    id: 'gemini-2.5-flash-image',
+    nome: 'Gemini 2.5 Flash Image',
+    descricao: 'Alternativa estável. Mais lento (~87s) e gera arquivo maior.',
   },
   {
-    id: 'imagen-3.0-generate-001',
-    nome: 'Imagen 3 - Padrão v1',
-    descricao: 'Versão padrão legada da família Imagen 3.',
+    id: 'gemini-3-pro-image',
+    nome: 'Gemini 3 Pro Image (Qualidade)',
+    descricao: 'Para quando a capa importa mais que o tempo de geração.',
   },
 ]

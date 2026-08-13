@@ -7,6 +7,19 @@ import { requireAdmin } from '@/lib/auth/require-admin'
 import type { Categoria, StatusPost } from '@/lib/blog/constantes'
 import { createClient } from '@/lib/supabase/server'
 
+/**
+ * Cada passo da criação por IA cabe sozinho neste orçamento:
+ *   passo 1  redigir + publicar   ~28s
+ *   passo 2  gerar e aplicar capa ~55s (limitado por ORCAMENTO_CAPA_MS)
+ *
+ * 60 é o teto do plano Hobby da Vercel e um valor válido também no Pro — por
+ * isso está aqui, e não 300: funciona nos dois sem ninguém precisar lembrar.
+ * No Pro, subir para 300 aqui e ORCAMENTO_CAPA_MS para 240_000 em
+ * actions/gerar-post-ia.ts faz as capas do Gemini caberem.
+ */
+export const maxDuration = 60
+
+
 export const metadata: Metadata = {
   title: 'Editar post',
   robots: { index: false, follow: false },

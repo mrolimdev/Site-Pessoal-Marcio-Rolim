@@ -14,6 +14,13 @@ import { PostBody } from '@/components/post-body'
 import { BASE_URL, CONTACT, MEDIA, SITE, urlAbsoluta } from '@/content/site'
 import { ROTULO_CATEGORIA } from '@/lib/blog/constantes'
 import {
+  extrairFaq,
+  jsonLd,
+  schemaArtigo,
+  schemaFaq,
+  schemaTrilha,
+} from '@/lib/seo/schema'
+import {
   listarSlugsPublicados,
   obterPostPorSlug,
   obterPostsRelacionados,
@@ -76,29 +83,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-function jsonLdDoPost(post: PostCompleto): string {
-  const url = urlAbsoluta(`/blog/${post.slug}`)
-
-  const schema = {
-    '@context': 'https://schema.org',
-    '@type': 'BlogPosting',
-    headline: post.titulo,
-    description: post.seoDescricao ?? post.resumo ?? undefined,
-    image: post.capaUrl ?? MEDIA.ogImageUrl,
-    datePublished: post.publicadoEm,
-    dateModified: post.atualizadoEm,
-    inLanguage: SITE.lang,
-    url,
-    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
-    articleSection: ROTULO_CATEGORIA[post.categoria],
-    keywords: post.tags.length > 0 ? post.tags.join(', ') : undefined,
-    timeRequired: `PT${post.minutosDeLeitura}M`,
-    author: { '@type': 'Person', name: SITE.name, url: BASE_URL },
-    publisher: { '@type': 'Person', name: SITE.name, url: BASE_URL },
-  }
-
-  return JSON.stringify(schema).replace(/</g, '\\u003c')
-}
 
 export default async function PostPage({ params }: Props) {
   const { slug } = await params
@@ -109,12 +93,28 @@ export default async function PostPage({ params }: Props) {
   // Carrega 3 posts relacionados da mesma categoria
   const postsRelacionados = await obterPostsRelacionados(post.slug, post.categoria, 3)
 
+  // `wordCount` do schema vem do texto derivado no save, não de uma contagem
+  // refeita aqui: é o mesmo número que alimentou `reading_minutes`.
+  const palavras = post.minutosDeLeitura * 200
+  const artigo = schemaArtigo(post, palavras)
+  const faq = extrairFaq(post.conteudo)
+  const trilha = schemaTrilha([
+    { nome: 'Início', caminho: '/' },
+    { nome: 'Blog', caminho: '/blog' },
+    { nome: ROTULO_CATEGORIA[post.categoria], caminho: `/blog/tag/${encodeURIComponent(post.categoria)}` },
+    { nome: post.titulo, caminho: `/blog/${post.slug}` },
+  ])
+
   return (
     <CascaBlog voltar={{ href: '/blog', rotulo: 'Blog' }}>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdDoPost(post) }}
-      />
+      {/* Um <script> por entidade, e não um grafo aninhado: se um bloco tiver
+          erro, o buscador descarta só aquele. Os `@id` compartilhados (definidos
+          em lib/seo/schema.ts) é que ligam artigo, autor e site num grafo só. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(artigo) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(trilha) }} />
+      {faq.length > 0 && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(schemaFaq(faq)) }} />
+      )}
 
       {/* ─── CABEÇALHO MODERNO E COMPLETO DO POST ─── */}
       <CabecalhoBlog>

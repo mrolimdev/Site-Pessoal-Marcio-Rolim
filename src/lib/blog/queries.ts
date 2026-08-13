@@ -332,6 +332,56 @@ export async function listarSlugsPublicados(): Promise<string[]> {
   return (data ?? []).map((linha) => linha.slug)
 }
 
+export type ItemSitemap = {
+  slug: string
+  atualizadoEm: string
+  publicadoEm: string
+  capaUrl: string | null
+  titulo: string
+}
+
+/**
+ * Tudo que o sitemap precisa de cada post publicado.
+ *
+ * `updated_at` e não `published_at` no `lastModified`: o buscador usa esse campo
+ * para decidir se vale reprocessar a página, e o que interessa a ele é quando o
+ * CONTEÚDO mudou pela última vez — não quando o post estreou.
+ */
+export async function listarPostsParaSitemap(): Promise<ItemSitemap[]> {
+  const { data, error } = await supabase
+    .from('posts')
+    .select('slug, updated_at, published_at, cover_url, title, noindex')
+    .eq('status', 'published')
+    .not('published_at', 'is', null)
+    // Post marcado como noindex não entra: pedir indexação no sitemap e negá-la
+    // na meta tag é sinal contraditório, e o Search Console reporta como erro.
+    .eq('noindex', false)
+    .order('published_at', { ascending: false })
+    .limit(LIMITE_VARREDURA)
+    .returns<
+      {
+        slug: string
+        updated_at: string
+        published_at: string
+        cover_url: string | null
+        title: string
+      }[]
+    >()
+
+  if (error) {
+    console.error('[sitemap] falha ao listar posts:', error.message)
+    return []
+  }
+
+  return (data ?? []).map((linha) => ({
+    slug: linha.slug,
+    atualizadoEm: linha.updated_at,
+    publicadoEm: linha.published_at,
+    capaUrl: linha.cover_url,
+    titulo: linha.title,
+  }))
+}
+
 /** Tags distintas dos posts publicados, em ordem alfabética. */
 export async function listarTagsPublicadas(): Promise<string[]> {
   const { data, error } = await supabase
