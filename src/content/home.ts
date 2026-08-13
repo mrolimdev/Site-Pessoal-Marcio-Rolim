@@ -366,6 +366,14 @@ export type HomeSocialButton = {
   readonly label: string
   readonly gradient: string
   readonly gradientDark?: string
+  /**
+   * Canal principal da seção: sai maior que os demais, com halo e legenda.
+   *
+   * As redes são para acompanhar conteúdo; o WhatsApp é para falar comigo. São
+   * intenções diferentes na mesma fileira, e sem hierarquia visual a que
+   * interessa ficava do mesmo tamanho de um perfil de rede social.
+   */
+  readonly destaque?: boolean
 }
 
 export type VideoCardContent = {
@@ -391,6 +399,12 @@ export const CONTACT_SECTION = {
   title: 'Conecte-se comigo', // App.tsx:592
   subtitle: 'Acompanhe conteúdos sobre tecnologia, fé e vida nas minhas redes.', // App.tsx:595
   socials: [
+    {
+      key: 'whatsapp',
+      label: 'Falar no WhatsApp',
+      gradient: 'from-emerald-500 to-emerald-600',
+      destaque: true,
+    },
     { key: 'instagram', label: 'Instagram', gradient: 'from-purple-500 to-pink-500' }, // App.tsx:601
     { key: 'youtube', label: 'YouTube', gradient: 'from-red-500 to-red-600' }, // App.tsx:602
     { key: 'linkedin', label: 'LinkedIn', gradient: 'from-blue-600 to-blue-700' }, // App.tsx:603

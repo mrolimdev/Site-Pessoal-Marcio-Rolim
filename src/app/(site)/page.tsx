@@ -122,6 +122,7 @@ const ICONE_SOCIAL: Partial<Record<SocialKey, { Icone: IconeComponente; classe: 
     youtube: { Icone: YoutubeIcon, classe: 'h-6 w-6' },
     linkedin: { Icone: LinkedInIcon, classe: 'h-5 w-5' },
     email: { Icone: MailIcon, classe: 'h-6 w-6' },
+    whatsapp: { Icone: WhatsAppIcon, classe: 'h-8 w-8' },
   }
 
 // `gradientDark` no módulo de conteúdo guarda o valor de origem, sem prefixo.
@@ -410,13 +411,54 @@ export default async function HomePage() {
               {CONTACT_SECTION.subtitle}
             </p>
 
-            <div className="flex justify-center items-center gap-4 mb-16">
+            {/* `mb-16` virou `mb-20` por causa da legenda do destaque, que fica
+                fora do fluxo para não desalinhar os outros ícones da fileira. */}
+            <div className="flex justify-center items-center gap-4 sm:gap-5 mb-20">
               {CONTACT_SECTION.socials.map((social) => {
                 const icone = ICONE_SOCIAL[social.key]
                 if (!icone) return null
                 const { Icone, classe } = icone
                 const externo = social.key !== 'email'
                 const gradiente = `${social.gradient} ${GRADIENTE_SOCIAL_ESCURO[social.key] ?? ''}`
+                // `as const` no conteúdo preserva o literal de cada entrada, e
+                // só a do WhatsApp tem `destaque` — daí o `in` em vez do acesso
+                // direto, que não compila sobre a união.
+                const emDestaque = 'destaque' in social && social.destaque
+
+                if (emDestaque) {
+                  return (
+                    <a
+                      key={social.key}
+                      href={SOCIAL_LINKS[social.key]}
+                      aria-label={social.label}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-track="contato_click"
+                      className="group relative w-[4.5rem] h-[4.5rem] sm:w-20 sm:h-20 shrink-0 hover:scale-105 transition-transform duration-300"
+                    >
+                      {/* Halo desfocado por trás do ladrilho: é o que puxa o
+                          olho para cá antes de o texto ser lido. Fora do <span>
+                          do gradiente porque `blur` num elemento com conteúdo
+                          borraria o ícone junto. */}
+                      <span
+                        aria-hidden="true"
+                        className="absolute -inset-2 rounded-[1.75rem] bg-emerald-500/30 blur-lg animate-pulse dark:bg-emerald-400/25"
+                      />
+                      <span
+                        className={`relative flex h-full w-full items-center justify-center rounded-[1.4rem] bg-gradient-to-br ${gradiente} text-white ring-4 ring-emerald-500/25 shadow-xl shadow-emerald-500/30 transition-shadow duration-300 group-hover:shadow-2xl group-hover:shadow-emerald-500/40 dark:ring-emerald-400/25`}
+                      >
+                        <Icone className={classe} />
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className="absolute top-full left-1/2 mt-2.5 -translate-x-1/2 whitespace-nowrap text-xs font-bold text-emerald-600 dark:text-emerald-400"
+                      >
+                        WhatsApp
+                      </span>
+                    </a>
+                  )
+                }
+
                 return (
                   <a
                     key={social.key}

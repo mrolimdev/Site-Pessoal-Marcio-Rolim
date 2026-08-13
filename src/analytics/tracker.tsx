@@ -149,6 +149,28 @@ function aoIntersectar(entradas: IntersectionObserverEntry[]) {
 }
 
 /**
+ * Altura do documento SEM as sentinelas dentro da conta.
+ *
+ * A sentinela de 100% mora em `top: altura - 1px`, então ela própria conta no
+ * `scrollHeight`. Medir com ela no leiaute faz a altura de ontem virar piso da
+ * de hoje: ao sair de uma página longa para uma curta, a medição ainda devolvia
+ * a altura antiga, a sentinela era recolocada lá no fim, e o documento ficava
+ * com um vazio enorme depois do rodapé que nenhuma medição seguinte desfazia —
+ * a conta se alimentava do próprio resultado.
+ *
+ * `display:none` tira as quatro do leiaute; a leitura no meio força um refluxo,
+ * mas isto só roda na troca de rota e quando a página muda de tamanho.
+ */
+function alturaDoDocumento(): number {
+  if (containerSentinelas === null) return document.documentElement.scrollHeight
+
+  containerSentinelas.style.display = 'none'
+  const altura = document.documentElement.scrollHeight
+  containerSentinelas.style.display = ''
+  return altura
+}
+
+/**
  * Reposiciona as sentinelas ainda não atingidas em N% da ALTURA DO DOCUMENTO.
  *
  * O `top` é calculado em pixels, não em porcentagem de CSS: um filho absoluto
@@ -158,8 +180,14 @@ function aoIntersectar(entradas: IntersectionObserverEntry[]) {
 function reposicionar() {
   if (containerSentinelas === null) return
 
-  const altura = document.documentElement.scrollHeight
+  const altura = alturaDoDocumento()
   alturaConhecida = altura
+
+  // Marca já atingida sai da lista, mas o `top` dela continua no DOM. Numa
+  // página mais curta, esse resto esticaria o documento sozinho.
+  for (const filho of Array.from(containerSentinelas.children) as HTMLDivElement[]) {
+    if (!sentinelas.includes(filho)) filho.style.top = '0px'
+  }
 
   for (const sentinela of sentinelas) {
     observador?.unobserve(sentinela)
@@ -202,7 +230,10 @@ function montarSentinelas() {
   // streaming) muda onde ficam os 50%. Sem isto, as marcas ficariam ancoradas
   // na altura do primeiro paint.
   redimensionador = new ResizeObserver(() => {
-    if (document.documentElement.scrollHeight === alturaConhecida) return
+    // Pela mesma razão de `alturaDoDocumento`: comparar contra a altura com as
+    // sentinelas dentro dava sempre igual depois de a página encolher, e a
+    // correção nunca chegava a rodar.
+    if (alturaDoDocumento() === alturaConhecida) return
     reposicionar()
   })
   redimensionador.observe(document.documentElement)

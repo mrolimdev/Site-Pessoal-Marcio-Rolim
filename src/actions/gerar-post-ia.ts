@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/auth/require-admin'
 import {
   Categoria,
   MODELOS_IMAGEM_DISPONIVEIS,
+  LIMITES_SEO,
   MODELOS_TEXTO_PREFERIDOS,
   MODELO_TEXTO_PADRAO,
   VALORES_CATEGORIA,
@@ -729,7 +730,7 @@ ESTRUTURA FIXA OBRIGATÓRIA DO ARTIGO:
    [${listaTagsExistentes.join(', ')}]
    - Se o conceito do artigo exigir novos termos que não estão na lista acima, crie novas tags curtas e precisas em minúsculas.
 7. OTIMIZAÇÃO SEO COMPLETA:
-   - Título SEO ("seoTitulo"): Título otimizado para o Google com até 60 caracteres.
+   - Título SEO ("seoTitulo"): Título otimizado para o Google com NO MÁXIMO 60 caracteres. Acima disso o Google trunca. NÃO inclua o nome do site ou do autor: o sistema anexa a marca automaticamente.
    - Descrição SEO ("seoDescricao"): Meta description envolvente entre 120 e 155 caracteres.
 8. RESPOSTA RÁPIDA ("respostaRapida"): 2 a 3 frases, no máximo 340 caracteres, respondendo
    DIRETAMENTE o que o título promete — sem introdução, sem "neste artigo veremos", sem rodeio.
@@ -796,7 +797,7 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
     // o começo da página; enterrar a resposta depois de três parágrafos de
     // introdução é o que faz um artigo bom não ser citado. Vai como blockquote
     // para o leitor humano também identificar de imediato.
-    const respostaRapida = limitar(gerado.respostaRapida, 340)
+    const respostaRapida = limitar(gerado.respostaRapida, LIMITES_SEO.respostaRapidaMax)
     if (respostaRapida) {
       contentNodes.push({
         type: 'blockquote',
@@ -1016,8 +1017,12 @@ Responda EXCLUSIVAMENTE em formato JSON com o seguinte schema:
       slug,
       categoria,
       resumo: resumoFinal,
-      seoTitulo: limitar(gerado.seoTitulo, 200) || tituloFinal,
-      seoDescricao: limitar(gerado.seoDescricao, 200) || limitar(resumoFinal, 200),
+      // Limite de SEO, não do banco. A coluna aceita 200; o Google trunca em
+      // ~60. Cortar em 200 aqui produzia um título válido e inútil.
+      seoTitulo: limitar(gerado.seoTitulo, LIMITES_SEO.tituloMax) || limitar(tituloFinal, LIMITES_SEO.tituloMax),
+      seoDescricao:
+        limitar(gerado.seoDescricao, LIMITES_SEO.descricaoMax) ||
+        limitar(resumoFinal, LIMITES_SEO.descricaoMax),
       tags: tagsFinais,
       capaUrl,
       capaAlt: limitar(gerado.capaAlt, 300) || `Imagem de capa do post ${tituloFinal}`,

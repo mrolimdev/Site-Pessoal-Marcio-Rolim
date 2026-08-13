@@ -62,6 +62,31 @@ export const LIMITES = {
 export const REGEX_SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/
 
 /**
+ * Limites de SEO — que NÃO são os limites do banco.
+ *
+ * A distinção existe porque os dois foram confundidos e o resultado passou
+ * despercebido: `seo_title` era cortado em 200 (o CHECK da coluna) quando o
+ * Google trunca por volta de 60. Um título gerado com 150 caracteres passava em
+ * tudo — zod, banco, build — e chegava ao resultado de busca cortado no meio,
+ * sem nenhum aviso em lugar nenhum.
+ *
+ *   CHECK do banco   impede a linha de entrar
+ *   limite de SEO    impede o resultado de ficar feio no Google
+ *
+ * O segundo é mais apertado e é o que vale na hora de gerar.
+ */
+export const LIMITES_SEO = {
+  /** O Google corta o título do resultado por volta daqui. */
+  tituloMax: 60,
+  /** Abaixo disso a descrição desperdiça espaço que já foi conquistado. */
+  descricaoMin: 110,
+  /** Acima disso o Google trunca com reticências. */
+  descricaoMax: 160,
+  /** Resposta direta no topo do post: o que cabe num trecho destacado. */
+  respostaRapidaMax: 340,
+} as const
+
+/**
  * Título → slug. Usada no browser para sugerir, e a action revalida do zero:
  * a sugestão é conveniência, não é a validação.
  */

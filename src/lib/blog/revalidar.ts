@@ -51,6 +51,10 @@ export function revalidarBlog(slugs: readonly (string | null | undefined)[] = []
   revalidatePath('/blog')
   revalidatePath('/blog/rss.xml')
   revalidatePath('/sitemap.xml')
+  // O índice que os motores generativos leem. Estava de fora: um post novo
+  // levava até uma hora para existir no llms.txt, enquanto já estava no ar em
+  // todo o resto do site.
+  revalidatePath('/llms.txt')
   revalidatePath('/admin/posts')
 
   // 3. Páginas dinâmicas por parâmetro. O segundo argumento 'page' faz o Next
