@@ -116,8 +116,33 @@ export default async function PostPage({ params }: Props) {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(schemaFaq(faq)) }} />
       )}
 
-      {/* ─── CABEÇALHO MODERNO E COMPLETO DO POST ─── */}
-      <CabecalhoBlog>
+      {/* ─── CAPA: A PRIMEIRA COISA DA PÁGINA ───
+          Antes ela vinha depois do cabeçalho inteiro — título, resumo, autor e
+          data —, ou seja, só aparecia passada a primeira dobra, quando quem
+          chegou pelo card do blog já tinha visto essa mesma imagem.
+
+          Sangra de ponta a ponta, sem borda nem canto arredondado: contida na
+          régua do texto ela pareceria mais um bloco do artigo, e não a abertura.
+
+          `max-h` porque 21/9 numa tela larga passa dos 800px de altura, e o
+          título nasceria fora da tela. A imagem preenche por `object-cover`, o
+          corte cai nas bordas e o miolo continua inteiro. */}
+      {post.capaUrl && (
+        <figure className="relative aspect-[16/9] max-h-[70vh] w-full overflow-hidden bg-stone-100 md:aspect-[21/9] dark:bg-slate-800">
+          <ImagemDeCapa
+            src={post.capaUrl}
+            alt={post.capaAlt ?? ''}
+            sizes="100vw"
+            prioridade
+          />
+        </figure>
+      )}
+
+      {/* ─── CABEÇALHO MODERNO E COMPLETO DO POST ───
+          `compacto` quando há capa: o `pt-28` do padrão existe para o título não
+          nascer embaixo da pílula flutuante, e com a capa no topo é ela que fica
+          ali — os 112px viram buraco entre a imagem e o título. */}
+      <CabecalhoBlog compacto={Boolean(post.capaUrl)}>
         <div className="flex flex-col gap-6">
           <div className="flex items-center gap-3 flex-wrap">
             <CategoriaBadge categoria={post.categoria} />
@@ -173,17 +198,6 @@ export default async function PostPage({ params }: Props) {
 
       {/* ─── CORPO DO ARTIGO E POSTS RELACIONADOS ─── */}
       <main className="mx-auto flex max-w-4xl flex-col gap-12 px-6 py-12">
-        {post.capaUrl && (
-          <figure className="relative aspect-[21/9] overflow-hidden rounded-3xl border border-slate-200/80 bg-stone-100 shadow-xl dark:border-slate-800/80 dark:bg-slate-800">
-            <ImagemDeCapa
-              src={post.capaUrl}
-              alt={post.capaAlt ?? ''}
-              sizes="(min-width: 768px) 56rem, 92vw"
-              prioridade
-            />
-          </figure>
-        )}
-
         <article className="rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-xl backdrop-blur-xl sm:p-10 dark:border-slate-800/80 dark:bg-slate-900/90">
           <PostBody conteudo={post.conteudo} />
         </article>
