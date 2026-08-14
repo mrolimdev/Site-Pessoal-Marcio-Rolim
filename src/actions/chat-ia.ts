@@ -83,8 +83,9 @@ export async function excluirAtendimentosIaAction({
       return { ok: false, erro: 'Nenhum atendimento foi encontrado para excluir.' }
     }
 
+    // '/admin' também: o painel mostra o resumo dos atendimentos, e apagar
+    // conversa muda aquele número.
     revalidatePath('/admin/ia')
-    revalidatePath('/admin/analytics')
     revalidatePath('/admin')
 
     return { ok: true, excluidos }

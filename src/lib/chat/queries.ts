@@ -256,22 +256,51 @@ export async function carregarSessaoCompletaAdmin(sessaoId: string): Promise<Ses
   }
 }
 
+/** Meia-noite UTC do dia seguinte — limite superior exclusivo de um intervalo. */
+function diaSeguinteUTC(dia: string): string {
+  const data = new Date(`${dia}T00:00:00.000Z`)
+  data.setUTCDate(data.getUTCDate() + 1)
+  return data.toISOString()
+}
+
 /**
- * Carrega métricas agregadas de atendimento IA para Analytics e Admin.
+ * Carrega métricas agregadas de atendimento IA.
+ *
+ * Aceita duas formas de janela porque as duas telas perguntam diferente: o
+ * painel manda um intervalo fechado de dias (o mesmo do analytics, para que
+ * "ontem" signifique ontem nas duas seções), e a tela de IA manda um número de
+ * dias corridos.
  */
-export async function carregarEstatisticasChatAdmin(dias: number = 30): Promise<EstatisticasChat> {
+export async function carregarEstatisticasChatAdmin(
+  janela: number | { inicio: string; fim: string } = 30,
+): Promise<EstatisticasChat> {
   try {
     await requireAdmin()
     const supabase = await createClient()
 
-    const dataLimite = new Date()
-    dataLimite.setDate(dataLimite.getDate() - dias)
-    const isoLimite = dataLimite.toISOString()
+    let de: string
+    let ate: string | null = null
 
-    const { data: sessoes, error } = await supabase
+    if (typeof janela === 'number') {
+      const dataLimite = new Date()
+      dataLimite.setDate(dataLimite.getDate() - janela)
+      de = dataLimite.toISOString()
+    } else {
+      // Mesma fronteira de dia do analytics: meia-noite UTC. Calcular no fuso
+      // local faria "hoje" no painel começar três horas depois de "hoje" no
+      // gráfico ao lado.
+      de = `${janela.inicio}T00:00:00.000Z`
+      ate = diaSeguinteUTC(janela.fim)
+    }
+
+    let consulta = supabase
       .from('chat_sessoes')
       .select('id, modo_atual, clicou_whatsapp, houve_transferencia, qualificado, total_mensagens')
-      .gte('created_at', isoLimite)
+      .gte('created_at', de)
+
+    if (ate) consulta = consulta.lt('created_at', ate)
+
+    const { data: sessoes, error } = await consulta
 
     if (error || !sessoes) {
       return {

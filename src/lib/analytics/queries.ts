@@ -38,15 +38,141 @@ import { createClient } from '@/lib/supabase/server'
 // Período
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const PERIODOS = [7, 30, 90] as const
-export type Periodo = (typeof PERIODOS)[number]
-export const PERIODO_PADRAO: Periodo = 30
+/**
+ * Presets do painel.
+ *
+ * `dias` é o tamanho da janela e `terminaEm` diz quantos dias atrás ela FECHA:
+ * 0 fecha hoje, 1 fecha ontem. Os dois campos juntos descrevem tanto "os
+ * últimos 7 dias" quanto "ontem inteiro" sem nenhum caso especial no motor de
+ * consulta, que recebe apenas um intervalo de datas já resolvido.
+ */
+export const PRESETS_PERIODO = [
+  { chave: 'hoje', rotulo: 'Hoje', dias: 1, terminaEm: 0 },
+  { chave: 'ontem', rotulo: 'Ontem', dias: 1, terminaEm: 1 },
+  { chave: '3dias', rotulo: '3 dias', dias: 3, terminaEm: 0 },
+  { chave: '7dias', rotulo: '7 dias', dias: 7, terminaEm: 0 },
+  { chave: '15dias', rotulo: '15 dias', dias: 15, terminaEm: 0 },
+  { chave: '30dias', rotulo: '30 dias', dias: 30, terminaEm: 0 },
+] as const
 
-/** searchParams é entrada de usuário: só aceitamos os três valores previstos. */
-export function normalizarPeriodo(bruto: string | string[] | undefined): Periodo {
-  const texto = Array.isArray(bruto) ? bruto[0] : bruto
-  const numero = Number(texto)
-  return (PERIODOS as readonly number[]).includes(numero) ? (numero as Periodo) : PERIODO_PADRAO
+export type ChavePreset = (typeof PRESETS_PERIODO)[number]['chave']
+export const PRESET_PADRAO: ChavePreset = '7dias'
+
+/**
+ * Teto do intervalo personalizado. Não é limite do banco: é o que impede um
+ * `?de=1990-01-01` de varrer a tabela de eventos inteira para desenhar um
+ * gráfico com dez mil pontos.
+ */
+export const LIMITE_DIAS_PERSONALIZADO = 366
+
+export type Recorte = {
+  chave: ChavePreset | 'personalizado'
+  rotulo: string
+  /** Primeiro dia da janela, YYYY-MM-DD em UTC. */
+  inicio: string
+  /** Último dia da janela, inclusivo. */
+  fim: string
+  /** Dias na janela, contando as duas pontas. */
+  dias: number
+  /** A janela alcança hoje e portanto inclui o dia parcial em curso. */
+  incluiHoje: boolean
+  /** Texto pronto do rótulo de variação. Ex.: 'vs. 7 dias anteriores'. */
+  rotuloComparacao: string
+}
+
+/** Os links antigos usavam `?periodo=7`. Continuam valendo. */
+const ALIAS_PRESET: Record<string, ChavePreset> = {
+  '3': '3dias',
+  '7': '7dias',
+  '15': '15dias',
+  '30': '30dias',
+}
+
+const FORMATO_DIA = /^\d{4}-\d{2}-\d{2}$/
+
+/** Formato certo E data que existe: 2026-02-31 casa com o regex e não existe. */
+function ehDiaValido(bruto: string | undefined): bruto is string {
+  if (!bruto || !FORMATO_DIA.test(bruto)) return false
+  const data = new Date(`${bruto}T00:00:00.000Z`)
+  return !isNaN(data.getTime()) && data.toISOString().slice(0, 10) === bruto
+}
+
+/** Dias entre duas datas, contando as duas pontas. */
+function contarDias(inicio: string, fim: string): number {
+  const ms =
+    new Date(`${fim}T00:00:00.000Z`).getTime() - new Date(`${inicio}T00:00:00.000Z`).getTime()
+  return Math.floor(ms / 86_400_000) + 1
+}
+
+function primeiro(bruto: string | string[] | undefined): string | undefined {
+  return Array.isArray(bruto) ? bruto[0] : bruto
+}
+
+function rotularComparacao(dias: number, terminaEm: number): string {
+  if (dias === 1) return terminaEm === 0 ? 'vs. ontem' : 'vs. o dia anterior'
+  return `vs. ${dias} dias anteriores`
+}
+
+/**
+ * searchParams é entrada de usuário e vira intervalo de datas AQUI, num lugar
+ * só. Nada mais no módulo decide o que é um recorte válido, então não há como
+ * uma tela nova inventar uma regra de período diferente das outras.
+ */
+export function normalizarRecorte(params: {
+  periodo?: string | string[]
+  de?: string | string[]
+  ate?: string | string[]
+}): Recorte {
+  const hoje = hojeUTC()
+
+  const de = primeiro(params.de)
+  const ate = primeiro(params.ate)
+
+  // Intervalo explícito vence o preset: quem digitou datas quer aquelas datas.
+  if (ehDiaValido(de) && ehDiaValido(ate)) {
+    // Invertido, no futuro ou grande demais: corrige em vez de recusar. Uma
+    // tela em branco dizendo "intervalo inválido" não ajuda quem só trocou a
+    // ordem dos campos.
+    let inicio = de <= ate ? de : ate
+    let fim = de <= ate ? ate : de
+
+    if (fim > hoje) fim = hoje
+    if (inicio > fim) inicio = fim
+
+    let dias = contarDias(inicio, fim)
+    if (dias > LIMITE_DIAS_PERSONALIZADO) {
+      inicio = deslocarDia(fim, -(LIMITE_DIAS_PERSONALIZADO - 1))
+      dias = LIMITE_DIAS_PERSONALIZADO
+    }
+
+    return {
+      chave: 'personalizado',
+      rotulo: 'Período',
+      inicio,
+      fim,
+      dias,
+      incluiHoje: fim === hoje,
+      rotuloComparacao: rotularComparacao(dias, fim === hoje ? 0 : 1),
+    }
+  }
+
+  const bruto = primeiro(params.periodo)
+  const chave = (bruto && ALIAS_PRESET[bruto]) || bruto
+  const preset =
+    PRESETS_PERIODO.find((p) => p.chave === chave) ??
+    PRESETS_PERIODO.find((p) => p.chave === PRESET_PADRAO)!
+
+  const fim = deslocarDia(hoje, -preset.terminaEm)
+
+  return {
+    chave: preset.chave,
+    rotulo: preset.rotulo,
+    inicio: deslocarDia(fim, -(preset.dias - 1)),
+    fim,
+    dias: preset.dias,
+    incluiHoje: preset.terminaEm === 0,
+    rotuloComparacao: rotularComparacao(preset.dias, preset.terminaEm),
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -240,9 +366,8 @@ export type LinhaEvento = {
 }
 
 export type DadosAnalytics = {
-  dias: Periodo
-  inicio: string
-  fim: string
+  /** A janela que gerou estes números — quem pergunta, junto da resposta. */
+  recorte: Recorte
   periodoAnteriorInicio: string
   periodoAnteriorFim: string
   /** Houve tráfego no período selecionado. */
@@ -263,12 +388,11 @@ export type DadosAnalytics = {
   eventos: LinhaEvento[]
 }
 
-export type ResumoPainel = {
-  pageviews7d: string
-  visitantes7d: string
-  sessoes7d: string
-  posts: { publicados: number; rascunhos: number; agendados: number; total: number }
-  jaColetouAlgumDia: boolean
+export type ResumoConteudo = {
+  publicados: number
+  rascunhos: number
+  agendados: number
+  total: number
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -563,23 +687,38 @@ function ordenarPor(
  * rota nova) leia analytics sem passar pela autorização. O `cache()` do React
  * deduplica dentro da requisição, então o custo é zero.
  */
-export async function carregarAnalytics(dias: Periodo): Promise<DadosAnalytics> {
+export async function carregarAnalytics(recorte: Recorte): Promise<DadosAnalytics> {
   await requireAdmin()
   const supabase = await createClient()
 
   const hoje = hojeUTC()
   const ontem = deslocarDia(hoje, -1)
-  const inicioAtual = deslocarDia(hoje, -(dias - 1))
+
+  const inicioAtual = recorte.inicio
+  const fimAtual = recorte.fim
   const fimAnterior = deslocarDia(inicioAtual, -1)
-  const inicioAnterior = deslocarDia(inicioAtual, -dias)
+  const inicioAnterior = deslocarDia(inicioAtual, -recorte.dias)
+
+  // O rollup só conhece dias FECHADOS. Antes a janela terminava sempre hoje e
+  // o corte em `ontem` era constante; agora ela pode terminar no passado
+  // ("ontem", um intervalo escolhido a dedo), e aí o rollup cobre a janela
+  // inteira e não há nada a buscar ao vivo.
+  const fimRollup = fimAtual < ontem ? fimAtual : ontem
+  const precisaDoDiaCorrente = recorte.incluiHoje
 
   // O recorte ao vivo começa na meia-noite UTC, a mesma fronteira que
   // `created_at::date` usa dentro do rollup.
   const inicioDeHoje = `${hoje}T00:00:00.000Z`
 
+  // Limite superior das leituras por timestamp: o dia seguinte ao fim da
+  // janela, exclusivo. Sem ele, um recorte que termina no passado ainda
+  // arrastaria todo o tráfego posterior para dentro das campanhas.
+  const limiteSuperior = `${deslocarDia(fimAtual, 1)}T00:00:00.000Z`
+
   const [totaisRollup, dimensionalRollup, eventosDeHoje, campanhasCruas, existeAlgum] =
     await Promise.all([
-      // Totais diários das DUAS janelas (atual + anterior), só até ontem.
+      // Totais diários das DUAS janelas (atual + anterior), só até o último dia
+      // já consolidado.
       paginar<LinhaRollup>(
         (de, ate) =>
           supabase
@@ -587,13 +726,13 @@ export async function carregarAnalytics(dias: Periodo): Promise<DadosAnalytics> 
             .select(COLUNAS_ROLLUP)
             .eq('dimension', 'total')
             .gte('day', inicioAnterior)
-            .lte('day', ontem)
+            .lte('day', fimRollup)
             .order('day', { ascending: true })
             .range(de, ate),
         'analytics_daily (totais)',
       ),
 
-      // Demais dimensões, só da janela atual e só até ontem.
+      // Demais dimensões, só da janela atual.
       paginar<LinhaRollup>(
         (de, ate) =>
           supabase
@@ -601,29 +740,32 @@ export async function carregarAnalytics(dias: Periodo): Promise<DadosAnalytics> 
             .select(COLUNAS_ROLLUP)
             .neq('dimension', 'total')
             .gte('day', inicioAtual)
-            .lte('day', ontem)
+            .lte('day', fimRollup)
             .range(de, ate),
         'analytics_daily (dimensões)',
       ),
 
-      // Hoje, ao vivo, direto do evento.
-      paginar<EventoCru>(
-        (de, ate) =>
-          supabase
-            .from('analytics_event')
-            .select(COLUNAS_EVENTO)
-            .gte('created_at', inicioDeHoje)
-            .eq('analytics_session.is_bot', false)
-            .eq('analytics_session.is_internal', false)
-            // Filtro por PATH além do filtro por sessão: `is_internal` é
-            // decidido quando a sessão nasce e nunca revisto, então uma sessão
-            // que começou pública e depois entrou no painel trazia /admin junto.
-            .not('path', 'like', '/admin%')
-          .not('path', 'like', '/auth/%')
-            .not('path', 'like', '/auth/%')
-            .range(de, ate),
-        'analytics_event (dia corrente)',
-      ),
+      // Hoje, ao vivo, direto do evento — e só quando a janela chega até hoje.
+      // Em "ontem" ou num intervalo passado, esta consulta seria puro tráfego
+      // de rede para um resultado que vai ser descartado no filtro de janela.
+      precisaDoDiaCorrente
+        ? paginar<EventoCru>(
+            (de, ate) =>
+              supabase
+                .from('analytics_event')
+                .select(COLUNAS_EVENTO)
+                .gte('created_at', inicioDeHoje)
+                .eq('analytics_session.is_bot', false)
+                .eq('analytics_session.is_internal', false)
+                // Filtro por PATH além do filtro por sessão: `is_internal` é
+                // decidido quando a sessão nasce e nunca revisto, então uma sessão
+                // que começou pública e depois entrou no painel trazia /admin junto.
+                .not('path', 'like', '/admin%')
+                .not('path', 'like', '/auth/%')
+                .range(de, ate),
+            'analytics_event (dia corrente)',
+          )
+        : Promise.resolve({ linhas: [] as EventoCru[], truncado: false }),
 
       // Campanhas: o rollup guarda utm_source, mas não medium nem campaign,
       // então a granularidade de campanha só existe no evento. O filtro deixa
@@ -634,6 +776,7 @@ export async function carregarAnalytics(dias: Periodo): Promise<DadosAnalytics> 
             .from('analytics_event')
             .select(COLUNAS_EVENTO)
             .gte('created_at', `${inicioAtual}T00:00:00.000Z`)
+            .lt('created_at', limiteSuperior)
             .or('utm_source.not.is.null,utm_campaign.not.is.null,utm_medium.not.is.null')
             .eq('analytics_session.is_bot', false)
             .eq('analytics_session.is_internal', false)
@@ -641,7 +784,6 @@ export async function carregarAnalytics(dias: Periodo): Promise<DadosAnalytics> 
             // decidido quando a sessão nasce e nunca revisto, então uma sessão
             // que começou pública e depois entrou no painel trazia /admin junto.
             .not('path', 'like', '/admin%')
-          .not('path', 'like', '/auth/%')
             .not('path', 'like', '/auth/%')
             .range(de, ate),
         'analytics_event (campanhas)',
@@ -665,7 +807,9 @@ export async function carregarAnalytics(dias: Periodo): Promise<DadosAnalytics> 
     ...linhasDeHoje.filter((linha) => linha.dimension !== 'total'),
   ]
 
-  const janelaAtual = totaisDoDia.filter((linha) => linha.day >= inicioAtual)
+  const janelaAtual = totaisDoDia.filter(
+    (linha) => linha.day >= inicioAtual && linha.day <= fimAtual,
+  )
   const janelaAnterior = totaisDoDia.filter(
     (linha) => linha.day >= inicioAnterior && linha.day <= fimAnterior,
   )
@@ -733,7 +877,7 @@ export async function carregarAnalytics(dias: Periodo): Promise<DadosAnalytics> 
     })
   }
 
-  const serieDiaria: PontoDiario[] = listarDias(inicioAtual, hoje).map((dia) => {
+  const serieDiaria: PontoDiario[] = listarDias(inicioAtual, fimAtual).map((dia) => {
     const totais = porDia.get(dia) ?? { pageviews: 0, visitantes: 0 }
     return {
       dia,
@@ -820,9 +964,7 @@ export async function carregarAnalytics(dias: Periodo): Promise<DadosAnalytics> 
   const jaColetouAlgumDia = (existeAlgum.data?.length ?? 0) > 0 || temDadosNoPeriodo
 
   return {
-    dias,
-    inicio: inicioAtual,
-    fim: hoje,
+    recorte,
     periodoAnteriorInicio: inicioAnterior,
     periodoAnteriorFim: fimAnterior,
     temDadosNoPeriodo,
@@ -885,74 +1027,37 @@ function consolidarCampanhas(eventos: EventoCru[]): LinhaCampanha[] {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Resumo da visão geral
+// Resumo de conteúdo do painel
 // ─────────────────────────────────────────────────────────────────────────────
 
 type LinhaStatus = { status: string }
 
 /**
- * A contagem de posts vive neste módulo por uma questão de fronteira, não de
- * domínio: é a única consulta que a visão geral precisa além de analytics, e
- * mantê-la aqui evita abrir um segundo módulo de queries no meio do caminho.
+ * Contagem de posts por status.
+ *
+ * Vive neste módulo por fronteira, não por domínio: é a única consulta que o
+ * painel precisa além de analytics, e mantê-la aqui evita abrir um segundo
+ * módulo de queries no meio do caminho.
+ *
+ * NÃO devolve mais tráfego. Havia aqui um bloco de pageviews/visitantes/sessões
+ * de 7 dias que a visão geral mostrava logo acima dos KPIs de analytics — dois
+ * caminhos de cálculo para o mesmo número, na mesma tela, com recortes de data
+ * diferentes. Dois números que deveriam bater e um dia não vão bater é pior do
+ * que um número só.
  */
-export async function carregarResumoPainel(): Promise<ResumoPainel> {
+export async function carregarResumoConteudo(): Promise<ResumoConteudo> {
   await requireAdmin()
   const supabase = await createClient()
 
-  const hoje = hojeUTC()
-  const ontem = deslocarDia(hoje, -1)
-  const inicio = deslocarDia(hoje, -6)
+  const { data } = await supabase.from('posts').select('status')
 
-  const [totaisRollup, eventosDeHoje, statusDosPosts, existeAlgum] = await Promise.all([
-    paginar<LinhaRollup>(
-      (de, ate) =>
-        supabase
-          .from('analytics_daily')
-          .select(COLUNAS_ROLLUP)
-          .eq('dimension', 'total')
-          .gte('day', inicio)
-          .lte('day', ontem)
-          .range(de, ate),
-      'analytics_daily (resumo)',
-    ),
-
-    paginar<EventoCru>(
-      (de, ate) =>
-        supabase
-          .from('analytics_event')
-          .select(COLUNAS_EVENTO)
-          .gte('created_at', `${hoje}T00:00:00.000Z`)
-          .eq('analytics_session.is_bot', false)
-          .eq('analytics_session.is_internal', false)
-          .not('path', 'like', '/admin%')
-          .not('path', 'like', '/auth/%')
-          .range(de, ate),
-      'analytics_event (resumo do dia corrente)',
-    ),
-
-    supabase.from('posts').select('status'),
-
-    supabase.from('analytics_event').select('id').limit(1),
-  ])
-
-  const linhasDeHoje = consolidarHoje(eventosDeHoje.linhas, hoje).filter(
-    (linha) => linha.dimension === 'total',
-  )
-  const totais = somar([...totaisRollup.linhas, ...linhasDeHoje])
-
-  const status = (statusDosPosts.data ?? []) as LinhaStatus[]
+  const status = (data ?? []) as LinhaStatus[]
   const contar = (alvo: string) => status.filter((linha) => linha.status === alvo).length
 
   return {
-    pageviews7d: formatarInteiro(totais.pageviews),
-    visitantes7d: formatarInteiro(totais.visitors),
-    sessoes7d: formatarInteiro(totais.sessions),
-    posts: {
-      publicados: contar('published'),
-      rascunhos: contar('draft'),
-      agendados: contar('scheduled'),
-      total: status.length,
-    },
-    jaColetouAlgumDia: (existeAlgum.data?.length ?? 0) > 0,
+    publicados: contar('published'),
+    rascunhos: contar('draft'),
+    agendados: contar('scheduled'),
+    total: status.length,
   }
 }

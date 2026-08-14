@@ -15,13 +15,15 @@ import { DatabaseIcon, BriefcaseIcon, TargetIcon, BotIcon } from '@/components/i
  * o bundle do browser.
  */
 
+// Sem item de "Analytics": os gráficos e as tabelas de tráfego passaram a ser
+// a visão geral. Duas entradas de menu para a mesma tela é convite a achar que
+// uma delas mostra outra coisa.
 const ITENS = [
   { href: '/admin', rotulo: 'Visão geral', Icone: TargetIcon, exato: true },
   { href: '/admin/posts', rotulo: 'Posts', Icone: BriefcaseIcon, exato: false },
   { href: '/admin/categorias', rotulo: 'Categorias', Icone: DatabaseIcon, exato: false },
   { href: '/admin/tags', rotulo: 'Tags', Icone: DatabaseIcon, exato: false },
   { href: '/admin/ia', rotulo: 'Atendimentos IA', Icone: BotIcon, exato: false },
-  { href: '/admin/analytics', rotulo: 'Analytics', Icone: DatabaseIcon, exato: false },
   { href: '/admin/configuracoes', rotulo: 'Configurações IA', Icone: DatabaseIcon, exato: false },
 ] as const
 
