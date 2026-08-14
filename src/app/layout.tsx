@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import Script from 'next/script'
 import { Suspense } from 'react'
 import { Tracker } from '@/analytics/tracker'
+import { ChatWidget } from '@/components/chat/chat-widget'
 import { SITE, urlAbsoluta } from '@/content/site'
 import { jsonLd, schemaSite } from '@/lib/seo/schema'
 import './globals.css'
@@ -96,6 +97,9 @@ export default function RootLayout({
             para renderização no cliente e perde o pré-render. */}
         <Suspense fallback={null}>
           <Tracker />
+        </Suspense>
+        <Suspense fallback={null}>
+          <ChatWidget />
         </Suspense>
       </body>
     </html>

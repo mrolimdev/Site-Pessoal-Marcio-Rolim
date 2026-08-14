@@ -5,6 +5,9 @@ import { fileURLToPath } from 'url'
 const config: NextConfig = {
   // Fixa a raiz: sem isso o Turbopack sobe a árvore procurando lockfile
   // e escolhe um diretório de fora do projeto.
+  turbopack: {
+    root: dirname(fileURLToPath(import.meta.url)),
+  },
   // Limite de payload para Server Actions (ex: formulários de posts com imagens)
   experimental: {
     serverActions: {

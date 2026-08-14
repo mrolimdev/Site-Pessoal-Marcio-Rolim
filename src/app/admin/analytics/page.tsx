@@ -13,6 +13,8 @@ import {
   type Kpi,
   type Periodo,
 } from '@/lib/analytics/queries'
+import { carregarEstatisticasChatAdmin } from '@/lib/chat/queries'
+import { BotIcon, WhatsAppIcon, CodeIcon, HeartIcon, ChevronRightIcon } from '@/components/icons'
 
 export const metadata: Metadata = { title: 'Analytics' }
 
@@ -97,7 +99,10 @@ function SeletorPeriodo({ atual }: { atual: Periodo }) {
 }
 
 async function ConteudoAnalytics({ dias }: { dias: Periodo }) {
-  const dados = await carregarAnalytics(dias)
+  const [dados, dadosIa] = await Promise.all([
+    carregarAnalytics(dias),
+    carregarEstatisticasChatAdmin(dias),
+  ])
 
   // Gráfico vazio sem explicação faz o leitor procurar defeito no próprio
   // site. Quando não há o que plotar, a tela diz por quê.
@@ -110,6 +115,82 @@ async function ConteudoAnalytics({ dias }: { dias: Periodo }) {
           {dados.kpis.map((kpi) => (
             <TileKpi key={kpi.chave} kpi={kpi} dias={dias} />
           ))}
+        </div>
+      </section>
+
+      {/* ─── Atendimentos de Inteligência Artificial & Conversão ─── */}
+      <section
+        aria-label="Atendimentos de IA"
+        className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-100 dark:border-slate-800/80">
+          <div>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <BotIcon className="w-5 h-5 text-amber-500" />
+              Atendimentos de Inteligência Artificial
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Métricas de conversação das IAs nos últimos {dias} dias.
+            </p>
+          </div>
+
+          <Link
+            href="/admin/ia"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400 text-xs font-semibold hover:bg-amber-500/20 transition-all self-start sm:self-auto"
+          >
+            Ver e depurar conversas completas
+            <ChevronRightIcon className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Sessões de IA
+            </span>
+            <div className="text-xl font-bold text-slate-900 dark:text-white mt-1">
+              {dadosIa.totalSessoes}
+            </div>
+            <span className="text-[10px] text-slate-400 mt-0.5 block">
+              {dadosIa.totalMensagens} msgs trocadas
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+              <CodeIcon className="w-3 h-3" /> Tech & IA
+            </span>
+            <div className="text-xl font-bold text-slate-900 dark:text-white mt-1">
+              {dadosIa.sessoesTech}
+            </div>
+            <span className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 mt-0.5 block">
+              Consultorias técnicas
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/40">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-1">
+              <HeartIcon className="w-3 h-3" /> Pastoral & Fé
+            </span>
+            <div className="text-xl font-bold text-slate-900 dark:text-white mt-1">
+              {dadosIa.sessoesPastoral}
+            </div>
+            <span className="text-[10px] text-amber-600/80 dark:text-amber-400/80 mt-0.5 block">
+              Aconselhamentos pastorais
+            </span>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+              <WhatsAppIcon className="w-3 h-3" /> WhatsApp
+            </span>
+            <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+              {dadosIa.conversoesWhatsApp}
+            </div>
+            <span className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 font-medium mt-0.5 block">
+              {dadosIa.taxaConversaoWhatsApp}% conversão
+            </span>
+          </div>
         </div>
       </section>
 

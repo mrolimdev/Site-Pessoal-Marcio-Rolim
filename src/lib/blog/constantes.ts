@@ -207,9 +207,11 @@ export function formatarDataPainel(iso: string | null | undefined): string {
  * catálogo real da API e escolhe sozinha.
  */
 export const MODELOS_TEXTO_PREFERIDOS = [
-  'gemini-2.5-flash',
+  'gemini-3.7-flash',
+  'gemini-3.6-flash',
+  'gemini-3.5-flash',
   'gemini-3-flash-preview',
-  'gemini-2.5-flash-lite',
+  'gemini-2.5-flash',
   'gemini-2.5-pro',
 ] as const
 
