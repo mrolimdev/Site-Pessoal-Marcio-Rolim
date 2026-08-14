@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useSyncExternalStore } from 'react'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { MEDIA, SITE } from '@/content/site'
@@ -34,6 +34,36 @@ const MENSAGEM_BOAS_VINDAS_TECH: Mensagem = {
   modo: 'tech',
 }
 
+/**
+ * Espelho do breakpoint `sm:` do Tailwind.
+ *
+ * `(width < 40rem)` e não `(max-width: 639px)`: é a media query LITERAL que o
+ * Tailwind 4 emite para `max-sm:`. Escrever igual garante que o JS e o CSS
+ * virem no mesmo ponto mesmo se a fonte-raiz mudar.
+ *
+ * Fora do componente e com a MediaQueryList em cache: useSyncExternalStore
+ * exige funções de identidade estável, senão reassina a cada render.
+ */
+const CONSULTA_MOBILE = '(width < 40rem)'
+let mediaQueryMobile: MediaQueryList | null = null
+
+function obterMediaQueryMobile(): MediaQueryList {
+  if (!mediaQueryMobile) mediaQueryMobile = window.matchMedia(CONSULTA_MOBILE)
+  return mediaQueryMobile
+}
+
+function assinarLargura(aoMudar: () => void) {
+  const mq = obterMediaQueryMobile()
+  mq.addEventListener('change', aoMudar)
+  return () => mq.removeEventListener('change', aoMudar)
+}
+
+const lerLargura = () => obterMediaQueryMobile().matches
+
+/** No servidor não existe viewport. `false` só evita o mismatch de hidratação —
+ *  nada de layout depende disto (o layout é 100% CSS, com max-sm:/sm:). */
+const lerLarguraNoServidor = () => false
+
 const MENSAGEM_BOAS_VINDAS_PASTORAL: Mensagem = {
   id: 'welcome-pastoral',
   role: 'assistant',
@@ -50,12 +80,23 @@ export function ChatWidget() {
   const [input, setInput] = useState('')
   const [carregando, setCarregando] = useState(false)
   const [aguardandoSilencio, setAguardandoSilencio] = useState(false)
-  const [notificacaoAtiva, setNotificacaoAtiva] = useState(true)
   const [sessaoId, setSessaoId] = useState<string>('')
 
-  const fimMensagensRef = useRef<HTMLDivElement>(null)
+  /**
+   * NÃO decide layout — isso é 100% CSS (`max-sm:`/`sm:`), correto já no
+   * primeiro paint e durante uma rotação de tela. Serve só para saber se
+   * devemos ancorar o painel ao visual viewport, que é problema exclusivo de
+   * teclado virtual.
+   */
+  const ehMobile = useSyncExternalStore(assinarLargura, lerLargura, lerLarguraNoServidor)
+
   const inputRef = useRef<HTMLInputElement>(null)
   const timerSilencioRef = useRef<NodeJS.Timeout | null>(null)
+  const painelRef = useRef<HTMLDivElement>(null)
+  const listaRef = useRef<HTMLDivElement>(null)
+  const fabRef = useRef<HTMLButtonElement>(null)
+  const coladoNoFimRef = useRef(true)
+  const jaAbriuRef = useRef(false)
 
   const historicoTechRef = useRef(historicoTech)
   const historicoPastoralRef = useRef(historicoPastoral)
@@ -130,20 +171,163 @@ export function ChatWidget() {
     }
   }, [historicoPastoral])
 
-  // Rola para o fim das mensagens suavemente ao trocar de persona ou receber novos dados
+  /** Só rola sozinho se o usuário já estava no fim — senão, quem subiu para
+   *  reler é puxado de volta a cada token do streaming. */
+  const aoRolarLista = () => {
+    const el = listaRef.current
+    if (!el) return
+    coladoNoFimRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+  }
+
   useEffect(() => {
-    if (aberto) {
-      fimMensagensRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }
+    coladoNoFimRef.current = true
+  }, [modo, aberto])
+
+  /**
+   * scrollTop no container, e NUNCA scrollIntoView.
+   *
+   * `scrollIntoView` rola todos os ancestrais roláveis por definição — inclusive
+   * o documento — e `html { scroll-behavior: smooth }` transforma isso em
+   * animação. Como `mensagens` muda a cada token do streaming, a versão anterior
+   * disparava dezenas de rolagens suaves por segundo arrastando a página inteira
+   * atrás do painel. Em tela cheia isso sabotaria a própria contenção.
+   */
+  useEffect(() => {
+    const el = listaRef.current
+    if (!aberto || !el || !coladoNoFimRef.current) return
+    el.scrollTop = el.scrollHeight
   }, [mensagens, modo, aberto, carregando, aguardandoSilencio])
 
-  // Foco automático no input ao abrir
+  /**
+   * Foco de entrada e devolução ao fechar.
+   *
+   * O critério aqui é `(pointer: fine)` — e não a largura — de propósito: em
+   * aparelho de toque, focar o campo abriria o teclado por cima justamente dos
+   * chips de sugestão e da mensagem de boas-vindas. Ali o foco vai para o painel,
+   * o que faz o leitor de tela entrar no diálogo sem levantar teclado.
+   */
   useEffect(() => {
-    if (aberto) {
-      setTimeout(() => inputRef.current?.focus(), 150)
-      setNotificacaoAtiva(false)
+    if (!aberto) {
+      if (jaAbriuRef.current) fabRef.current?.focus()
+      return
+    }
+
+    jaAbriuRef.current = true
+
+    if (!window.matchMedia('(pointer: fine)').matches) {
+      painelRef.current?.focus()
+      return
+    }
+
+    const t = setTimeout(() => inputRef.current?.focus(), 150)
+    return () => clearTimeout(t)
+  }, [aberto])
+
+  // Escape fecha — mesmo padrão do lightbox de vídeo do site.
+  useEffect(() => {
+    if (!aberto) return
+    const aoTeclar = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setAberto(false)
+    }
+    window.addEventListener('keydown', aoTeclar)
+    return () => window.removeEventListener('keydown', aoTeclar)
+  }, [aberto])
+
+  /**
+   * `inert` em tudo que não é o chat — é ISTO que torna o `aria-modal` verdadeiro.
+   *
+   * Vale nas duas larguras porque o fundo agora fica escurecido e desfocado em
+   * qualquer tela: deixar conteúdo borrado alcançável por Tab seria pior do que
+   * no desenho anterior. Salvar e restaurar o valor anterior é obrigatório — o
+   * container de sentinelas do analytics também é filho do <body> e não é nosso.
+   */
+  useEffect(() => {
+    if (!aberto) return
+
+    const meuAside = painelRef.current?.closest('aside')
+    const irmaos = Array.from(document.body.children).filter(
+      (n): n is HTMLElement => n instanceof HTMLElement && n !== meuAside,
+    )
+    const antes = irmaos.map((n) => n.inert)
+
+    irmaos.forEach((n) => {
+      n.inert = true
+    })
+
+    return () => {
+      irmaos.forEach((n, i) => {
+        n.inert = antes[i]
+      })
     }
   }, [aberto])
+
+  /**
+   * Ancoragem ao visual viewport — a parte que faz o teclado do celular não
+   * engolir o botão de enviar.
+   *
+   * Nenhuma unidade de CSS enxerga o teclado: vh, dvh, svh e lvh medem o LAYOUT
+   * viewport, e o teclado só encolhe o VISUAL viewport. Daí as duas variáveis:
+   *   --vvh encolhe o painel até a área livre acima do teclado (quem cede altura
+   *         é a lista, porque o rodapé é shrink-0 — o composer sobe colado);
+   *   --vvo re-ancora o painel `fixed`, que continuaria preso ao layout viewport
+   *         e sumiria atrás do teclado quando o iOS rola o visual viewport.
+   *
+   * Escrevemos em custom property, não em style.height, para a cascata do
+   * Tailwind continuar mandando: `sm:h-[580px]` sobrescreve no desktop sem o JS
+   * precisar saber de breakpoint.
+   */
+  useEffect(() => {
+    if (!aberto || !ehMobile) return
+
+    const vv = window.visualViewport
+    const el = painelRef.current
+    if (!vv || !el) return
+
+    let raf = 0
+
+    const aplicar = () => {
+      raf = 0
+
+      // Com pinça ativa, o visual viewport vira a lupa do usuário: seguir isso
+      // faria o painel encolher junto e brigar com o gesto.
+      if (vv.scale > 1.01) {
+        el.style.removeProperty('--vvh')
+        el.style.removeProperty('--vvo')
+        return
+      }
+
+      el.style.setProperty('--vvh', `${Math.round(vv.height)}px`)
+      el.style.setProperty('--vvo', `${Math.round(vv.offsetTop)}px`)
+
+      if (coladoNoFimRef.current && listaRef.current) {
+        listaRef.current.scrollTop = listaRef.current.scrollHeight
+      }
+    }
+
+    const agendar = () => {
+      if (!raf) raf = requestAnimationFrame(aplicar)
+    }
+
+    aplicar()
+    vv.addEventListener('resize', agendar)
+    vv.addEventListener('scroll', agendar)
+
+    return () => {
+      if (raf) cancelAnimationFrame(raf)
+      vv.removeEventListener('resize', agendar)
+      vv.removeEventListener('scroll', agendar)
+      el.style.removeProperty('--vvh')
+      el.style.removeProperty('--vvo')
+    }
+  }, [aberto, ehMobile])
+
+  // O timer de 5s sobrevivia ao desmonte e disparava fetch sobre estado morto.
+  useEffect(
+    () => () => {
+      if (timerSilencioRef.current) clearTimeout(timerSilencioRef.current)
+    },
+    [],
+  )
 
   const alternarModo = (novoModo: 'tech' | 'pastoral') => {
     if (novoModo === modo) return
@@ -366,19 +550,31 @@ export function ChatWidget() {
 
   const sugestoes = modo === 'pastoral' ? SUGESTOES_PASTORAL : SUGESTOES_TECH
 
-  if (pathname?.startsWith('/admin')) {
+  // /auth junto de /admin: um painel de tela cheia cobriria o formulário de login.
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/auth')) {
     return null
   }
 
   return (
     <aside aria-label="Atendimento por Inteligência Artificial">
       {/* ─── Botão Flutuante (Trigger) ─── */}
-      <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50 flex items-center group">
+      {/*
+        z-[100]: o maior z-index do resto do site é 50, e até aqui o chat só
+        vencia por ser o último filho do <body> — empate resolvido por ordem de
+        DOM é frágil. Aberto no mobile ele some por CSS (`hidden`), porque em
+        tela cheia ele ficaria flutuando sobre o próprio chat, duplicando a
+        função do botão Fechar. `hidden` também o tira da ordem de tabulação.
+      */}
+      <div
+        className={`fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-[100] items-center group ${
+          aberto ? 'hidden sm:flex' : 'flex'
+        }`}
+      >
         {/* Tooltip elegante que aparece SOMENTE ao passar o mouse (Hover) */}
         {!aberto && (
           <div
-            onClick={() => setAberto(true)}
-            className="hidden md:flex items-center gap-2 mr-3 px-3 py-1.5 rounded-xl bg-white/95 dark:bg-slate-900/95 border border-stone-200/90 dark:border-slate-800/90 shadow-lg backdrop-blur-md cursor-pointer text-xs font-medium text-stone-700 dark:text-slate-200 opacity-0 -translate-x-2 pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 group-hover:pointer-events-auto transition-all duration-200 whitespace-nowrap"
+            aria-hidden="true"
+            className="hidden md:flex items-center gap-2 mr-3 px-3 py-1.5 rounded-xl bg-white/95 dark:bg-slate-900/95 border border-stone-200/90 dark:border-slate-800/90 shadow-lg backdrop-blur-md text-xs font-medium text-stone-700 dark:text-slate-200 opacity-0 -translate-x-2 pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 whitespace-nowrap"
           >
             <SparklesIcon
               className={`w-3.5 h-3.5 ${
@@ -390,10 +586,12 @@ export function ChatWidget() {
         )}
 
         <button
+          ref={fabRef}
           id="btn-abrir-chat-ia"
           onClick={() => setAberto(!aberto)}
           aria-label={aberto ? 'Fechar atendimento por IA' : 'Abrir atendimento por IA'}
-          aria-expanded={aberto}
+          aria-haspopup="dialog"
+          aria-controls="painel-chat-ia"
           className={`relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full text-white shadow-xl transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
             aberto
               ? modo === 'pastoral'
@@ -431,25 +629,62 @@ export function ChatWidget() {
         </button>
       </div>
 
-      {/* ─── Painel do Chat (Modal / Drawer) ─── */}
+      {/* ─── Fundo escurecido e desfocado ─── */}
+      {/*
+        Vale nas duas larguras: é o que dá destaque ao chat e apaga a confusão
+        entre a conversa e a página. Mesmo tom e mesmo desfoque do backdrop do
+        menu mobile (site-nav.tsx), para o site ter um vocabulário só.
+
+        z-[95] fica ABAIXO do gatilho (100): no desktop o botão flutuante é o
+        próprio "fechar" e precisa continuar clicável por cima do escurecido.
+      */}
       {aberto && (
         <div
-          className="fixed bottom-24 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[430px] h-[580px] max-h-[82vh] rounded-3xl overflow-hidden flex flex-col bg-white/95 dark:bg-slate-900/95 border border-stone-200/90 dark:border-slate-800/90 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-6 duration-300"
+          aria-hidden="true"
+          onClick={() => setAberto(false)}
+          className="fixed inset-0 z-[95] bg-slate-950/60 backdrop-blur-sm animate-fade-in"
+        />
+      )}
+
+      {/* ─── Painel do Chat ─── */}
+      {aberto && (
+        <div
+          id="painel-chat-ia"
+          ref={painelRef}
+          tabIndex={-1}
           role="dialog"
           aria-modal="true"
           aria-label="Janela de atendimento por IA"
+          /*
+            Um elemento só, com a geometria inteira trocando no breakpoint:
+            no mobile é tela cheia (inset-0 + altura do visual viewport), no
+            desktop volta a ser exatamente o cartão de antes.
+
+            Toda cor `dark:` escrita para o mobile precisa do par `sm:dark:` —
+            o Tailwind emite as variantes `dark:` DEPOIS do bloco `sm:`, e como
+            :where() soma especificidade zero, sem o par a cor do mobile venceria
+            no cartão do desktop em tema escuro.
+          */
+          className="fixed z-[110] flex flex-col overflow-hidden overscroll-none focus:outline-none
+                     inset-0 h-[var(--vvh,100dvh)] translate-y-[var(--vvo,0px)]
+                     bg-white dark:bg-slate-900
+                     max-sm:animate-slide-in-up
+                     sm:inset-auto sm:right-6 sm:bottom-24 sm:translate-y-0
+                     sm:w-[430px] sm:h-[580px] sm:max-h-[82dvh]
+                     sm:rounded-3xl sm:border sm:border-stone-200/90 sm:dark:border-slate-800/90
+                     sm:bg-white/95 sm:dark:bg-slate-900/95 sm:shadow-2xl sm:backdrop-blur-xl"
         >
           {/* ─── Topo / Cabeçalho ─── */}
           <div
-            className={`p-4 border-b transition-colors duration-300 ${
+            className={`shrink-0 p-4 max-sm:pt-[max(1rem,env(safe-area-inset-top))] max-sm:touch-none border-b transition-colors duration-300 ${
               modo === 'pastoral'
                 ? 'bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent border-amber-200/50 dark:border-amber-500/20'
                 : 'bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent border-emerald-200/50 dark:border-emerald-500/20'
             }`}
           >
             <div className="flex items-center justify-between gap-3 mb-3">
-              <div className="flex items-center gap-3">
-                <div className="relative w-10 h-10 rounded-full overflow-hidden ring-2 ring-white dark:ring-slate-800 shadow-md">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="relative shrink-0 w-10 h-10 rounded-full overflow-hidden ring-2 ring-white dark:ring-slate-800 shadow-md">
                   <Image
                     src={MEDIA.profileImageUrl}
                     alt={SITE.name}
@@ -464,11 +699,11 @@ export function ChatWidget() {
                   />
                 </div>
 
-                <div>
-                  <h3 className="font-bold text-sm text-stone-900 dark:text-white flex items-center gap-1.5">
-                    Márcio Rolim
+                <div className="min-w-0">
+                  <h3 className="font-bold text-sm text-stone-900 dark:text-white flex items-center gap-1.5 min-w-0">
+                    <span className="truncate">Márcio Rolim</span>
                     <span
-                      className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full ${
+                      className={`shrink-0 text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full ${
                         modo === 'pastoral'
                           ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
                           : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
@@ -477,7 +712,7 @@ export function ChatWidget() {
                       IA Online
                     </span>
                   </h3>
-                  <p className="text-xs text-stone-500 dark:text-slate-400">
+                  <p className="text-xs text-stone-500 dark:text-slate-400 truncate">
                     {modo === 'pastoral'
                       ? 'Pastor & Conselheiro Espiritual'
                       : 'Consultor de Tecnologia & IA'}
@@ -485,33 +720,48 @@ export function ChatWidget() {
                 </div>
               </div>
 
-              {/* Ações do cabeçalho */}
-              <div className="flex items-center gap-1">
+              {/* Ações do cabeçalho — no mobile viram alvos de 44px, e afastados:
+                  "Limpar" apaga a conversa sem confirmação e ficava a 4px de "Fechar". */}
+              <div className="flex items-center gap-2 max-sm:gap-4 shrink-0">
                 <button
+                  type="button"
                   onClick={limparHistorico}
+                  aria-label="Limpar conversa"
                   title="Limpar conversa"
-                  className="p-1.5 rounded-full text-stone-400 hover:text-stone-700 dark:hover:text-slate-200 hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors text-xs"
+                  className="grid place-items-center h-11 w-11 sm:h-7 sm:w-7 shrink-0 rounded-full text-stone-600 hover:text-stone-900 hover:bg-stone-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800 transition-colors"
                 >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    className="w-5 h-5 sm:w-4 sm:h-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    aria-hidden="true"
+                  >
                     <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                   </svg>
                 </button>
+
+                {/* Fechar: no toque não existe hover, então ele tem fundo sólido
+                    e 44px. No desktop volta a ser o ícone discreto de sempre. */}
                 <button
+                  type="button"
                   onClick={() => setAberto(false)}
+                  aria-label="Fechar chat"
                   title="Fechar chat"
-                  className="p-1.5 rounded-full text-stone-400 hover:text-stone-700 dark:hover:text-slate-200 hover:bg-stone-100 dark:hover:bg-slate-800 transition-colors"
+                  className="grid place-items-center h-11 w-11 sm:h-7 sm:w-7 shrink-0 rounded-full bg-stone-200 text-stone-800 dark:bg-slate-700 dark:text-slate-50 hover:bg-stone-300 dark:hover:bg-slate-600 active:scale-95 sm:bg-transparent sm:dark:bg-transparent sm:text-stone-500 sm:dark:text-slate-400 sm:hover:bg-stone-100 sm:dark:hover:bg-slate-800 transition-colors"
                 >
-                  <CloseIcon className="w-4 h-4" />
+                  <CloseIcon className="w-5 h-5 sm:w-4 sm:h-4" />
                 </button>
               </div>
             </div>
 
             {/* ─── Seletor de Personalidade (Segmented Control) ─── */}
-            <div className="grid grid-cols-2 p-1 bg-stone-200/70 dark:bg-slate-800/80 rounded-xl text-xs font-semibold gap-1">
+            <div className="grid grid-cols-2 p-1 bg-stone-200/70 dark:bg-slate-800/80 rounded-xl text-xs max-sm:text-sm font-semibold gap-1">
               <button
                 type="button"
                 onClick={() => alternarModo('tech')}
-                className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg transition-all ${
+                className={`flex items-center justify-center gap-1.5 py-1.5 px-2 min-h-11 sm:min-h-0 rounded-lg transition-all ${
                   modo === 'tech'
                     ? 'bg-emerald-600 text-white shadow-sm'
                     : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
@@ -524,7 +774,7 @@ export function ChatWidget() {
               <button
                 type="button"
                 onClick={() => alternarModo('pastoral')}
-                className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg transition-all ${
+                className={`flex items-center justify-center gap-1.5 py-1.5 px-2 min-h-11 sm:min-h-0 rounded-lg transition-all ${
                   modo === 'pastoral'
                     ? 'bg-amber-600 text-white shadow-sm'
                     : 'text-stone-600 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white'
@@ -537,7 +787,16 @@ export function ChatWidget() {
           </div>
 
           {/* ─── Corpo de Mensagens com Scroll ─── */}
-          <div className="flex-1 overflow-y-auto divide-y divide-stone-100 dark:divide-slate-800/40">
+          {/*
+            min-h-0 é load-bearing: sem ele o min-height:auto do item flex impede
+            a lista de encolher e o rodapé com o campo é empurrado para fora da
+            tela em conversa longa. A altura fixa de antes mascarava isso.
+          */}
+          <div
+            ref={listaRef}
+            onScroll={aoRolarLista}
+            className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y touch-pinch-zoom [overflow-anchor:none] divide-y divide-stone-100 dark:divide-slate-800/40"
+          >
             <ChatMensagens
               mensagens={mensagens}
               carregando={carregando}
@@ -550,18 +809,18 @@ export function ChatWidget() {
             {/* ─── Chips de Sugestões de Perguntas Rápidas (Aparecem APENAS na tela inicial) ─── */}
             {!mensagens.some((m) => m.role === 'user') && mensagens.length <= 1 && (
               <div className="p-4 pt-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-slate-500 mb-2.5 flex items-center gap-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-500 dark:text-slate-400 mb-2.5 flex items-center gap-1">
                   <SparklesIcon className="w-3 h-3 text-amber-500" />
                   Sugestões de perguntas:
                 </p>
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-1.5 max-sm:gap-2">
                   {sugestoes.map((sugestao, i) => (
                     <button
                       key={i}
                       type="button"
                       disabled={carregando}
                       onClick={() => enviarMensagem(sugestao)}
-                      className={`text-left text-xs px-3 py-2 rounded-xl transition-all border ${
+                      className={`flex items-center text-left text-xs max-sm:text-sm px-3 py-2 min-h-11 sm:min-h-0 rounded-xl transition-all border ${
                         modo === 'pastoral'
                           ? 'bg-amber-50/70 dark:bg-amber-500/5 text-amber-900 dark:text-amber-200 border-amber-200/60 dark:border-amber-500/20 hover:bg-amber-100 dark:hover:bg-amber-500/10'
                           : 'bg-emerald-50/70 dark:bg-emerald-500/5 text-emerald-900 dark:text-emerald-200 border-emerald-200/60 dark:border-emerald-500/20 hover:bg-emerald-100 dark:hover:bg-emerald-500/10'
@@ -573,12 +832,10 @@ export function ChatWidget() {
                 </div>
               </div>
             )}
-
-            <div ref={fimMensagensRef} />
           </div>
 
           {/* ─── Rodapé do Input ─── */}
-          <div className="p-3 bg-stone-50/80 dark:bg-slate-900/80 border-t border-stone-200/80 dark:border-slate-800/80">
+          <div className="shrink-0 p-3 max-sm:pb-[max(0.75rem,env(safe-area-inset-bottom))] max-sm:touch-none bg-stone-50/80 dark:bg-slate-900/80 border-t border-stone-200/80 dark:border-slate-800/80">
             <form
               onSubmit={(e) => {
                 e.preventDefault()
@@ -586,6 +843,17 @@ export function ChatWidget() {
               }}
               className="flex items-center gap-2"
             >
+              {/*
+                text-base no toque não é estética: abaixo de 16px o Safari do iOS
+                amplia a página ao focar o campo e NÃO desfaz ao sair — num painel
+                fixed de tela cheia isso deixa o conteúdo maior que a viewport e o
+                botão Fechar fora de alcance. O critério é (pointer: fine) e não
+                `sm:` porque o iPad também é ≥640px.
+
+                Sem `disabled` aqui de propósito: campo desabilitado perde o foco a
+                cada turno, e com o resto da página inerte o usuário ficaria preso
+                fora do diálogo. `enviarMensagem` já ignora envio durante a resposta.
+              */}
               <input
                 ref={inputRef}
                 type="text"
@@ -596,35 +864,45 @@ export function ChatWidget() {
                     ? 'Peça um conselho bíblico ou oração...'
                     : 'Pergunte sobre IA, projetos ou serviços...'
                 }
-                disabled={carregando}
-                className="flex-1 bg-white dark:bg-slate-800 text-stone-900 dark:text-slate-100 text-xs sm:text-sm px-4 py-2.5 rounded-full border border-stone-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-emerald-500 placeholder-stone-400 dark:placeholder-slate-500"
+                enterKeyHint="send"
+                autoComplete="off"
+                autoCapitalize="sentences"
+                className="flex-1 min-w-0 min-h-11 sm:min-h-0 bg-white dark:bg-slate-800 text-stone-900 dark:text-slate-100 text-base [@media(pointer:fine)]:text-sm px-4 py-2.5 rounded-full border border-stone-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-emerald-500 placeholder-stone-400 dark:placeholder-slate-500"
               />
 
+              {/* Desabilitado vira cinza SÓLIDO, não 40% de opacidade: o botão
+                  precisa continuar aparente. */}
               <button
                 type="submit"
                 disabled={!input.trim() || carregando}
                 aria-label="Enviar mensagem"
-                className={`p-2.5 rounded-full text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md ${
+                className={`grid place-items-center shrink-0 h-11 w-11 sm:h-9 sm:w-9 rounded-full text-white shadow-md transition active:scale-95 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600 disabled:shadow-none dark:disabled:bg-slate-700 dark:disabled:text-slate-300 ${
                   modo === 'pastoral'
-                    ? 'bg-amber-500 hover:bg-amber-400'
-                    : 'bg-emerald-500 hover:bg-emerald-400'
+                    ? 'bg-amber-600 hover:bg-amber-500'
+                    : 'bg-emerald-600 hover:bg-emerald-500'
                 }`}
               >
-                <svg className="w-4 h-4 transform rotate-90" viewBox="0 0 24 24" fill="currentColor">
+                <svg
+                  className="w-5 h-5 sm:w-4 sm:h-4 rotate-90"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
                   <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
                 </svg>
               </button>
             </form>
 
-            <div className="mt-2 flex items-center justify-between px-1 text-[10px] text-stone-400 dark:text-slate-500">
-              <span>Atendimento IA • Márcio Rolim</span>
+            <div className="mt-2 flex items-center justify-between gap-2 px-1 text-[11px] text-stone-500 dark:text-slate-400">
+              <span className="truncate">Atendimento IA • Márcio Rolim</span>
               <a
                 href="https://wa.me/5511980888880"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400 font-medium"
+                onClick={notificarCliqueWhatsApp}
+                className="shrink-0 inline-flex items-center gap-1 min-h-11 sm:min-h-0 px-2 -mr-1 font-semibold text-emerald-700 dark:text-emerald-400 hover:underline"
               >
-                <WhatsAppIcon className="w-3 h-3" />
+                <WhatsAppIcon className="w-4 h-4" />
                 Falar no WhatsApp
               </a>
             </div>

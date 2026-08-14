@@ -68,7 +68,10 @@ export function VideoTestimony() {
           aria-modal="true"
           aria-label={CONTACT_SECTION.video.title}
           onClick={() => setAberto(false)}
-          className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          /* z-[120]: acima do chat (fundo 95, gatilho 100, painel 110). Enquanto
+             o vídeo toca, ele é o modal — antes o botão do chat flutuava por
+             cima dele, decidido só pela ordem no DOM. */
+          className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[120] flex items-center justify-center p-4"
         >
           <div
             onClick={(evento) => evento.stopPropagation()}
