@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -95,33 +95,37 @@ export function ModalGeradorIa({
     if (salvaImgMod) setModeloImagemId(salvaImgMod)
   }, [aberto])
 
-  // Timer de contagem regressiva de 5 segundos ao concluir a publicação
-  useEffect(() => {
-    if (passo === 'concluido') {
-      setTempoRestante(5)
-      const timer = setInterval(() => {
-        setTempoRestante((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer)
-            handleFinalizarERedirecionar()
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-
-      return () => clearInterval(timer)
-    }
-  }, [passo])
-
-  if (!aberto) return null
-
   // Redireciona e fecha o modal
-  const handleFinalizarERedirecionar = () => {
+  const handleFinalizarERedirecionar = useCallback(() => {
     onFechar()
     router.push('/admin/posts')
     router.refresh()
-  }
+  }, [onFechar, router])
+
+  // Redefine a contagem regressiva de 5 segundos ao entrar no passo 'concluido'
+  useEffect(() => {
+    if (passo === 'concluido') {
+      setTempoRestante(5)
+    }
+  }, [passo])
+
+  // Timer de contagem regressiva de 5 segundos ao concluir a publicação
+  useEffect(() => {
+    if (passo !== 'concluido') return
+
+    if (tempoRestante <= 0) {
+      handleFinalizarERedirecionar()
+      return
+    }
+
+    const timer = setTimeout(() => {
+      setTempoRestante((prev) => prev - 1)
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [passo, tempoRestante, handleFinalizarERedirecionar])
+
+  if (!aberto) return null
 
   // ─── BOTÃO ÚNICO DE BUSCA E GERAÇÃO DE 5 SUGESTÕES ────────────────────────
   const handleBuscar5Sugestoes = async (e?: React.FormEvent) => {

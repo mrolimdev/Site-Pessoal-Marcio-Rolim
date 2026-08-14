@@ -240,11 +240,13 @@ export function PostForm({ post }: Props) {
     setSlug(valor.toLowerCase().replace(/[^a-z0-9-]+/g, '-'))
   }
 
+  const fecharModalIa = useCallback(() => setModalIaAberto(false), [])
+
   return (
     <>
       <ModalGeradorIa
         aberto={modalIaAberto}
-        onFechar={() => setModalIaAberto(false)}
+        onFechar={fecharModalIa}
         onAplicarAoFormulario={aoAplicarPostIa}
         categoriaAtual={categoria}
       />
