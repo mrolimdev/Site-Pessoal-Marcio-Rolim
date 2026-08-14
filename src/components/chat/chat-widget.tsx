@@ -101,6 +101,18 @@ export function ChatWidget() {
   const historicoTechRef = useRef(historicoTech)
   const historicoPastoralRef = useRef(historicoPastoral)
 
+  /**
+   * A rota decide se o painel EXISTE, e os efeitos precisam saber disso.
+   *
+   * O widget vive no layout raiz e sobrevive à navegação de cliente. Se os
+   * efeitos dependessem só de `aberto`, navegar para /admin com o chat aberto
+   * desmontaria o painel sem rodar cleanup nenhum — a página inteira ficaria
+   * `inert` para sempre e o listener de Escape continuaria vivo no painel
+   * administrativo. `painelAberto` é o que muda de verdade nessa hora.
+   */
+  const rotaBloqueada = !!pathname && (pathname.startsWith('/admin') || pathname.startsWith('/auth'))
+  const painelAberto = aberto && !rotaBloqueada
+
   useEffect(() => {
     historicoTechRef.current = historicoTech
   }, [historicoTech])
@@ -181,7 +193,7 @@ export function ChatWidget() {
 
   useEffect(() => {
     coladoNoFimRef.current = true
-  }, [modo, aberto])
+  }, [modo, painelAberto])
 
   /**
    * scrollTop no container, e NUNCA scrollIntoView.
@@ -194,9 +206,9 @@ export function ChatWidget() {
    */
   useEffect(() => {
     const el = listaRef.current
-    if (!aberto || !el || !coladoNoFimRef.current) return
+    if (!painelAberto || !el || !coladoNoFimRef.current) return
     el.scrollTop = el.scrollHeight
-  }, [mensagens, modo, aberto, carregando, aguardandoSilencio])
+  }, [mensagens, modo, painelAberto, carregando, aguardandoSilencio])
 
   /**
    * Foco de entrada e devolução ao fechar.
@@ -207,7 +219,7 @@ export function ChatWidget() {
    * o que faz o leitor de tela entrar no diálogo sem levantar teclado.
    */
   useEffect(() => {
-    if (!aberto) {
+    if (!painelAberto) {
       if (jaAbriuRef.current) fabRef.current?.focus()
       return
     }
@@ -221,17 +233,17 @@ export function ChatWidget() {
 
     const t = setTimeout(() => inputRef.current?.focus(), 150)
     return () => clearTimeout(t)
-  }, [aberto])
+  }, [painelAberto])
 
   // Escape fecha — mesmo padrão do lightbox de vídeo do site.
   useEffect(() => {
-    if (!aberto) return
+    if (!painelAberto) return
     const aoTeclar = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setAberto(false)
     }
     window.addEventListener('keydown', aoTeclar)
     return () => window.removeEventListener('keydown', aoTeclar)
-  }, [aberto])
+  }, [painelAberto])
 
   /**
    * `inert` em tudo que não é o chat — é ISTO que torna o `aria-modal` verdadeiro.
@@ -242,7 +254,7 @@ export function ChatWidget() {
    * container de sentinelas do analytics também é filho do <body> e não é nosso.
    */
   useEffect(() => {
-    if (!aberto) return
+    if (!painelAberto) return
 
     const meuAside = painelRef.current?.closest('aside')
     const irmaos = Array.from(document.body.children).filter(
@@ -259,7 +271,10 @@ export function ChatWidget() {
         n.inert = antes[i]
       })
     }
-  }, [aberto])
+    // pathname nas deps: a navegação de cliente troca os filhos do <body> por
+    // nós NOVOS, que nascem sem inert. Sem re-fotografar, o fundo escurecido
+    // volta a ser alcançável por Tab e o aria-modal vira mentira de novo.
+  }, [painelAberto, pathname])
 
   /**
    * Ancoragem ao visual viewport — a parte que faz o teclado do celular não
@@ -277,7 +292,7 @@ export function ChatWidget() {
    * precisar saber de breakpoint.
    */
   useEffect(() => {
-    if (!aberto || !ehMobile) return
+    if (!painelAberto || !ehMobile) return
 
     const vv = window.visualViewport
     const el = painelRef.current
@@ -319,7 +334,7 @@ export function ChatWidget() {
       el.style.removeProperty('--vvh')
       el.style.removeProperty('--vvo')
     }
-  }, [aberto, ehMobile])
+  }, [painelAberto, ehMobile])
 
   // O timer de 5s sobrevivia ao desmonte e disparava fetch sobre estado morto.
   useEffect(
@@ -551,7 +566,7 @@ export function ChatWidget() {
   const sugestoes = modo === 'pastoral' ? SUGESTOES_PASTORAL : SUGESTOES_TECH
 
   // /auth junto de /admin: um painel de tela cheia cobriria o formulário de login.
-  if (pathname?.startsWith('/admin') || pathname?.startsWith('/auth')) {
+  if (rotaBloqueada) {
     return null
   }
 
@@ -567,7 +582,7 @@ export function ChatWidget() {
       */}
       <div
         className={`fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-[100] items-center group ${
-          aberto ? 'hidden sm:flex' : 'flex'
+          painelAberto ? 'hidden sm:flex' : 'flex'
         }`}
       >
         {/* Tooltip elegante que aparece SOMENTE ao passar o mouse (Hover) */}
@@ -638,7 +653,7 @@ export function ChatWidget() {
         z-[95] fica ABAIXO do gatilho (100): no desktop o botão flutuante é o
         próprio "fechar" e precisa continuar clicável por cima do escurecido.
       */}
-      {aberto && (
+      {painelAberto && (
         <div
           aria-hidden="true"
           onClick={() => setAberto(false)}
@@ -647,7 +662,7 @@ export function ChatWidget() {
       )}
 
       {/* ─── Painel do Chat ─── */}
-      {aberto && (
+      {painelAberto && (
         <div
           id="painel-chat-ia"
           ref={painelRef}

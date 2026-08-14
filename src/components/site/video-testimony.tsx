@@ -68,10 +68,20 @@ export function VideoTestimony() {
           aria-modal="true"
           aria-label={CONTACT_SECTION.video.title}
           onClick={() => setAberto(false)}
-          /* z-[120]: acima do chat (fundo 95, gatilho 100, painel 110). Enquanto
-             o vídeo toca, ele é o modal — antes o botão do chat flutuava por
-             cima dele, decidido só pela ordem no DOM. */
-          className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[120] flex items-center justify-center p-4"
+          /*
+            z-[90] — abaixo de TODA a camada do chat (fundo 95, gatilho 100,
+            painel 110). Foi tentado o contrário, com o vídeo em 120, e a
+            consequência era pior: este lightbox não prende o foco, então o
+            botão do chat continuava tabulável por baixo da cortina; abri-lo
+            dali punha o painel DEBAIXO do vídeo e ainda marcava o vídeo como
+            inerte — o X de fechar parava de responder.
+
+            Com o vídeo embaixo, o chat é sempre a camada mais alta e qualquer
+            combinação continua utilizável. O preço é cosmético e é o mesmo de
+            antes desta mudança: com o vídeo aberto, o botão do chat flutua
+            sobre a cortina.
+          */
+          className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[90] flex items-center justify-center p-4"
         >
           <div
             onClick={(evento) => evento.stopPropagation()}
